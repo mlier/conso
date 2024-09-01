@@ -1,0 +1,8 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://bitbucket.org/mliermlier/haskell-soap.git
+  tag: 840c067494719c88974389630e7299c277f55ad2
+  subdir: soap-tls
+  
