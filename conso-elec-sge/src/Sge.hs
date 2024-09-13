@@ -1,20 +1,22 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
-module Sge ( consultationDonneesTechniquesContractuellesRequest ) where
+module Sge  where
 
 import           Control.Monad ( (>=>) )
 import qualified Data.Text as T
 import           Data.Text.Encoding as T ( encodeUtf8 )
-import           Data.Text ( Text ) 
+import           Data.Text ( Text )
+import qualified Data.Text.Lazy as L
 import           Text.Pretty.Simple (pPrint)
 
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
-import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc )
+import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc, printRequest, printBody )
 import           Network.SOAP.Transport.HTTP.TLS ( makeSettings )
 import           Network.HTTP.Client ( applyBasicAuth )
 
-import           Text.XML.Writer ( elementA, element, XML )
+import           Text.XML.Writer ( XML, node )
+import qualified Text.XML as X
 import           Data.ByteString ( ByteString )
 import           Text.XML.HaXml
                     ( Element,
@@ -22,21 +24,20 @@ import           Text.XML.HaXml
                       Document(Document),
                       deep,
                       tag,
-                      xmlParse ) 
+                      xmlParse )
 import           Text.XML.HaXml.Posn ( noPos, Posn )
-import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(XsdString) )
+import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(XsdString), Boolean )
 import           Text.XML.HaXml.Schema.Schema ( XMLParser )
-import           Data.ByteString.Lazy.Char8 ( unpack ) 
+import qualified Text.XML.HaXml.Pretty as P
+import qualified Text.PrettyPrint.HughesPJ as PP
+import           Data.ByteString.Lazy.Char8 ( unpack )
 import           Data.Yaml (FromJSON, ToJSON, decodeFileEither)
 import           GHC.Generics ( Generic )
 import           System.Posix.User
                     ( UserEntry(homeDirectory),
                       getEffectiveUserName,
-                      getUserEntryForName ) 
+                      getUserEntryForName )
 
-import           ConsulterDonneesTechniquesContractuellesV10
-                    ( ConsulterDonneesTechniquesContractuellesResponseType,
-                      elementConsulterDonneesTechniquesContractuellesResponse )
 import           EnedisDictionnaireResultat
                     ( ResultatType(ResultatType),
                       ResultatLibelleType(ResultatLibelleType),
@@ -44,6 +45,10 @@ import           EnedisDictionnaireResultat
                                              resultatTypeAttributes_code),
                       ResultatCodeType(ResultatCodeType),
                       elementResultat )
+
+
+getEnv :: IO Env
+getEnv = readEnv
 
 
 newtype Env =
@@ -78,124 +83,52 @@ readEnv = do
         decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
 
 withBasicAuth :: ByteString -> ByteString -> RequestProc
-withBasicAuth username passw request = pure (applyBasicAuth username passw request)
-
---getSge :: IO ()
---getSge = do
---    env <- readEnv
---    let sgeEnv = sge env
---    --print env
---    --print sgeEnv
---
---    myHD <- myHomeDirectory
---    let myHDT = T.pack $ myHD <> "/.conso/"
---    let certPath = T.unpack $ T.append myHDT (cert sgeEnv) :: FilePath
---    let keyPath = T.unpack $ T.append myHDT (key sgeEnv) :: FilePath
---
---    --settings <- makeSettings (Just "production-coach-energy.crt") (Just "production-coach-energy.key") validateDefault
---    settings <- makeSettings (Just certPath) (Just keyPath) (\_ _ _ _ -> return [])
---    let pointId = "21429667044956000" :: Text
---    let loginUtilisateur = userB2b sgeEnv
---    let passwordUtilisateur = password sgeEnv
---    let autorisationClient = True
---
---    let loginUtilisateurBS =  T.encodeUtf8 loginUtilisateur
---    let passwordUtilisateurBS = T.encodeUtf8 passwordUtilisateur
---
---    let urlSge = "https://sge-b2b.enedis.fr/ConsultationDonneesTechniquesContractuelles/v1.0"
---    let soapAction =  urlSge
---    let body = elementA "tns:consulterDonneesTechniquesContractuelles"
---                        [("xmlns:tns", "http://www.enedis.fr/sge/b2b/services/consulterdonneestechniquescontractuelles/v1.0")]
---                        $ do
---                                Text.XML.Writer.element "pointId" pointId
---                                Text.XML.Writer.element "loginUtilisateur" loginUtilisateur
---                                Text.XML.Writer.element "autorisationClient" autorisationClient
---    putStrLn urlSge
---
---    transport <- initTransportWithM
---        settings
---        urlSge
---        ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> pure  ) -- or printRequest
---        pure -- or printBody
---
---    response <- invokeWS transport soapAction () body (RawParser id)
---    --print response
---
---    let responseStr = unpack response
---    cdtcr responseStr
---    --where
---    --    parser cur = cur $// laxElement "consulterDonneesTechniquesContractuellesResponse"
---
---
---titi root = adresseInstallationType_escalierEtEtageEtAppartement
---                                    $ pointDonneesGeneralesType_adresseInstallation
---                                    $ pointType_donneesGenerales
---                                    $ consulterDonneesTechniquesContractuellesResponseType_point plans
---    where
---      cdtcresp = deep (tag "ns7:consulterDonneesTechniquesContractuellesResponse") $ CElem root noPos
---      toto = runParser elementConsulterDonneesTechniquesContractuellesResponse [head cdtcresp]
---      (Right plans) = fst toto
+withBasicAuth username passw req = pure (applyBasicAuth username passw req)
 
 
+--consulterMesuresDetailleesV3Request :: Text -> IO()
+--consulterMesuresDetailleesV3Request pointId = do
 
---cdtcr :: String -> IO ()
---cdtcr s = do
---    let (Document _ _ root _) = xmlParse "(No Document)" s
---    let resultatXml = deep (tag "resultat") $ CElem root noPos
---    --print resultatXml
---    let resultat = runParser elementResultat resultatXml
---    --print resultat
---    --let cdtcresp = deep (tag "ns7:consulterDonneesTechniquesContractuellesResponse") $ CElem root noPos
---    --print root
---    --let toto = runParser elementConsulterDonneesTechniquesContractuellesResponse [head cdtcresp]
---    --print toto
---    --let (Right plans) = fst toto
---    --print plans
---    print $ case resultat of
---      (Right ( ResultatType 
---                  ( ResultatLibelleType ( XsdString l ) ) 
---                  ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) } )
---              ), _) 
---                        -> Left root
---                        
---                          
---      (Right ( ResultatType 
---                  ( ResultatLibelleType ( XsdString l ) ) 
---                  ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) } )
---              ), _)
---                        -> Right (a, l)
---      _                 -> Right ("BAD", "Erreur interne")
---
---    --let (Right r) = fst resultat
---
------------------------------------------------------------
+    --hsType <- xml2hsType "ns4:rechercherServicesSouscritsMesuresResponse" elementRechercherServicesSouscritsMesuresResponse sRequest
+    
 
-
-
-consultationDonneesTechniquesContractuellesRequest :: Text -> Bool -> IO ()
-consultationDonneesTechniquesContractuellesRequest pointId autorisationClient = do 
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> XMLParser b -> IO ()
+sgeRequest req elementResponse= do 
     env <- readEnv
     let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-
-    let body = elementA "tns:consulterDonneesTechniquesContractuelles"
-                        [("xmlns:tns", "http://www.enedis.fr/sge/b2b/services/consulterdonneestechniquescontractuelles/v1.0")]
-                        $ do
-                                Text.XML.Writer.element "pointId" pointId
-                                Text.XML.Writer.element "loginUtilisateur" loginUtilisateur
-                                Text.XML.Writer.element "autorisationClient" autorisationClient
-    let urlSge = "https://sge-b2b.enedis.fr/ConsultationDonneesTechniquesContractuelles/v1.0"
-    let soapAction =  urlSge
-    sRequest <- soapRequest sgeEnv urlSge soapAction body
-    case sRequest of 
+    let (urlSge, soapAction, elementToXMLRequest, xmlTag) = config req
+    let t = PP.render . P.content . head . elementToXMLRequest $ req
+    let (X.Document _ u _) = X.parseText_ X.def $ L.pack t
+    let v =  node . X.NodeElement $ u
+    print urlSge
+    print soapAction
+    pPrint req
+    pPrint v
+    sRequest <- soapRequest sgeEnv urlSge soapAction v
+    putStrLn sRequest
+    hsType <- xml2hsType xmlTag elementResponse sRequest
+    case hsType of
         Left resp -> pPrint resp
-        Right (c, l) -> do 
+        Right (c, l) -> do
             putStr "Erreur "
             putStrLn c
             putStrLn l
 
+class RequestType a where
+   config :: a -> ( String, String, a -> [Content ()], String )
 
-soapRequest :: Sge -> String -> String -> XML -> IO (Either ConsulterDonneesTechniquesContractuellesV10.ConsulterDonneesTechniquesContractuellesResponseType (String, String) )
+class ResponseType a
+
+
+getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
+getHaskellType xmlTag elementResponse root = plans
+        where
+            cdtcresp = deep (tag xmlTag) $ CElem root noPos
+            toto = runParser elementResponse [head cdtcresp]
+            (Right plans) = fst toto
+
+
+soapRequest :: Sge -> String -> String -> XML -> IO String
 soapRequest sgeEnv urlSge soapAction body = do
     myHD <- myHomeDirectory
     let myHDT = T.pack $ myHD <> "/.conso/"
@@ -214,38 +147,36 @@ soapRequest sgeEnv urlSge soapAction body = do
         ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> pure  ) -- or printRequest
         pure -- or printBody
 
-    response <- invokeWS transport soapAction () body (RawParser id)
-    return $ case checkXMLerror $ unpack response of
-        (Left root ) -> Left $ getHaskellType "ns7:consulterDonneesTechniquesContractuellesResponse" 
-                                               ConsulterDonneesTechniquesContractuellesV10.elementConsulterDonneesTechniquesContractuellesResponse root
+    xml <- invokeWS transport soapAction () body (RawParser id)
+    return $ unpack xml
+
+
+xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either a (String, String) )
+xml2hsType xmlTag elementResponse xml = do
+    return $ case checkXMLerror xml of
+        (Left root ) -> Left $ getHaskellType xmlTag elementResponse root
         (Right (c, l) ) -> Right (c, l)
 
-    
+
 checkXMLerror :: String -> Either (Element Posn) (String, String)
-checkXMLerror xmlResp =  do 
+checkXMLerror xmlResp =  do
     let (Document _ _ root _) = xmlParse "(No Document)" xmlResp
     let resultatXml = deep (tag "resultat") $ CElem root noPos
     let resultat = runParser elementResultat resultatXml
 
     case resultat of
-        (Right ( ResultatType 
-                  ( ResultatLibelleType ( XsdString l ) ) 
+        (Right ( ResultatType
+                  ( ResultatLibelleType ( XsdString l ) )
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) } )
-              ), _) 
+              ), _)
                         -> Left root
-                        
-                          
-        (Right ( ResultatType 
-                  ( ResultatLibelleType ( XsdString l ) ) 
+
+
+        (Right ( ResultatType
+                  ( ResultatLibelleType ( XsdString l ) )
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) } )
               ), _)
                         -> Right (a, l)
         _               -> Right ("BAD", "Erreur interne")
 
 
-getHaskellType :: String -> XMLParser ConsulterDonneesTechniquesContractuellesV10.ConsulterDonneesTechniquesContractuellesResponseType ->Element Posn -> ConsulterDonneesTechniquesContractuellesV10.ConsulterDonneesTechniquesContractuellesResponseType
-getHaskellType xmlTag elementResponse root = plans
-    where
-      cdtcresp = deep (tag xmlTag) $ CElem root noPos
-      toto = runParser elementResponse [head cdtcresp]
-      (Right plans) = fst toto

@@ -7,7 +7,7 @@ import           Data.Text ( Text )
 import           System.Posix.User ()
 import           GHC.Generics ()
 
-import           Sge ( consultationDonneesTechniquesContractuellesRequest )
+import           ConsulterDonneesTechniquesContractuellesV10
 
 data Options = Options
     {
@@ -20,8 +20,8 @@ data Options = Options
 data Command
     = Info InfoOptions
     | Mesures MesuresOptions
-{-    | MesuresDetail MesuresDetailCommand
-    | Recherche RechercheCommand
+    | MesuresDetail MesuresDetailOptions
+{-    | Recherche RechercheCommand
     | HistoriqueM23 HistoriqueM23Command
     | FluxCommand FluxCommand
     | FluxRecherche FluxRechercheCommand
@@ -35,6 +35,10 @@ newtype InfoOptions = InfoOptions
 
 newtype MesuresOptions = MesuresOptions
   { pointMesures     :: String
+  } deriving (Eq, Show)
+
+newtype MesuresDetailOptions = MesuresDetailOptions
+  { pointMesuresDetail     :: String
   } deriving (Eq, Show)
 
 
@@ -58,6 +62,11 @@ comm =
                 ( Mesures <$> mesuresParser <**> helper )
                 ( progDesc "Avoir des mesures mensuelles" )
             )
+        <> command "mesuresdetail"
+            (info
+                ( MesuresDetail <$> mesuresDetailParser <**> helper )
+                ( progDesc "Avoir des mesures détaillées" )
+            )
         )
 
 infParser :: Parser InfoOptions
@@ -76,6 +85,14 @@ mesuresParser = MesuresOptions
          <> metavar "POINT"
          <> help "Point" )
 
+mesuresDetailParser :: Parser MesuresDetailOptions
+mesuresDetailParser = MesuresDetailOptions
+      <$> strOption
+          ( long "point"
+         <> short 'p' 
+         <> metavar "POINT"
+         <> help "Point" )
+
 docommand :: Options -> IO ()
 docommand Options{ optVerbose=v, optCommand=c } = case c of 
     Info i -> do 
@@ -83,13 +100,21 @@ docommand Options{ optVerbose=v, optCommand=c } = case c of
         putStrLn $ pointInfo i
         print v
         --getSge
-        let pointId = "12345678901234" :: Text
-        consultationDonneesTechniquesContractuellesRequest pointId True
+
     Mesures m -> do
         putStrLn "To be done : mesures"
         putStrLn $ pointMesures m
         print v
-
+        let pointId = "21429667044956" :: Text
+        print v
+       
+    MesuresDetail m -> do
+        putStrLn "To be done : mesures detail"
+        putStrLn $ pointMesuresDetail m
+        print v
+        let pointId = "21429667044956" :: Text
+        print v
+      
 
 main :: IO ()
 main = docommand =<< execParser optsHeader

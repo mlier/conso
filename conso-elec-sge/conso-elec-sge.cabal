@@ -59,11 +59,15 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  Sge
+    exposed-modules:  
+        Sge
+        ConsulterDonneesTechniquesContractuellesV10
+        RechercherServicesSouscritsMesuresV10     
 
     -- Modules included in this library but not exported.
     other-modules:
-        ConsulterDonneesTechniquesContractuellesV10
+        ConsulterDonneesTechniquesContractuellesV10Type
+        RechercherServicesSouscritsMesuresV10Type
         EnedisDictionnaireTypeComplexeV50
         EnedisDictionnaireTypeSimpleV50
         EnedisDictionnaireResultat
@@ -78,12 +82,14 @@ library
         , soap-tls
         , http-client
         , xml-conduit-writer
+        , xml-conduit
         , text
         , bytestring
         , HaXml
         , yaml
         , unix
         , pretty-simple
+        , pretty
 
     -- Directories containing source files.
     hs-source-dirs:   src
