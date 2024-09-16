@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ConsulterMesuresDetailleesV3 where
+module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 where
 
 import           Data.Text ( Text )
 import qualified Data.Text as T
@@ -10,9 +10,9 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.XML.HaXml.Schema.Schema as Schema ( Content, XMLParser )
 import           Text.Pretty.Simple (pPrint)
 
-import           EnedisDictionnaireTypeSimpleV50 as Ds
-import           ConsulterMesuresDetailleesCommunV12Type
-import Sge
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
+import           Conso.Fr.Elec.Sge.Sge
 
 
 instance RequestType ConsulterMesuresDetailleesV3Type

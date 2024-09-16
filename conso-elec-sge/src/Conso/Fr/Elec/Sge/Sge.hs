@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
-module Sge  where
+module Conso.Fr.Elec.Sge.Sge  where
 
 import           Control.Monad ( (>=>) )
 import qualified Data.Text as T
@@ -40,7 +40,7 @@ import           System.Posix.User
                       getEffectiveUserName,
                       getUserEntryForName )
 
-import           EnedisDictionnaireResultat
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                     ( ResultatType(ResultatType),
                       ResultatLibelleType(ResultatLibelleType),
                       ResultatTypeAttributes(ResultatTypeAttributes,

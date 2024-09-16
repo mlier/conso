@@ -60,19 +60,19 @@ library
 
     -- Modules exported by the library.
     exposed-modules:  
-        ConsulterDonneesTechniquesContractuellesV10
-        RechercherServicesSouscritsMesuresV10     
-        ConsulterMesuresDetailleesV3
+        Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
+        Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10     
+        Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3
 
     -- Modules included in this library but not exported.
     other-modules:
-        Sge
-        ConsulterDonneesTechniquesContractuellesV10Type
-        RechercherServicesSouscritsMesuresV10Type
-        ConsulterMesuresDetailleesCommunV12Type
-        EnedisDictionnaireTypeComplexeV50
-        EnedisDictionnaireTypeSimpleV50
-        EnedisDictionnaireResultat
+        Conso.Fr.Elec.Sge.Sge
+        Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
+        Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
+        Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
+        Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
+        Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+        Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

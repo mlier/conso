@@ -1,8 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module EnedisDictionnaireResultat
-  ( module EnedisDictionnaireResultat
+module Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
+  ( module Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema

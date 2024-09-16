@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module RechercherServicesSouscritsMesuresV10 where
+module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10 where
 
 import           Data.Text ( Text )
 import qualified Data.Text as T
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), Boolean )
 import           Text.Pretty.Simple (pPrint)
 
-import           EnedisDictionnaireTypeSimpleV50 as Ds
-import           RechercherServicesSouscritsMesuresV10Type
-import Sge
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+import           Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
+import           Conso.Fr.Elec.Sge.Sge
     
 
 instance RequestType RechercherServicesSouscritsMesuresType

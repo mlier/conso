@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-module RechercherServicesSouscritsMesuresV10Type
-  ( module RechercherServicesSouscritsMesuresV10Type
+module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
+  ( module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
@@ -19,7 +19,7 @@ import Text.XML.HaXml.Schema.Schema as Schema
       posnElement,
       Occurs(Occurs) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
-import EnedisDictionnaireTypeSimpleV50 as Ds
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( BooleenType,
       Chaine15Type,
       Chaine255Type,

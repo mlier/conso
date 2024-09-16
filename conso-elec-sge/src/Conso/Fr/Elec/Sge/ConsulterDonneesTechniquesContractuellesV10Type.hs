@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-module ConsulterDonneesTechniquesContractuellesV10Type
-  ( module ConsulterDonneesTechniquesContractuellesV10Type
+module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
+  ( module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
   ) where
 
 import Text.XML.HaXml.Schema.Schema as Schema
@@ -21,7 +21,7 @@ import Text.XML.HaXml.Schema.Schema as Schema
       Commitment(commit) )
 import Text.XML.HaXml.OneOfN ()
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
-import EnedisDictionnaireTypeComplexeV50 as Dc
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50 as Dc
     ( TransformateurPrecisionClasseType,
       TransformateurCourantPositionType,
       TransformateurCouplageType,
@@ -47,7 +47,7 @@ import EnedisDictionnaireTypeComplexeV50 as Dc
       CalendrierType,
       AlimentationModeApresCompteurType,
       AcheminementTarifType(AcheminementTarifType) )
-import EnedisDictionnaireTypeSimpleV50 as Ds
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( UtilisateurLoginType,
       PosteHoraireCodeType,
       PointIdType,

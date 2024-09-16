@@ -7,7 +7,7 @@ import           Data.Text ( Text )
 import           System.Posix.User ()
 import           GHC.Generics ()
 
-import           ConsulterDonneesTechniquesContractuellesV10
+import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
 
 data Options = Options
     {

@@ -1,17 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ConsulterDonneesTechniquesContractuellesV10 where
+module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
 
 import           Data.Text ( Text )
 import qualified Data.Text as T
-import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), Boolean )
+import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), )
 import Text.XML.HaXml.Schema.Schema as Schema ( Content, XMLParser )
 import           Text.Pretty.Simple (pPrint)
 
-import           EnedisDictionnaireTypeSimpleV50 as Ds
-import           ConsulterDonneesTechniquesContractuellesV10Type
-import Sge
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
+import           Conso.Fr.Elec.Sge.Sge
 
 
 instance RequestType ConsulterDonneesTechniquesContractuellesType

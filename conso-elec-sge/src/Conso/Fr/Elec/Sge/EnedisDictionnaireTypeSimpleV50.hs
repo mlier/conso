@@ -3,8 +3,8 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 
-module EnedisDictionnaireTypeSimpleV50
-  ( module EnedisDictionnaireTypeSimpleV50
+module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+  ( module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
   ) where
  
 import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Restricts(..))

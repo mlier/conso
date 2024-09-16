@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-module EnedisDictionnaireTypeComplexeV50
-  ( module EnedisDictionnaireTypeComplexeV50
+module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
+  ( module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
@@ -17,7 +17,7 @@ import Text.XML.HaXml.Schema.Schema as Schema
       Occurs(Occurs),
       Commitment(commit) )
 import Text.XML.HaXml.OneOfN ()
-import EnedisDictionnaireTypeSimpleV50 as Ds
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( ZoneQualiteDesserteCodeType,
       UsageChantierCodeType,
       TransformateurPrecisionClasseCodeType,

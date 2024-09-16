@@ -3,14 +3,14 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 
-module ConsulterMesuresDetailleesCommunV12Type
-  ( module ConsulterMesuresDetailleesCommunV12Type
+module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
+  ( module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
-import EnedisDictionnaireTypeSimpleV50 as Ds
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
  
 -- Some hs-boot imports are required, for fwd-declaring types.
  
