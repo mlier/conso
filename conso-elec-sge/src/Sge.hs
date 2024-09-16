@@ -11,7 +11,9 @@ import           Text.Pretty.Simple (pPrint)
 
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
-import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc, printRequest, printBody )
+import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc,
+                 --printRequest, printBody 
+                 )
 import           Network.SOAP.Transport.HTTP.TLS ( makeSettings )
 import           Network.HTTP.Client ( applyBasicAuth )
 
@@ -26,7 +28,7 @@ import           Text.XML.HaXml
                       tag,
                       xmlParse )
 import           Text.XML.HaXml.Posn ( noPos, Posn )
-import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(XsdString), Boolean )
+import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(XsdString) )
 import           Text.XML.HaXml.Schema.Schema ( XMLParser )
 import qualified Text.XML.HaXml.Pretty as P
 import qualified Text.PrettyPrint.HughesPJ as PP
@@ -45,10 +47,6 @@ import           EnedisDictionnaireResultat
                                              resultatTypeAttributes_code),
                       ResultatCodeType(ResultatCodeType),
                       elementResultat )
-
-
-getEnv :: IO Env
-getEnv = readEnv
 
 
 newtype Env =
@@ -70,6 +68,21 @@ instance ToJSON Env
 instance FromJSON Sge
 instance ToJSON Sge
 
+data ConfigWS a b = ConfigWS{
+          urlSge :: String
+        , soapAction :: String
+        , elementToXMLRequest :: a -> [Content ()]
+        , xmlTag :: String
+        , elementResponse :: XMLParser b
+}
+
+class RequestType a where
+class ResponseType a
+
+
+getEnv :: IO Env
+getEnv = readEnv
+
 myHomeDirectory :: IO String
 myHomeDirectory = do
     name <- getEffectiveUserName
@@ -82,31 +95,21 @@ readEnv = do
     either (error . show) id <$>
         decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
 
-withBasicAuth :: ByteString -> ByteString -> RequestProc
-withBasicAuth username passw req = pure (applyBasicAuth username passw req)
 
-
---consulterMesuresDetailleesV3Request :: Text -> IO()
---consulterMesuresDetailleesV3Request pointId = do
-
-    --hsType <- xml2hsType "ns4:rechercherServicesSouscritsMesuresResponse" elementRechercherServicesSouscritsMesuresResponse sRequest
-    
-
-sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> XMLParser b -> IO ()
-sgeRequest req elementResponse= do 
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> ConfigWS a b -> IO ()
+sgeRequest req config = do
     env <- readEnv
     let sgeEnv = sge env
-    let (urlSge, soapAction, elementToXMLRequest, xmlTag) = config req
-    let t = PP.render . P.content . head . elementToXMLRequest $ req
-    let (X.Document _ u _) = X.parseText_ X.def $ L.pack t
-    let v =  node . X.NodeElement $ u
-    print urlSge
-    print soapAction
+    let xml = PP.render . P.content . head . elementToXMLRequest config $ req
+    let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
+    let xmlConduit =  node . X.NodeElement $ u
+    print $ urlSge config
+    print $ soapAction config
     pPrint req
-    pPrint v
-    sRequest <- soapRequest sgeEnv urlSge soapAction v
+    pPrint xmlConduit
+    sRequest <- soapRequest sgeEnv (urlSge config) (soapAction config) xmlConduit
     putStrLn sRequest
-    hsType <- xml2hsType xmlTag elementResponse sRequest
+    hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
     case hsType of
         Left resp -> pPrint resp
         Right (c, l) -> do
@@ -114,28 +117,24 @@ sgeRequest req elementResponse= do
             putStrLn c
             putStrLn l
 
-class RequestType a where
-   config :: a -> ( String, String, a -> [Content ()], String )
-
-class ResponseType a
-
 
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
-getHaskellType xmlTag elementResponse root = plans
+getHaskellType myXmlTag myElementResponse root = plans
         where
-            cdtcresp = deep (tag xmlTag) $ CElem root noPos
-            toto = runParser elementResponse [head cdtcresp]
+            cdtcresp = deep (tag myXmlTag) $ CElem root noPos
+            toto = runParser myElementResponse [head cdtcresp]
             (Right plans) = fst toto
 
 
 soapRequest :: Sge -> String -> String -> XML -> IO String
-soapRequest sgeEnv urlSge soapAction body = do
+soapRequest sgeEnv myUrlSge mySoapAction body = do
     myHD <- myHomeDirectory
     let myHDT = T.pack $ myHD <> "/.conso/"
     let certPath = T.unpack $ T.append myHDT (cert sgeEnv) :: FilePath
     let keyPath = T.unpack $ T.append myHDT (key sgeEnv) :: FilePath
+    let fullUrlSge = T.unpack (url sgeEnv) ++ myUrlSge
 
-    --settings <- makeSettings (Just "production-coach-energy.crt") (Just "production-coach-energy.key") validateDefault
+    --settings <- makeSettings (Just "production.crt") (Just "production.key") validateDefault
     settings <- makeSettings (Just certPath) (Just keyPath) (\_ _ _ _ -> return [])
 
     let loginUtilisateurBS =  T.encodeUtf8 $ userB2b sgeEnv
@@ -143,18 +142,21 @@ soapRequest sgeEnv urlSge soapAction body = do
 
     transport <- initTransportWithM
         settings
-        urlSge
+        fullUrlSge
         ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> pure  ) -- or printRequest
         pure -- or printBody
 
-    xml <- invokeWS transport soapAction () body (RawParser id)
+    xml <- invokeWS transport mySoapAction () body (RawParser id)
     return $ unpack xml
+    where
+        withBasicAuth :: ByteString -> ByteString -> RequestProc
+        withBasicAuth username passw req = pure (applyBasicAuth username passw req)
 
 
 xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either a (String, String) )
-xml2hsType xmlTag elementResponse xml = do
+xml2hsType myXmlTag myElementResponse xml = do
     return $ case checkXMLerror xml of
-        (Left root ) -> Left $ getHaskellType xmlTag elementResponse root
+        (Left root ) -> Left $ getHaskellType myXmlTag myElementResponse root
         (Right (c, l) ) -> Right (c, l)
 
 
@@ -177,6 +179,6 @@ checkXMLerror xmlResp =  do
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) } )
               ), _)
                         -> Right (a, l)
-        _               -> Right ("BAD", "Erreur interne")
+        _               -> Left root
 
 

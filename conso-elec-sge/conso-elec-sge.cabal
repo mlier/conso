@@ -60,14 +60,16 @@ library
 
     -- Modules exported by the library.
     exposed-modules:  
-        Sge
         ConsulterDonneesTechniquesContractuellesV10
         RechercherServicesSouscritsMesuresV10     
+        ConsulterMesuresDetailleesV3
 
     -- Modules included in this library but not exported.
     other-modules:
+        Sge
         ConsulterDonneesTechniquesContractuellesV10Type
         RechercherServicesSouscritsMesuresV10Type
+        ConsulterMesuresDetailleesCommunV12Type
         EnedisDictionnaireTypeComplexeV50
         EnedisDictionnaireTypeSimpleV50
         EnedisDictionnaireResultat

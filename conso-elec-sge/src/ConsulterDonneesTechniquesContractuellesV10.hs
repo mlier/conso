@@ -6,28 +6,17 @@ module ConsulterDonneesTechniquesContractuellesV10 where
 import           Data.Text ( Text )
 import qualified Data.Text as T
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), Boolean )
+import Text.XML.HaXml.Schema.Schema as Schema ( Content, XMLParser )
 import           Text.Pretty.Simple (pPrint)
 
 import           EnedisDictionnaireTypeSimpleV50 as Ds
 import           ConsulterDonneesTechniquesContractuellesV10Type
 import Sge
-    ( ResponseType,
-      RequestType(..),
-      Sge(..),
-      Env(sge),
-      getEnv,
-      sgeRequest )
 
 
-instance RequestType ConsulterDonneesTechniquesContractuellesType where
-    config _ = ( "https://sge-b2b.enedis.fr/ConsultationDonneesTechniquesContractuelles/v1.0"
-               , "nimportequoimaispasvide"
-               , elementToXMLConsulterDonneesTechniquesContractuelles 
-               , "ns7:consulterDonneesTechniquesContractuellesResponse" )
-
+instance RequestType ConsulterDonneesTechniquesContractuellesType
 instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType
-
-
+               
 
 initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
 initType pointId autorisationClient = do
@@ -42,10 +31,20 @@ initType pointId autorisationClient = do
         }
     return requestType
 
-sgeRequestFinal :: ConsulterDonneesTechniquesContractuellesType -> IO ()
-sgeRequestFinal r = sgeRequest r elementConsulterDonneesTechniquesContractuellesResponse
+
+wsRequest :: ConsulterDonneesTechniquesContractuellesType -> IO ()
+wsRequest r = sgeRequest r configWS
+    where configWS = ConfigWS{
+                  urlSge = "/ConsultationDonneesTechniquesContractuelles/v1.0"
+                , soapAction = "nimportequoimaispasvide"
+                , elementToXMLRequest = elementToXMLConsulterDonneesTechniquesContractuelles
+                , xmlTag = "ns7:consulterDonneesTechniquesContractuellesResponse"
+                , elementResponse = elementConsulterDonneesTechniquesContractuellesResponse
+}  
+
+
 
 myrequest :: IO()
 myrequest = do 
     myType <- initType "21429667044956" False
-    sgeRequestFinal myType
+    wsRequest myType

@@ -11,20 +11,9 @@ import           Text.Pretty.Simple (pPrint)
 import           EnedisDictionnaireTypeSimpleV50 as Ds
 import           RechercherServicesSouscritsMesuresV10Type
 import Sge
-    ( ResponseType,
-      RequestType(..),
-      Sge(..),
-      Env(sge),
-      getEnv,
-      sgeRequest )
+    
 
-
-instance RequestType RechercherServicesSouscritsMesuresType where
-    config _ = ( "https://sge-b2b.enedis.fr/RechercheServicesSouscritsMesures/v1.0"
-               , "nimportequoimaispasvide"
-               , elementToXMLRechercherServicesSouscritsMesures
-               , "ns4:rechercherServicesSouscritsMesuresResponse" )
-
+instance RequestType RechercherServicesSouscritsMesuresType
 instance ResponseType RechercherServicesSouscritsMesuresResponseType
 
 
@@ -44,11 +33,19 @@ initType pointId = do
             }
     return requestType
 
-sgeRequestFinal :: RechercherServicesSouscritsMesuresType -> IO ()
-sgeRequestFinal r = sgeRequest r elementRechercherServicesSouscritsMesuresResponse
+
+wsRequest :: RechercherServicesSouscritsMesuresType -> IO ()
+wsRequest r = sgeRequest r configWS
+    where configWS = ConfigWS{
+                          urlSge = "/RechercheServicesSouscritsMesures/v1.0"
+                        , soapAction = "nimportequoimaispasvide"
+                        , elementToXMLRequest = elementToXMLRechercherServicesSouscritsMesures
+                        , xmlTag = "ns4:rechercherServicesSouscritsMesuresResponse" 
+                        , elementResponse = elementRechercherServicesSouscritsMesuresResponse
+    }
 
 myrequest :: IO()
 myrequest = do 
     myType <- initType "21429667044956"
-    sgeRequestFinal myType
+    wsRequest myType
     pPrint myType
