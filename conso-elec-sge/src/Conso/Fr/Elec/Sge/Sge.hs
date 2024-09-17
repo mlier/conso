@@ -122,7 +122,7 @@ getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
 getHaskellType myXmlTag myElementResponse root = plans
         where
             cdtcresp = deep (tag myXmlTag) $ CElem root noPos
-            toto = runParser myElementResponse [head cdtcresp]
+            toto = runParser myElementResponse cdtcresp
             (Right plans) = fst toto
 
 
@@ -168,7 +168,7 @@ checkXMLerror xmlResp =  do
 
     case resultat of
         (Right ( ResultatType
-                  ( ResultatLibelleType ( XsdString l ) )
+                  ( ResultatLibelleType ( XsdString _ ) )
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) } )
               ), _)
                         -> Left root
