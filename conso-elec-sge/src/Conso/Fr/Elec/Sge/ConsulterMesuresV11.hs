@@ -21,10 +21,12 @@ import Conso.Fr.Elec.Sge.Sge
       RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
+      Test(pointId),
       Sge(contractId, userB2b),
-      Env(sge),
+      Env(test, sge),
       getEnv,
       sgeRequest )
+
 import qualified Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Xsd
 
 
@@ -33,14 +35,14 @@ instance ResponseType ConsulterMesuresResponseType
                
 
 initType :: String -> IO ConsulterMesuresType
-initType pointId = do
+initType myPointId= do
     env <- getEnv
     let sgeEnv = sge env
     let loginUtilisateur = userB2b sgeEnv
     let contratId = contractId sgeEnv
 
     let requestType = ConsulterMesuresType
-            { consulterMesuresType_pointId = PointIdType $ Xsd.XsdString pointId
+            { consulterMesuresType_pointId = PointIdType $ Xsd.XsdString myPointId
             , consulterMesuresType_loginDemandeur = AdresseEmailType $ Xsd.XsdString $ T.unpack loginUtilisateur
             , consulterMesuresType_contratId = ContratIdType $ Xsd.XsdString $ T.unpack contratId
             , consulterMesuresType_choice3 = Just ( TwoOf2 $ Xsd.BooleenType True )
@@ -61,5 +63,7 @@ wsRequest r = sgeRequest r configWS
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956"
+    env <- getEnv
+    let testEnv = test env
+    myType <- initType (T.unpack $ pointId testEnv)
     wsRequest myType

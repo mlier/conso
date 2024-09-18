@@ -49,8 +49,9 @@ import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                       elementResultat )
 
 
-newtype Env =
+data Env =
     Env { sge :: Sge
+        , test :: Test
     } deriving (Show,Generic)
 
 data Sge =
@@ -62,11 +63,22 @@ data Sge =
         , url :: Text
     } deriving (Show,Generic)
 
+data Test =
+    Test { pointId :: Text
+        , nomClientFinalOuDenominationSociale :: Text
+        , numeroEtNomVoie :: Text
+        , codePostal :: Text
+        , codeInseeCommune :: Text
+    } deriving (Show,Generic)
+
 instance FromJSON Env
 instance ToJSON Env
 
 instance FromJSON Sge
 instance ToJSON Sge
+
+instance FromJSON Test
+instance ToJSON Test
 
 data ConfigWS a b = ConfigWS{
           urlSge :: String

@@ -3,15 +3,28 @@
 
 module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
 
-import           Data.Text ( Text )
 import qualified Data.Text as T
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), )
-import Text.XML.HaXml.Schema.Schema as Schema ( Content, XMLParser )
-import           Text.Pretty.Simple (pPrint)
 
-import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
-import           Conso.Fr.Elec.Sge.Sge
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( PointIdType(PointIdType),
+      BooleenType(BooleenType),
+      AdresseEmailType(AdresseEmailType) )
+import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
+    ( elementConsulterDonneesTechniquesContractuellesResponse,
+      elementToXMLConsulterDonneesTechniquesContractuelles,
+      ConsulterDonneesTechniquesContractuellesResponseType,
+      ConsulterDonneesTechniquesContractuellesType(..) )
+import Conso.Fr.Elec.Sge.Sge
+    ( RequestType,
+      ResponseType,
+      Env(test, sge),
+      Sge(userB2b),
+      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
+               elementToXMLRequest, xmlTag),
+      Test(pointId),
+      getEnv,
+      sgeRequest )
 
 
 instance RequestType ConsulterDonneesTechniquesContractuellesType
@@ -19,13 +32,13 @@ instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType
                
 
 initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
-initType pointId autorisationClient = do
+initType myPointId autorisationClient = do
     env <- getEnv
     let sgeEnv = sge env
     let loginUtilisateur = userB2b sgeEnv
 
     let requestType = ConsulterDonneesTechniquesContractuellesType{ 
-          consulterDonneesTechniquesContractuellesType_pointId = PointIdType $ XsdString pointId
+          consulterDonneesTechniquesContractuellesType_pointId = PointIdType $ XsdString myPointId
         , consulterDonneesTechniquesContractuellesType_loginUtilisateur =  Ds.AdresseEmailType $ XsdString $ T.unpack loginUtilisateur
         , consulterDonneesTechniquesContractuellesType_autorisationClient = Just $ Ds.BooleenType autorisationClient
         }
@@ -46,5 +59,7 @@ wsRequest r = sgeRequest r configWS
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956" False
+    env <- getEnv
+    let testEnv = test env
+    myType <- initType (T.unpack $ pointId testEnv) False
     wsRequest myType

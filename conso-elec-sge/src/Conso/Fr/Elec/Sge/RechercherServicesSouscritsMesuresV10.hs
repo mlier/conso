@@ -3,14 +3,31 @@
 
 module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10 where
 
-import           Data.Text ( Text )
 import qualified Data.Text as T
-import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), Boolean )
+import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString) )
 import           Text.Pretty.Simple (pPrint)
 
-import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-import           Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
-import           Conso.Fr.Elec.Sge.Sge
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( PointIdType(PointIdType),
+      ContratIdType(ContratIdType),
+      AdresseEmailType(AdresseEmailType) )
+import Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
+    ( elementRechercherServicesSouscritsMesuresResponse,
+      elementToXMLRechercherServicesSouscritsMesures,
+      CriteresType(CriteresType, criteresType_contratId,
+                   criteresType_pointId),
+      RechercherServicesSouscritsMesuresResponseType,
+      RechercherServicesSouscritsMesuresType(..) )
+import Conso.Fr.Elec.Sge.Sge
+    ( RequestType,
+      ResponseType,
+      Env(test, sge),
+      Sge(contractId, userB2b),
+      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
+               elementToXMLRequest, xmlTag),
+      Test(pointId),
+      getEnv,
+      sgeRequest )
     
 
 instance RequestType RechercherServicesSouscritsMesuresType
@@ -18,7 +35,7 @@ instance ResponseType RechercherServicesSouscritsMesuresResponseType
 
 
 initType :: String -> IO RechercherServicesSouscritsMesuresType
-initType pointId = do
+initType myPointId = do
     env <- getEnv
     let sgeEnv = sge env
     let loginUtilisateur = userB2b sgeEnv
@@ -26,7 +43,7 @@ initType pointId = do
 
     let requestType = RechercherServicesSouscritsMesuresType{ 
               rechercherServicesSouscritsMesuresType_criteres = CriteresType
-                { criteresType_pointId = PointIdType $ XsdString pointId
+                { criteresType_pointId = PointIdType $ XsdString myPointId
                 , criteresType_contratId = ContratIdType $ XsdString $ T.unpack contratId
                 }
             , rechercherServicesSouscritsMesuresType_loginUtilisateur = Ds.AdresseEmailType $ XsdString $ T.unpack loginUtilisateur
@@ -46,6 +63,8 @@ wsRequest r = sgeRequest r configWS
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956"
+    env <- getEnv
+    let testEnv = test env
+    myType <- initType (T.unpack $ pointId testEnv)
     wsRequest myType
     pPrint myType

@@ -5,12 +5,37 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
   ( module Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
   ) where
  
---import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Extension(..),Restricts(..))
 import Text.XML.HaXml.Schema.Schema as Schema
---import Text.XML.HaXml.OneOfN
+    ( OneOf2(..),
+      Content,
+      XMLParser,
+      SchemaType(..),
+      foldOneOf2,
+      optional,
+      apply,
+      Commitment(oneOf', commit),
+      between,
+      toXMLAttribute,
+      toXMLElement,
+      interior,
+      posnElement,
+      Occurs(Occurs) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50 as Dc
+    ( CalendrierType,
+      ClasseTemporelleType,
+      GrandeurPhysiqueType,
+      MesureDeclencheurType,
+      MesureNatureType,
+      MesureStatutType )
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( PointIdType,
+      UtilisateurLoginType,
+      ContratIdType,
+      BooleenType,
+      NbEntierType,
+      IndexUniteSymboleType,
+      DateType )
  
 -- Some hs-boot imports are required, for fwd-declaring types.
  

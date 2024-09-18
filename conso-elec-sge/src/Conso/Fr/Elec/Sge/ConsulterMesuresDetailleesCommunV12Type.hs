@@ -8,9 +8,29 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
+    ( Content,
+      XMLParser,
+      Extension(..),
+      SchemaType(..),
+      SimpleType(..),
+      optional,
+      literal,
+      apply,
+      many1,
+      onFail,
+      Alternative(many),
+      Commitment(commit),
+      parseSimpleType,
+      toXMLAttribute,
+      toXMLElement,
+      toXMLText,
+      element,
+      interior,
+      posnElement )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( PointIdType )
  
 -- Some hs-boot imports are required, for fwd-declaring types.
  

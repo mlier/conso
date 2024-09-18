@@ -3,12 +3,8 @@
 
 module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 where
 
-import           Data.Text ( Text )
 import qualified Data.Text as T
---import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), Boolean )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
-import           Text.XML.HaXml.Schema.Schema as Schema ( Content, XMLParser )
-import           Text.Pretty.Simple (pPrint)
 
 import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
@@ -21,7 +17,7 @@ instance ResponseType ConsulterMesuresDetailleesV3ResponseType
 
 initType :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
             Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
-initType pointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
+initType myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
          mesuresPas mesuresCorrigees sens cadreAcces = do
     env <- getEnv
     let sgeEnv = sge env
@@ -30,7 +26,7 @@ initType pointId mesuresTypeCode grandeurPhysique dateDebut dateFin
     let requestType = ConsulterMesuresDetailleesV3Type{ 
           consulterMesuresDetailleesV3Type_demande = Demande {
                   demande_initiateurLogin = Xsd.XsdString $ T.unpack loginUtilisateur
-                , demande_pointId = PointIdType $ Xsd.XsdString pointId
+                , demande_pointId = PointIdType $ Xsd.XsdString myPointId
                 , demande_mesuresTypeCode = mesuresTypeCode
                 , demande_grandeurPhysique = Xsd.XsdString grandeurPhysique
                 , demande_dateDebut = Xsd.Date dateDebut

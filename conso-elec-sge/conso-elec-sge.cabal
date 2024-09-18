@@ -64,6 +64,7 @@ library
         Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10     
         Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3
         Conso.Fr.Elec.Sge.ConsulterMesuresV11
+        Conso.Fr.Elec.Sge.RechercherPointV20
 
     -- Modules included in this library but not exported.
     other-modules:
@@ -72,6 +73,7 @@ library
         Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
         Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
         Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
+        Conso.Fr.Elec.Sge.RechercherPointV20Type
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireResultat

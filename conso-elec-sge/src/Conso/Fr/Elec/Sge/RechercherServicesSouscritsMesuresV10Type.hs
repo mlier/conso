@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+
 module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
   ( module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
   ) where
