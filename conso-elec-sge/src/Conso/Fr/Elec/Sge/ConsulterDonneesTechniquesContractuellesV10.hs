@@ -4,6 +4,7 @@
 module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
 
 import qualified Data.Text as T
+import           Data.Maybe ( fromMaybe )
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), )
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
@@ -29,7 +30,7 @@ import Conso.Fr.Elec.Sge.Sge
 
 instance RequestType ConsulterDonneesTechniquesContractuellesType
 instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType
-               
+
 
 initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
 initType myPointId autorisationClient = do
@@ -37,7 +38,7 @@ initType myPointId autorisationClient = do
     let sgeEnv = sge env
     let loginUtilisateur = userB2b sgeEnv
 
-    let requestType = ConsulterDonneesTechniquesContractuellesType{ 
+    let requestType = ConsulterDonneesTechniquesContractuellesType{
           consulterDonneesTechniquesContractuellesType_pointId = PointIdType $ XsdString myPointId
         , consulterDonneesTechniquesContractuellesType_loginUtilisateur =  Ds.AdresseEmailType $ XsdString $ T.unpack loginUtilisateur
         , consulterDonneesTechniquesContractuellesType_autorisationClient = Just $ Ds.BooleenType autorisationClient
@@ -53,13 +54,13 @@ wsRequest r = sgeRequest r configWS
                 , elementToXMLRequest = elementToXMLConsulterDonneesTechniquesContractuelles
                 , xmlTag = "ns7:consulterDonneesTechniquesContractuellesResponse"
                 , elementResponse = elementConsulterDonneesTechniquesContractuellesResponse
-}  
+}
 
 
-
-myrequest :: IO()
-myrequest = do 
+myrequest :: Maybe String -> IO()
+myrequest mPointId = do
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) False
+    let myPointId = fromMaybe (T.unpack $ pointId testEnv) mPointId
+    myType <- initType myPointId False
     wsRequest myType
