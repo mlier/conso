@@ -1,7 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use camelCase" #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
   ( module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
@@ -267,9 +266,9 @@ instance SimpleType AffaireNatureModificationCodeType where
     simpleTypeText (AffaireNatureModificationCodeType x) = simpleTypeText x
  
 data AffaireStatutCodeType
-    = AffaireStatutCodeType_ANNUL
-    | AffaireStatutCodeType_COURS
-    | AffaireStatutCodeType_TERMN
+    = AffaireStatutCodeTypeANNUL
+    | AffaireStatutCodeTypeCOURS
+    | AffaireStatutCodeTypeTERMN
     deriving (Eq,Show,Enum)
 instance SchemaType AffaireStatutCodeType where
     parseSchemaType s = do
@@ -278,20 +277,20 @@ instance SchemaType AffaireStatutCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType AffaireStatutCodeType where
-    acceptingParser =  do _ <- literal "ANNUL"; return AffaireStatutCodeType_ANNUL
-                      `onFail` do _ <- literal "COURS"; return AffaireStatutCodeType_COURS
-                      `onFail` do _ <- literal "TERMN"; return AffaireStatutCodeType_TERMN
+    acceptingParser =  do _ <- literal "ANNUL"; return AffaireStatutCodeTypeANNUL
+                      `onFail` do _ <- literal "COURS"; return AffaireStatutCodeTypeCOURS
+                      `onFail` do _ <- literal "TERMN"; return AffaireStatutCodeTypeTERMN
                       
-    simpleTypeText AffaireStatutCodeType_ANNUL = "ANNUL"
-    simpleTypeText AffaireStatutCodeType_COURS = "COURS"
-    simpleTypeText AffaireStatutCodeType_TERMN = "TERMN"
+    simpleTypeText AffaireStatutCodeTypeANNUL = "ANNUL"
+    simpleTypeText AffaireStatutCodeTypeCOURS = "COURS"
+    simpleTypeText AffaireStatutCodeTypeTERMN = "TERMN"
  
 data AlimentationEtatCodeType
-    = AlimentationEtatCodeType_ALIM
-    | AlimentationEtatCodeType_COUP
-    | AlimentationEtatCodeType_LIMI
-    | AlimentationEtatCodeType_NRAC
-    | AlimentationEtatCodeType_NALI
+    = AlimentationEtatCodeTypeALIM
+    | AlimentationEtatCodeTypeCOUP
+    | AlimentationEtatCodeTypeLIMI
+    | AlimentationEtatCodeTypeNRAC
+    | AlimentationEtatCodeTypeNALI
     deriving (Eq,Show,Enum)
 instance SchemaType AlimentationEtatCodeType where
     parseSchemaType s = do
@@ -300,17 +299,17 @@ instance SchemaType AlimentationEtatCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType AlimentationEtatCodeType where
-    acceptingParser =  do _ <- literal "ALIM"; return AlimentationEtatCodeType_ALIM
-                      `onFail` do _ <- literal "COUP"; return AlimentationEtatCodeType_COUP
-                      `onFail` do _ <- literal "LIMI"; return AlimentationEtatCodeType_LIMI
-                      `onFail` do _ <- literal "NRAC"; return AlimentationEtatCodeType_NRAC
-                      `onFail` do _ <- literal "NALI"; return AlimentationEtatCodeType_NALI
+    acceptingParser =  do _ <- literal "ALIM"; return AlimentationEtatCodeTypeALIM
+                      `onFail` do _ <- literal "COUP"; return AlimentationEtatCodeTypeCOUP
+                      `onFail` do _ <- literal "LIMI"; return AlimentationEtatCodeTypeLIMI
+                      `onFail` do _ <- literal "NRAC"; return AlimentationEtatCodeTypeNRAC
+                      `onFail` do _ <- literal "NALI"; return AlimentationEtatCodeTypeNALI
                       
-    simpleTypeText AlimentationEtatCodeType_ALIM = "ALIM"
-    simpleTypeText AlimentationEtatCodeType_COUP = "COUP"
-    simpleTypeText AlimentationEtatCodeType_LIMI = "LIMI"
-    simpleTypeText AlimentationEtatCodeType_NRAC = "NRAC"
-    simpleTypeText AlimentationEtatCodeType_NALI = "NALI"
+    simpleTypeText AlimentationEtatCodeTypeALIM = "ALIM"
+    simpleTypeText AlimentationEtatCodeTypeCOUP = "COUP"
+    simpleTypeText AlimentationEtatCodeTypeLIMI = "LIMI"
+    simpleTypeText AlimentationEtatCodeTypeNRAC = "NRAC"
+    simpleTypeText AlimentationEtatCodeTypeNALI = "NALI"
  
 newtype AlimentationModeApresCompteurCodeType = AlimentationModeApresCompteurCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts AlimentationModeApresCompteurCodeType Xsd.XsdString where
@@ -870,8 +869,8 @@ instance SimpleType CleTeleAccesType where
     simpleTypeText (CleTeleAccesType x) = simpleTypeText x
  
 data ClientFinalCategorieCodeType
-    = ClientFinalCategorieCodeType_PRO
-    | ClientFinalCategorieCodeType_RES
+    = ClientFinalCategorieCodeTypePRO
+    | ClientFinalCategorieCodeTypeRES
     deriving (Eq,Show,Enum)
 instance SchemaType ClientFinalCategorieCodeType where
     parseSchemaType s = do
@@ -880,11 +879,11 @@ instance SchemaType ClientFinalCategorieCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType ClientFinalCategorieCodeType where
-    acceptingParser =  do _ <- literal "PRO"; return ClientFinalCategorieCodeType_PRO
-                      `onFail` do _ <-literal "RES"; return ClientFinalCategorieCodeType_RES
+    acceptingParser =  do _ <- literal "PRO"; return ClientFinalCategorieCodeTypePRO
+                      `onFail` do _ <-literal "RES"; return ClientFinalCategorieCodeTypeRES
                       
-    simpleTypeText ClientFinalCategorieCodeType_PRO = "PRO"
-    simpleTypeText ClientFinalCategorieCodeType_RES = "RES"
+    simpleTypeText ClientFinalCategorieCodeTypePRO = "PRO"
+    simpleTypeText ClientFinalCategorieCodeTypeRES = "RES"
  
 newtype ClientPrioritaireTypeCodeType = ClientPrioritaireTypeCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts ClientPrioritaireTypeCodeType Xsd.XsdString where
@@ -1027,8 +1026,8 @@ instance SimpleType CompteurTypeCodeType where
     simpleTypeText (CompteurTypeCodeType x) = simpleTypeText x
  
 data ConsommationTypeCodeType
-    = ConsommationTypeCodeType_FACTU
-    | ConsommationTypeCodeType_MOYEN
+    = ConsommationTypeCodeTypeFACTU
+    | ConsommationTypeCodeTypeMOYEN
     deriving (Eq,Show,Enum)
 instance SchemaType ConsommationTypeCodeType where
     parseSchemaType s = do
@@ -1037,11 +1036,11 @@ instance SchemaType ConsommationTypeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType ConsommationTypeCodeType where
-    acceptingParser =  do _ <- literal "FACTU"; return ConsommationTypeCodeType_FACTU
-                      `onFail` do _ <- literal "MOYEN"; return ConsommationTypeCodeType_MOYEN
+    acceptingParser =  do _ <- literal "FACTU"; return ConsommationTypeCodeTypeFACTU
+                      `onFail` do _ <- literal "MOYEN"; return ConsommationTypeCodeTypeMOYEN
                       
-    simpleTypeText ConsommationTypeCodeType_FACTU = "FACTU"
-    simpleTypeText ConsommationTypeCodeType_MOYEN = "MOYEN"
+    simpleTypeText ConsommationTypeCodeTypeFACTU = "FACTU"
+    simpleTypeText ConsommationTypeCodeTypeMOYEN = "MOYEN"
  
 newtype ConsuelMotifNonExigibiliteCodeType = ConsuelMotifNonExigibiliteCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts ConsuelMotifNonExigibiliteCodeType Xsd.XsdString where
@@ -1519,10 +1518,10 @@ instance SimpleType DispositifParticulierLimitationPerturbationsCodeType where
     simpleTypeText (DispositifParticulierLimitationPerturbationsCodeType x) = simpleTypeText x
  
 data DomaineTensionCodeType
-    = DomaineTensionCodeType_BTINF
-    | DomaineTensionCodeType_BTSUP
-    | DomaineTensionCodeType_HTA
-    | DomaineTensionCodeType_HTB
+    = DomaineTensionCodeTypeBTINF
+    | DomaineTensionCodeTypeBTSUP
+    | DomaineTensionCodeTypeHTA
+    | DomaineTensionCodeTypeHTB
     deriving (Eq,Show,Enum)
 instance SchemaType DomaineTensionCodeType where
     parseSchemaType s = do
@@ -1531,25 +1530,25 @@ instance SchemaType DomaineTensionCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType DomaineTensionCodeType where
-    acceptingParser =  do _ <- literal "BTINF"; return DomaineTensionCodeType_BTINF
-                      `onFail` do _ <- literal "BTSUP"; return DomaineTensionCodeType_BTSUP
-                      `onFail` do _ <- literal "HTA"; return DomaineTensionCodeType_HTA
-                      `onFail` do _ <- literal "HTB"; return DomaineTensionCodeType_HTB
+    acceptingParser =  do _ <- literal "BTINF"; return DomaineTensionCodeTypeBTINF
+                      `onFail` do _ <- literal "BTSUP"; return DomaineTensionCodeTypeBTSUP
+                      `onFail` do _ <- literal "HTA"; return DomaineTensionCodeTypeHTA
+                      `onFail` do _ <- literal "HTB"; return DomaineTensionCodeTypeHTB
                       
-    simpleTypeText DomaineTensionCodeType_BTINF = "BTINF"
-    simpleTypeText DomaineTensionCodeType_BTSUP = "BTSUP"
-    simpleTypeText DomaineTensionCodeType_HTA = "HTA"
-    simpleTypeText DomaineTensionCodeType_HTB = "HTB"
+    simpleTypeText DomaineTensionCodeTypeBTINF = "BTINF"
+    simpleTypeText DomaineTensionCodeTypeBTSUP = "BTSUP"
+    simpleTypeText DomaineTensionCodeTypeHTA = "HTA"
+    simpleTypeText DomaineTensionCodeTypeHTB = "HTB"
  
 data DureeUniteSymboleType
-    = DureeUniteSymboleType_Annee
-    | DureeUniteSymboleType_H
-    | DureeUniteSymboleType_Jour
-    | DureeUniteSymboleType_Min
-    | DureeUniteSymboleType_Mois
-    | DureeUniteSymboleType_Ms
-    | DureeUniteSymboleType_S
-    | DureeUniteSymboleType_Semaine
+    = DureeUniteSymboleTypeAnnee
+    | DureeUniteSymboleTypeH
+    | DureeUniteSymboleTypeJour
+    | DureeUniteSymboleTypeMin
+    | DureeUniteSymboleTypeMois
+    | DureeUniteSymboleTypeMs
+    | DureeUniteSymboleTypeS
+    | DureeUniteSymboleTypeSemaine
     deriving (Eq,Show,Enum)
 instance SchemaType DureeUniteSymboleType where
     parseSchemaType s = do
@@ -1558,23 +1557,23 @@ instance SchemaType DureeUniteSymboleType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType DureeUniteSymboleType where
-    acceptingParser =  do _ <- literal "annee"; return DureeUniteSymboleType_Annee
-                      `onFail` do _ <- literal "h"; return DureeUniteSymboleType_H
-                      `onFail` do _ <- literal "jour"; return DureeUniteSymboleType_Jour
-                      `onFail` do _ <- literal "min"; return DureeUniteSymboleType_Min
-                      `onFail` do _ <- literal "mois"; return DureeUniteSymboleType_Mois
-                      `onFail` do _ <- literal "ms"; return DureeUniteSymboleType_Ms
-                      `onFail` do _ <- literal "s"; return DureeUniteSymboleType_S
-                      `onFail` do _ <- literal "semaine"; return DureeUniteSymboleType_Semaine
+    acceptingParser =  do _ <- literal "annee"; return DureeUniteSymboleTypeAnnee
+                      `onFail` do _ <- literal "h"; return DureeUniteSymboleTypeH
+                      `onFail` do _ <- literal "jour"; return DureeUniteSymboleTypeJour
+                      `onFail` do _ <- literal "min"; return DureeUniteSymboleTypeMin
+                      `onFail` do _ <- literal "mois"; return DureeUniteSymboleTypeMois
+                      `onFail` do _ <- literal "ms"; return DureeUniteSymboleTypeMs
+                      `onFail` do _ <- literal "s"; return DureeUniteSymboleTypeS
+                      `onFail` do _ <- literal "semaine"; return DureeUniteSymboleTypeSemaine
                       
-    simpleTypeText DureeUniteSymboleType_Annee = "annee"
-    simpleTypeText DureeUniteSymboleType_H = "h"
-    simpleTypeText DureeUniteSymboleType_Jour = "jour"
-    simpleTypeText DureeUniteSymboleType_Min = "min"
-    simpleTypeText DureeUniteSymboleType_Mois = "mois"
-    simpleTypeText DureeUniteSymboleType_Ms = "ms"
-    simpleTypeText DureeUniteSymboleType_S = "s"
-    simpleTypeText DureeUniteSymboleType_Semaine = "semaine"
+    simpleTypeText DureeUniteSymboleTypeAnnee = "annee"
+    simpleTypeText DureeUniteSymboleTypeH = "h"
+    simpleTypeText DureeUniteSymboleTypeJour = "jour"
+    simpleTypeText DureeUniteSymboleTypeMin = "min"
+    simpleTypeText DureeUniteSymboleTypeMois = "mois"
+    simpleTypeText DureeUniteSymboleTypeMs = "ms"
+    simpleTypeText DureeUniteSymboleTypeS = "s"
+    simpleTypeText DureeUniteSymboleTypeSemaine = "semaine"
  
 newtype DysfonctionnementNatureCodeType = DysfonctionnementNatureCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts DysfonctionnementNatureCodeType Xsd.XsdString where
@@ -1889,8 +1888,8 @@ instance SimpleType IndexUniteSymboleType where
     simpleTypeText (IndexUniteSymboleType x) = simpleTypeText x
  
 data IntensiteUniteSymboleType
-    = IntensiteUniteSymboleType_A
-    | IntensiteUniteSymboleType_MA
+    = IntensiteUniteSymboleTypeA
+    | IntensiteUniteSymboleTypeMA
     deriving (Eq,Show,Enum)
 instance SchemaType IntensiteUniteSymboleType where
     parseSchemaType s = do
@@ -1899,11 +1898,11 @@ instance SchemaType IntensiteUniteSymboleType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType IntensiteUniteSymboleType where
-    acceptingParser =  do _ <- literal "A"; return IntensiteUniteSymboleType_A
-                      `onFail` do _ <- literal "mA"; return IntensiteUniteSymboleType_MA
+    acceptingParser =  do _ <- literal "A"; return IntensiteUniteSymboleTypeA
+                      `onFail` do _ <- literal "mA"; return IntensiteUniteSymboleTypeMA
                       
-    simpleTypeText IntensiteUniteSymboleType_A = "A"
-    simpleTypeText IntensiteUniteSymboleType_MA = "mA"
+    simpleTypeText IntensiteUniteSymboleTypeA = "A"
+    simpleTypeText IntensiteUniteSymboleTypeMA = "mA"
  
 newtype IntervenantTypeCodeType = IntervenantTypeCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts IntervenantTypeCodeType Xsd.XsdString where
@@ -1959,10 +1958,10 @@ instance SimpleType InterventionDeplanificationMotifCodeType where
     simpleTypeText (InterventionDeplanificationMotifCodeType x) = simpleTypeText x
  
 data InterventionEtatCodeType
-    = InterventionEtatCodeType_ANNUL
-    | InterventionEtatCodeType_CLOS
-    | InterventionEtatCodeType_DMND
-    | InterventionEtatCodeType_PLAN
+    = InterventionEtatCodeTypeANNUL
+    | InterventionEtatCodeTypeCLOS
+    | InterventionEtatCodeTypeDMND
+    | InterventionEtatCodeTypePLAN
     deriving (Eq,Show,Enum)
 instance SchemaType InterventionEtatCodeType where
     parseSchemaType s = do
@@ -1971,15 +1970,15 @@ instance SchemaType InterventionEtatCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType InterventionEtatCodeType where
-    acceptingParser =  do _ <- literal "ANNUL"; return InterventionEtatCodeType_ANNUL
-                      `onFail` do _ <- literal "CLOS"; return InterventionEtatCodeType_CLOS
-                      `onFail` do _ <- literal "DMND"; return InterventionEtatCodeType_DMND
-                      `onFail` do _ <- literal "PLAN"; return InterventionEtatCodeType_PLAN
+    acceptingParser =  do _ <- literal "ANNUL"; return InterventionEtatCodeTypeANNUL
+                      `onFail` do _ <- literal "CLOS"; return InterventionEtatCodeTypeCLOS
+                      `onFail` do _ <- literal "DMND"; return InterventionEtatCodeTypeDMND
+                      `onFail` do _ <- literal "PLAN"; return InterventionEtatCodeTypePLAN
                       
-    simpleTypeText InterventionEtatCodeType_ANNUL = "ANNUL"
-    simpleTypeText InterventionEtatCodeType_CLOS = "CLOS"
-    simpleTypeText InterventionEtatCodeType_DMND = "DMND"
-    simpleTypeText InterventionEtatCodeType_PLAN = "PLAN"
+    simpleTypeText InterventionEtatCodeTypeANNUL = "ANNUL"
+    simpleTypeText InterventionEtatCodeTypeCLOS = "CLOS"
+    simpleTypeText InterventionEtatCodeTypeDMND = "DMND"
+    simpleTypeText InterventionEtatCodeTypePLAN = "PLAN"
  
 newtype InterventionNonRealisationMotifCodeType = InterventionNonRealisationMotifCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts InterventionNonRealisationMotifCodeType Xsd.XsdString where
@@ -2001,11 +2000,11 @@ instance SimpleType InterventionNonRealisationMotifCodeType where
     simpleTypeText (InterventionNonRealisationMotifCodeType x) = simpleTypeText x
  
 data InterventionPeriodeTypeCodeType
-    = InterventionPeriodeTypeCodeType_HEOE
-    | InterventionPeriodeTypeCodeType_HHOE
-    | InterventionPeriodeTypeCodeType_HHOS
-    | InterventionPeriodeTypeCodeType_HHOW
-    | InterventionPeriodeTypeCodeType_HHSW
+    = InterventionPeriodeTypeCodeTypeHEOE
+    | InterventionPeriodeTypeCodeTypeHHOE
+    | InterventionPeriodeTypeCodeTypeHHOS
+    | InterventionPeriodeTypeCodeTypeHHOW
+    | InterventionPeriodeTypeCodeTypeHHSW
     deriving (Eq,Show,Enum)
 instance SchemaType InterventionPeriodeTypeCodeType where
     parseSchemaType s = do
@@ -2014,17 +2013,17 @@ instance SchemaType InterventionPeriodeTypeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType InterventionPeriodeTypeCodeType where
-    acceptingParser =  do _ <- literal "HEOE"; return InterventionPeriodeTypeCodeType_HEOE
-                      `onFail` do _ <- literal "HHOE"; return InterventionPeriodeTypeCodeType_HHOE
-                      `onFail` do _ <- literal "HHOS"; return InterventionPeriodeTypeCodeType_HHOS
-                      `onFail` do _ <- literal "HHOW"; return InterventionPeriodeTypeCodeType_HHOW
-                      `onFail` do _ <- literal "HHSW"; return InterventionPeriodeTypeCodeType_HHSW
+    acceptingParser =  do _ <- literal "HEOE"; return InterventionPeriodeTypeCodeTypeHEOE
+                      `onFail` do _ <- literal "HHOE"; return InterventionPeriodeTypeCodeTypeHHOE
+                      `onFail` do _ <- literal "HHOS"; return InterventionPeriodeTypeCodeTypeHHOS
+                      `onFail` do _ <- literal "HHOW"; return InterventionPeriodeTypeCodeTypeHHOW
+                      `onFail` do _ <- literal "HHSW"; return InterventionPeriodeTypeCodeTypeHHSW
                       
-    simpleTypeText InterventionPeriodeTypeCodeType_HEOE = "HEOE"
-    simpleTypeText InterventionPeriodeTypeCodeType_HHOE = "HHOE"
-    simpleTypeText InterventionPeriodeTypeCodeType_HHOS = "HHOS"
-    simpleTypeText InterventionPeriodeTypeCodeType_HHOW = "HHOW"
-    simpleTypeText InterventionPeriodeTypeCodeType_HHSW = "HHSW"
+    simpleTypeText InterventionPeriodeTypeCodeTypeHEOE = "HEOE"
+    simpleTypeText InterventionPeriodeTypeCodeTypeHHOE = "HHOE"
+    simpleTypeText InterventionPeriodeTypeCodeTypeHHOS = "HHOS"
+    simpleTypeText InterventionPeriodeTypeCodeTypeHHOW = "HHOW"
+    simpleTypeText InterventionPeriodeTypeCodeTypeHHSW = "HHSW"
  
 newtype InterventionPlanificationHorsDelaiMotifCodeType = InterventionPlanificationHorsDelaiMotifCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts InterventionPlanificationHorsDelaiMotifCodeType Xsd.XsdString where
@@ -2044,9 +2043,9 @@ instance SimpleType InterventionPlanificationHorsDelaiMotifCodeType where
     simpleTypeText (InterventionPlanificationHorsDelaiMotifCodeType x) = simpleTypeText x
  
 data InterventionRealisationEtatCodeType
-    = InterventionRealisationEtatCodeType_NREA
-    | InterventionRealisationEtatCodeType_PREA
-    | InterventionRealisationEtatCodeType_REAL
+    = InterventionRealisationEtatCodeTypeNREA
+    | InterventionRealisationEtatCodeTypePREA
+    | InterventionRealisationEtatCodeTypeREAL
     deriving (Eq,Show,Enum)
 instance SchemaType InterventionRealisationEtatCodeType where
     parseSchemaType s = do
@@ -2055,13 +2054,13 @@ instance SchemaType InterventionRealisationEtatCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType InterventionRealisationEtatCodeType where
-    acceptingParser =  do _ <- literal "NREA"; return InterventionRealisationEtatCodeType_NREA
-                      `onFail` do _ <- literal "PREA"; return InterventionRealisationEtatCodeType_PREA
-                      `onFail` do _ <- literal "REAL"; return InterventionRealisationEtatCodeType_REAL
+    acceptingParser =  do _ <- literal "NREA"; return InterventionRealisationEtatCodeTypeNREA
+                      `onFail` do _ <- literal "PREA"; return InterventionRealisationEtatCodeTypePREA
+                      `onFail` do _ <- literal "REAL"; return InterventionRealisationEtatCodeTypeREAL
                       
-    simpleTypeText InterventionRealisationEtatCodeType_NREA = "NREA"
-    simpleTypeText InterventionRealisationEtatCodeType_PREA = "PREA"
-    simpleTypeText InterventionRealisationEtatCodeType_REAL = "REAL"
+    simpleTypeText InterventionRealisationEtatCodeTypeNREA = "NREA"
+    simpleTypeText InterventionRealisationEtatCodeTypePREA = "PREA"
+    simpleTypeText InterventionRealisationEtatCodeTypeREAL = "REAL"
  
 newtype InterventionReplanificationMotifCodeType = InterventionReplanificationMotifCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts InterventionReplanificationMotifCodeType Xsd.XsdString where
@@ -2153,8 +2152,8 @@ instance SimpleType LimiteurTypeCodeType where
     simpleTypeText (LimiteurTypeCodeType x) = simpleTypeText x
  
 data LongueurUniteSymboleType
-    = LongueurUniteSymboleType_Km
-    | LongueurUniteSymboleType_M
+    = LongueurUniteSymboleTypeKm
+    | LongueurUniteSymboleTypeM
     deriving (Eq,Show,Enum)
 instance SchemaType LongueurUniteSymboleType where
     parseSchemaType s = do
@@ -2163,11 +2162,11 @@ instance SchemaType LongueurUniteSymboleType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType LongueurUniteSymboleType where
-    acceptingParser =  do _ <- literal "km"; return LongueurUniteSymboleType_Km
-                      `onFail` do _ <- literal "m"; return LongueurUniteSymboleType_M
+    acceptingParser =  do _ <- literal "km"; return LongueurUniteSymboleTypeKm
+                      `onFail` do _ <- literal "m"; return LongueurUniteSymboleTypeM
                       
-    simpleTypeText LongueurUniteSymboleType_Km = "km"
-    simpleTypeText LongueurUniteSymboleType_M = "m"
+    simpleTypeText LongueurUniteSymboleTypeKm = "km"
+    simpleTypeText LongueurUniteSymboleTypeM = "m"
  
 newtype MesureDeclencheurCodeType = MesureDeclencheurCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts MesureDeclencheurCodeType Xsd.XsdString where
@@ -2394,8 +2393,8 @@ instance SimpleType NonPriseEnCompteAutoreleveMotifCodeType where
     simpleTypeText (NonPriseEnCompteAutoreleveMotifCodeType x) = simpleTypeText x
  
 data OffreTypeCodeType
-    = OffreTypeCodeType_NO
-    | OffreTypeCodeType_OH
+    = OffreTypeCodeTypeNO
+    | OffreTypeCodeTypeOH
     deriving (Eq,Show,Enum)
 instance SchemaType OffreTypeCodeType where
     parseSchemaType s = do
@@ -2404,11 +2403,11 @@ instance SchemaType OffreTypeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType OffreTypeCodeType where
-    acceptingParser =  do _ <- literal "NO"; return OffreTypeCodeType_NO
-                      `onFail` do _ <- literal "OH"; return OffreTypeCodeType_OH
+    acceptingParser =  do _ <- literal "NO"; return OffreTypeCodeTypeNO
+                      `onFail` do _ <- literal "OH"; return OffreTypeCodeTypeOH
                       
-    simpleTypeText OffreTypeCodeType_NO = "NO"
-    simpleTypeText OffreTypeCodeType_OH = "OH"
+    simpleTypeText OffreTypeCodeTypeNO = "NO"
+    simpleTypeText OffreTypeCodeTypeOH = "OH"
  
 newtype OperationCodeType = OperationCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts OperationCodeType Xsd.XsdString where
@@ -2532,9 +2531,9 @@ instance SimpleType PlageHeuresCreusesCodeType where
     simpleTypeText (PlageHeuresCreusesCodeType x) = simpleTypeText x
  
 data PointAppartenanceRegroupementHebergeurDecomptantCodeType
-    = PointAppartenanceRegroupementHebergeurDecomptantCodeType_DECO
-    | PointAppartenanceRegroupementHebergeurDecomptantCodeType_HEBE
-    | PointAppartenanceRegroupementHebergeurDecomptantCodeType_NON
+    = PointAppartenanceRegroupementHebergeurDecomptantCodeTypeDECO
+    | PointAppartenanceRegroupementHebergeurDecomptantCodeTypeHEBE
+    | PointAppartenanceRegroupementHebergeurDecomptantCodeTypeNON
     deriving (Eq,Show,Enum)
 instance SchemaType PointAppartenanceRegroupementHebergeurDecomptantCodeType where
     parseSchemaType s = do
@@ -2543,18 +2542,18 @@ instance SchemaType PointAppartenanceRegroupementHebergeurDecomptantCodeType whe
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PointAppartenanceRegroupementHebergeurDecomptantCodeType where
-    acceptingParser =  do _ <- literal "DECO"; return PointAppartenanceRegroupementHebergeurDecomptantCodeType_DECO
-                      `onFail` do _ <- literal "HEBE"; return PointAppartenanceRegroupementHebergeurDecomptantCodeType_HEBE
-                      `onFail` do _ <- literal "NON"; return PointAppartenanceRegroupementHebergeurDecomptantCodeType_NON
+    acceptingParser =  do _ <- literal "DECO"; return PointAppartenanceRegroupementHebergeurDecomptantCodeTypeDECO
+                      `onFail` do _ <- literal "HEBE"; return PointAppartenanceRegroupementHebergeurDecomptantCodeTypeHEBE
+                      `onFail` do _ <- literal "NON"; return PointAppartenanceRegroupementHebergeurDecomptantCodeTypeNON
                       
-    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeType_DECO = "DECO"
-    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeType_HEBE = "HEBE"
-    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeType_NON = "NON"
+    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeTypeDECO = "DECO"
+    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeTypeHEBE = "HEBE"
+    simpleTypeText PointAppartenanceRegroupementHebergeurDecomptantCodeTypeNON = "NON"
  
 data PointAppartenanceRegroupementTurpeCodeType
-    = PointAppartenanceRegroupementTurpeCodeType_NON
-    | PointAppartenanceRegroupementTurpeCodeType_REGT
-    | PointAppartenanceRegroupementTurpeCodeType_RGPT
+    = PointAppartenanceRegroupementTurpeCodeTypeNON
+    | PointAppartenanceRegroupementTurpeCodeTypeREGT
+    | PointAppartenanceRegroupementTurpeCodeTypeRGPT
     deriving (Eq,Show,Enum)
 instance SchemaType PointAppartenanceRegroupementTurpeCodeType where
     parseSchemaType s = do
@@ -2563,21 +2562,21 @@ instance SchemaType PointAppartenanceRegroupementTurpeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PointAppartenanceRegroupementTurpeCodeType where
-    acceptingParser =  do _ <- literal "NON"; return PointAppartenanceRegroupementTurpeCodeType_NON
-                      `onFail` do _ <- literal "REGT"; return PointAppartenanceRegroupementTurpeCodeType_REGT
-                      `onFail` do _ <- literal "RGPT"; return PointAppartenanceRegroupementTurpeCodeType_RGPT
+    acceptingParser =  do _ <- literal "NON"; return PointAppartenanceRegroupementTurpeCodeTypeNON
+                      `onFail` do _ <- literal "REGT"; return PointAppartenanceRegroupementTurpeCodeTypeREGT
+                      `onFail` do _ <- literal "RGPT"; return PointAppartenanceRegroupementTurpeCodeTypeRGPT
                       
-    simpleTypeText PointAppartenanceRegroupementTurpeCodeType_NON = "NON"
-    simpleTypeText PointAppartenanceRegroupementTurpeCodeType_REGT = "REGT"
-    simpleTypeText PointAppartenanceRegroupementTurpeCodeType_RGPT = "RGPT"
+    simpleTypeText PointAppartenanceRegroupementTurpeCodeTypeNON = "NON"
+    simpleTypeText PointAppartenanceRegroupementTurpeCodeTypeREGT = "REGT"
+    simpleTypeText PointAppartenanceRegroupementTurpeCodeTypeRGPT = "RGPT"
  
 data PointEtatContractuelCodeType
-    = PointEtatContractuelCodeType_ECRAC
-    | PointEtatContractuelCodeType_INACCE
-    | PointEtatContractuelCodeType_ECRES
-    | PointEtatContractuelCodeType_IMPRO
-    | PointEtatContractuelCodeType_RESIL
-    | PointEtatContractuelCodeType_SERVC
+    = PointEtatContractuelCodeTypeECRAC
+    | PointEtatContractuelCodeTypeINACCE
+    | PointEtatContractuelCodeTypeECRES
+    | PointEtatContractuelCodeTypeIMPRO
+    | PointEtatContractuelCodeTypeRESIL
+    | PointEtatContractuelCodeTypeSERVC
     deriving (Eq,Show,Enum)
 instance SchemaType PointEtatContractuelCodeType where
     parseSchemaType s = do
@@ -2586,19 +2585,19 @@ instance SchemaType PointEtatContractuelCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PointEtatContractuelCodeType where
-    acceptingParser =  do _ <- literal "ECRAC"; return PointEtatContractuelCodeType_ECRAC
-                      `onFail` do _ <- literal "INACCE"; return PointEtatContractuelCodeType_INACCE
-                      `onFail` do _ <- literal "ECRES"; return PointEtatContractuelCodeType_ECRES
-                      `onFail` do _ <- literal "IMPRO"; return PointEtatContractuelCodeType_IMPRO
-                      `onFail` do _ <- literal "RESIL"; return PointEtatContractuelCodeType_RESIL
-                      `onFail` do _ <- literal "SERVC"; return PointEtatContractuelCodeType_SERVC
+    acceptingParser =  do _ <- literal "ECRAC"; return PointEtatContractuelCodeTypeECRAC
+                      `onFail` do _ <- literal "INACCE"; return PointEtatContractuelCodeTypeINACCE
+                      `onFail` do _ <- literal "ECRES"; return PointEtatContractuelCodeTypeECRES
+                      `onFail` do _ <- literal "IMPRO"; return PointEtatContractuelCodeTypeIMPRO
+                      `onFail` do _ <- literal "RESIL"; return PointEtatContractuelCodeTypeRESIL
+                      `onFail` do _ <- literal "SERVC"; return PointEtatContractuelCodeTypeSERVC
                       
-    simpleTypeText PointEtatContractuelCodeType_ECRAC = "ECRAC"
-    simpleTypeText PointEtatContractuelCodeType_INACCE = "INACCE"
-    simpleTypeText PointEtatContractuelCodeType_ECRES = "ECRES"
-    simpleTypeText PointEtatContractuelCodeType_IMPRO = "IMPRO"
-    simpleTypeText PointEtatContractuelCodeType_RESIL = "RESIL"
-    simpleTypeText PointEtatContractuelCodeType_SERVC = "SERVC"
+    simpleTypeText PointEtatContractuelCodeTypeECRAC = "ECRAC"
+    simpleTypeText PointEtatContractuelCodeTypeINACCE = "INACCE"
+    simpleTypeText PointEtatContractuelCodeTypeECRES = "ECRES"
+    simpleTypeText PointEtatContractuelCodeTypeIMPRO = "IMPRO"
+    simpleTypeText PointEtatContractuelCodeTypeRESIL = "RESIL"
+    simpleTypeText PointEtatContractuelCodeTypeSERVC = "SERVC"
  
 newtype PointIdType = PointIdType Xsd.XsdString deriving (Eq,Show)
 instance Restricts PointIdType Xsd.XsdString where
@@ -2620,11 +2619,11 @@ instance SimpleType PointIdType where
     simpleTypeText (PointIdType x) = simpleTypeText x
  
 data PointSegmentClienteleCodeType
-    = PointSegmentClienteleCodeType_C2
-    | PointSegmentClienteleCodeType_C3
-    | PointSegmentClienteleCodeType_C4
-    | PointSegmentClienteleCodeType_C5
-    | PointSegmentClienteleCodeType_INDET
+    = PointSegmentClienteleCodeTypeC2
+    | PointSegmentClienteleCodeTypeC3
+    | PointSegmentClienteleCodeTypeC4
+    | PointSegmentClienteleCodeTypeC5
+    | PointSegmentClienteleCodeTypeINDET
     deriving (Eq,Show,Enum)
 instance SchemaType PointSegmentClienteleCodeType where
     parseSchemaType s = do
@@ -2633,17 +2632,17 @@ instance SchemaType PointSegmentClienteleCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PointSegmentClienteleCodeType where
-    acceptingParser =  do _ <- literal "C2"; return PointSegmentClienteleCodeType_C2
-                      `onFail` do _ <- literal "C3"; return PointSegmentClienteleCodeType_C3
-                      `onFail` do _ <- literal "C4"; return PointSegmentClienteleCodeType_C4
-                      `onFail` do _ <- literal "C5"; return PointSegmentClienteleCodeType_C5
-                      `onFail` do _ <- literal "INDET"; return PointSegmentClienteleCodeType_INDET
+    acceptingParser =  do _ <- literal "C2"; return PointSegmentClienteleCodeTypeC2
+                      `onFail` do _ <- literal "C3"; return PointSegmentClienteleCodeTypeC3
+                      `onFail` do _ <- literal "C4"; return PointSegmentClienteleCodeTypeC4
+                      `onFail` do _ <- literal "C5"; return PointSegmentClienteleCodeTypeC5
+                      `onFail` do _ <- literal "INDET"; return PointSegmentClienteleCodeTypeINDET
                       
-    simpleTypeText PointSegmentClienteleCodeType_C2 = "C2"
-    simpleTypeText PointSegmentClienteleCodeType_C3 = "C3"
-    simpleTypeText PointSegmentClienteleCodeType_C4 = "C4"
-    simpleTypeText PointSegmentClienteleCodeType_C5 = "C5"
-    simpleTypeText PointSegmentClienteleCodeType_INDET = "INDET"
+    simpleTypeText PointSegmentClienteleCodeTypeC2 = "C2"
+    simpleTypeText PointSegmentClienteleCodeTypeC3 = "C3"
+    simpleTypeText PointSegmentClienteleCodeTypeC4 = "C4"
+    simpleTypeText PointSegmentClienteleCodeTypeC5 = "C5"
+    simpleTypeText PointSegmentClienteleCodeTypeINDET = "INDET"
  
 newtype PosteHoraireCodeType = PosteHoraireCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts PosteHoraireCodeType Xsd.XsdString where
@@ -2694,11 +2693,12 @@ instance SimpleType PrestationCasCodeType where
     -- The restrictions are:
     --      (RangeR (Occurs Nothing Nothing))
     --      (Enumeration)
+    simpleTypeText :: PrestationCasCodeType -> String
     simpleTypeText (PrestationCasCodeType x) = simpleTypeText x
  
 data PrestationEnvisageeCodeType
-    = PrestationEnvisageeCodeType_CFN
-    | PrestationEnvisageeCodeType_MES
+    = PrestationEnvisageeCodeTypeCFN
+    | PrestationEnvisageeCodeTypeMES
     deriving (Eq,Show,Enum)
 instance SchemaType PrestationEnvisageeCodeType where
     parseSchemaType s = do
@@ -2707,11 +2707,11 @@ instance SchemaType PrestationEnvisageeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PrestationEnvisageeCodeType where
-    acceptingParser =  do _ <- literal "CFN"; return PrestationEnvisageeCodeType_CFN
-                      `onFail` do _ <- literal "MES"; return PrestationEnvisageeCodeType_MES
+    acceptingParser =  do _ <- literal "CFN"; return PrestationEnvisageeCodeTypeCFN
+                      `onFail` do _ <- literal "MES"; return PrestationEnvisageeCodeTypeMES
                       
-    simpleTypeText PrestationEnvisageeCodeType_CFN = "CFN"
-    simpleTypeText PrestationEnvisageeCodeType_MES = "MES"
+    simpleTypeText PrestationEnvisageeCodeTypeCFN = "CFN"
+    simpleTypeText PrestationEnvisageeCodeTypeMES = "MES"
  
 newtype PrestationFicheCodeType = PrestationFicheCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts PrestationFicheCodeType Xsd.XsdString where
@@ -2835,9 +2835,9 @@ instance SimpleType ProgrammeCircuitEauTempoCodeType where
     simpleTypeText (ProgrammeCircuitEauTempoCodeType x) = simpleTypeText x
  
 data PuissanceUniteSymboleType
-    = PuissanceUniteSymboleType_KVA
-    | PuissanceUniteSymboleType_KVAR
-    | PuissanceUniteSymboleType_KW
+    = PuissanceUniteSymboleTypeKVA
+    | PuissanceUniteSymboleTypeKVAR
+    | PuissanceUniteSymboleTypeKW
     deriving (Eq,Show,Enum)
 instance SchemaType PuissanceUniteSymboleType where
     parseSchemaType s = do
@@ -2846,13 +2846,13 @@ instance SchemaType PuissanceUniteSymboleType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType PuissanceUniteSymboleType where
-    acceptingParser =  do _ <- literal "kVA"; return PuissanceUniteSymboleType_KVA
-                      `onFail` do _ <- literal "kVAR"; return PuissanceUniteSymboleType_KVAR
-                      `onFail` do _ <- literal "kW"; return PuissanceUniteSymboleType_KW
+    acceptingParser =  do _ <- literal "kVA"; return PuissanceUniteSymboleTypeKVA
+                      `onFail` do _ <- literal "kVAR"; return PuissanceUniteSymboleTypeKVAR
+                      `onFail` do _ <- literal "kW"; return PuissanceUniteSymboleTypeKW
                       
-    simpleTypeText PuissanceUniteSymboleType_KVA = "kVA"
-    simpleTypeText PuissanceUniteSymboleType_KVAR = "kVAR"
-    simpleTypeText PuissanceUniteSymboleType_KW = "kW"
+    simpleTypeText PuissanceUniteSymboleTypeKVA = "kVA"
+    simpleTypeText PuissanceUniteSymboleTypeKVAR = "kVAR"
+    simpleTypeText PuissanceUniteSymboleTypeKW = "kW"
  
 newtype RattachementIdType = RattachementIdType Xsd.XsdString deriving (Eq,Show)
 instance Restricts RattachementIdType Xsd.XsdString where
@@ -3144,8 +3144,8 @@ instance SimpleType ReleveTraitementModeCodeType where
     simpleTypeText (ReleveTraitementModeCodeType x) = simpleTypeText x
  
 data ResidenceTypeCodeType
-    = ResidenceTypeCodeType_PRP
-    | ResidenceTypeCodeType_SEC
+    = ResidenceTypeCodeTypePRP
+    | ResidenceTypeCodeTypeSEC
     deriving (Eq,Show,Enum)
 instance SchemaType ResidenceTypeCodeType where
     parseSchemaType s = do
@@ -3154,11 +3154,11 @@ instance SchemaType ResidenceTypeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType ResidenceTypeCodeType where
-    acceptingParser =  do _ <- literal "PRP"; return ResidenceTypeCodeType_PRP
-                      `onFail` do _ <- literal "SEC"; return ResidenceTypeCodeType_SEC
+    acceptingParser =  do _ <- literal "PRP"; return ResidenceTypeCodeTypePRP
+                      `onFail` do _ <- literal "SEC"; return ResidenceTypeCodeTypeSEC
                       
-    simpleTypeText ResidenceTypeCodeType_PRP = "PRP"
-    simpleTypeText ResidenceTypeCodeType_SEC = "SEC"
+    simpleTypeText ResidenceTypeCodeTypePRP = "PRP"
+    simpleTypeText ResidenceTypeCodeTypeSEC = "SEC"
  
 newtype SecteurGeographiqueCodeType = SecteurGeographiqueCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts SecteurGeographiqueCodeType Xsd.XsdString where
@@ -3178,8 +3178,8 @@ instance SimpleType SecteurGeographiqueCodeType where
     simpleTypeText (SecteurGeographiqueCodeType x) = simpleTypeText x
  
 data SituationContractuelleGestionModeCodeType
-    = SituationContractuelleGestionModeCodeType_INT
-    | SituationContractuelleGestionModeCodeType_GRD
+    = SituationContractuelleGestionModeCodeTypeINT
+    | SituationContractuelleGestionModeCodeTypeGRD
     deriving (Eq,Show,Enum)
 instance SchemaType SituationContractuelleGestionModeCodeType where
     parseSchemaType s = do
@@ -3188,11 +3188,11 @@ instance SchemaType SituationContractuelleGestionModeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType SituationContractuelleGestionModeCodeType where
-    acceptingParser =  do _ <- literal "INT"; return SituationContractuelleGestionModeCodeType_INT
-                      `onFail` do _ <- literal "GRD"; return SituationContractuelleGestionModeCodeType_GRD
+    acceptingParser =  do _ <- literal "INT"; return SituationContractuelleGestionModeCodeTypeINT
+                      `onFail` do _ <- literal "GRD"; return SituationContractuelleGestionModeCodeTypeGRD
                       
-    simpleTypeText SituationContractuelleGestionModeCodeType_INT = "INT"
-    simpleTypeText SituationContractuelleGestionModeCodeType_GRD = "GRD"
+    simpleTypeText SituationContractuelleGestionModeCodeTypeINT = "INT"
+    simpleTypeText SituationContractuelleGestionModeCodeTypeGRD = "GRD"
  
 newtype StructureComptageCodeType = StructureComptageCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts StructureComptageCodeType Xsd.XsdString where
@@ -3246,8 +3246,8 @@ instance SimpleType TensionLivraisonCodeType where
     simpleTypeText (TensionLivraisonCodeType x) = simpleTypeText x
  
 data TensionUniteSymboleType
-    = TensionUniteSymboleType_KV
-    | TensionUniteSymboleType_V
+    = TensionUniteSymboleTypeKV
+    | TensionUniteSymboleTypeV
     deriving (Eq,Show,Enum)
 instance SchemaType TensionUniteSymboleType where
     parseSchemaType s = do
@@ -3256,11 +3256,11 @@ instance SchemaType TensionUniteSymboleType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType TensionUniteSymboleType where
-    acceptingParser =  do _ <- literal "kV"; return TensionUniteSymboleType_KV
-                      `onFail` do _ <- literal "V"; return TensionUniteSymboleType_V
+    acceptingParser =  do _ <- literal "kV"; return TensionUniteSymboleTypeKV
+                      `onFail` do _ <- literal "V"; return TensionUniteSymboleTypeV
                       
-    simpleTypeText TensionUniteSymboleType_KV = "kV"
-    simpleTypeText TensionUniteSymboleType_V = "V"
+    simpleTypeText TensionUniteSymboleTypeKV = "kV"
+    simpleTypeText TensionUniteSymboleTypeV = "V"
  
 newtype TourneeCodeType = TourneeCodeType Xsd.XsdString deriving (Eq,Show)
 instance Restricts TourneeCodeType Xsd.XsdString where
