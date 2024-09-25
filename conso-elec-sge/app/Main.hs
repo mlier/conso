@@ -3,11 +3,13 @@
 module Main where
 
 import           Options.Applicative
-import           Data.Text ( Text ) 
+import           Data.Text ( Text )
 import           System.Posix.User ()
 import           GHC.Generics ()
 
-import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
+import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 as CDTC
+import           Conso.Fr.Elec.Sge.ConsulterMesuresV11 as CM
+import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 as CMD
 
 data Options = Options
     {
@@ -29,16 +31,17 @@ data Command
     | FluxInfra FluxInfraCommand
 -}  deriving (Eq, Show)
 
-newtype InfoOptions = InfoOptions
-  { pointInfo     :: String
+data InfoOptions = InfoOptions
+  { pointIdInfo :: String
+  , autorisationClient :: Bool
   } deriving (Eq, Show)
 
 newtype MesuresOptions = MesuresOptions
-  { pointMesures     :: String
+  { pointIdMesures     :: String
   } deriving (Eq, Show)
 
 newtype MesuresDetailOptions = MesuresDetailOptions
-  { pointMesuresDetail     :: String
+  { pointIdMesuresDetail     :: String
   } deriving (Eq, Show)
 
 
@@ -73,15 +76,19 @@ infParser :: Parser InfoOptions
 infParser = InfoOptions
       <$> strOption
           ( long "point"
-         <> short 'p' 
+         <> short 'p'
          <> metavar "POINT"
          <> help "Point" )
+      <*> switch
+          ( long "autorisation"
+         <> short 'a'
+         <> help "Enable verbosity (default: disabled)" )
 
 mesuresParser :: Parser MesuresOptions
 mesuresParser = MesuresOptions
       <$> strOption
           ( long "point"
-         <> short 'p' 
+         <> short 'p'
          <> metavar "POINT"
          <> help "Point" )
 
@@ -89,32 +96,28 @@ mesuresDetailParser :: Parser MesuresDetailOptions
 mesuresDetailParser = MesuresDetailOptions
       <$> strOption
           ( long "point"
-         <> short 'p' 
+         <> short 'p'
          <> metavar "POINT"
          <> help "Point" )
 
 docommand :: Options -> IO ()
-docommand Options{ optVerbose=v, optCommand=c } = case c of 
-    Info i -> do 
-        putStrLn "To be done : info"
-        putStrLn $ pointInfo i
-        print v
-        --getSge
+docommand Options{ optVerbose=v, optCommand=c } = case c of
+    Info i -> do
+        myType <- CDTC.initType (pointIdInfo i) (autorisationClient i)
+        CDTC.wsRequest myType
 
     Mesures m -> do
-        putStrLn "To be done : mesures"
-        putStrLn $ pointMesures m
-        print v
-        let pointId = "21429667044956" :: Text
-        print v
-       
+        myType <- CM.initType (pointIdMesures m)
+        CM.wsRequest myType
+
     MesuresDetail m -> do
         putStrLn "To be done : mesures detail"
-        putStrLn $ pointMesuresDetail m
-        print v
-        let pointId = "21429667044956" :: Text
-        print v
-      
+        putStrLn $ pointIdMesuresDetail m
+        --myType <- CMD.initType (pointIdMesuresDetail m)
+        --     mesuresTypeCode grandeurPhysique dateDebut dateFin 
+        -- mesuresPas mesuresCorrigees sens cadreAcces
+        --CMD.wsRequest myType
+
 
 main :: IO ()
 main = docommand =<< execParser optsHeader
