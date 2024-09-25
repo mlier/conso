@@ -7,10 +7,36 @@ import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
 import Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
+    ( elementCommanderArretServiceSouscritMesuresResponse,
+      elementToXMLCommanderArretServiceSouscritMesures,
+      ArretServiceSouscritType(ArretServiceSouscritType,
+                               arretServiceSouscritType_serviceSouscritId),
+      CommanderArretServiceSouscritMesuresResponseType,
+      CommanderArretServiceSouscritMesuresType(..),
+      DemandeType(DemandeType, demandeType_arretServiceSouscrit,
+                  demandeType_donneesGenerales),
+      DonneesGeneralesType(DonneesGeneralesType,
+                           donneesGeneralesType_contratId, donneesGeneralesType_refFrn,
+                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
+                           donneesGeneralesType_initiateurLogin) )
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( AdresseEmailType(AdresseEmailType),
+      Chaine15Type(Chaine15Type),
+      ContratIdType(ContratIdType),
+      DemandeObjetCodeType(DemandeObjetCodeType),
+      PointIdType(PointIdType) )
     
 import Conso.Fr.Elec.Sge.Sge
+    ( getEnv,
+      sgeRequest,
+      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
+               elementToXMLRequest, xmlTag),
+      Env(test, sge),
+      RequestType,
+      ResponseType,
+      Sge(contractId, userB2b),
+      Test(pointId) )
  
 
 

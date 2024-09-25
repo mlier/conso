@@ -7,29 +7,30 @@ import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
 import Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
-    ( Demande(Demande, demande_cadreAcces, demande_format,
+    ( elementAffaireId,
+      elementToXMLDemandePublicationMesuresFines,
+      AffaireId,
+      CadreAcces(CadreAccesACCORDCLIENT),
+      ContratId(ContratId),
+      DateDebut(DateDebut),
+      DateFin(DateFin),
+      Demande(Demande, demande_cadreAcces, demande_format,
               demande_pointIds, demande_mesuresTypeCode,
               demande_mesuresCorrigees, demande_dateDebut, demande_dateFin,
               demande_sens),
-      PointIds(PointIds, pointIds_pointId),
-      CadreAcces(CadreAcces_ACCORD_CLIENT),
-      Sens(Sens_SOUTIRAGE),
-      DateFin(DateFin),
-      DateDebut(DateDebut),
-      MesuresTypeCode(MesuresTypeCode_INDEX),
-      PointId(PointId),
-      Format(Format_JSON),
+      DemandePublicationMesuresFines(..),
       DonneesGenerales(DonneesGenerales,
                        donneesGenerales_referenceRegroupement,
                        donneesGenerales_initiateurLogin, donneesGenerales_contratId,
                        donneesGenerales_referenceDemandeur,
                        donneesGenerales_affaireReference),
-      ContratId(ContratId),
+      Format(FormatJSON),
       InitiateurLogin(InitiateurLogin),
-      DemandePublicationMesuresFines(..),
-      AffaireId,
-      elementAffaireId,
-      elementToXMLDemandePublicationMesuresFines )
+      MesuresTypeCode(MesuresTypeCodeINDEX),
+      PointId(PointId),
+      PointIds(PointIds, pointIds_pointId),
+      Sens(SensSOUTIRAGE) )
+  
 
 import Conso.Fr.Elec.Sge.Sge
     ( ResponseType,
@@ -63,16 +64,16 @@ initType myPointId = do
           , donneesGenerales_referenceRegroupement = Nothing
           }
         , demandePublicationMesuresFines_demande = Demande
-          { demande_format = Just Format_JSON
+          { demande_format = Just FormatJSON
           , demande_pointIds = PointIds
             { pointIds_pointId = [PointId $ Xsd.XsdString myPointId]
             }
-          , demande_mesuresTypeCode = MesuresTypeCode_INDEX
+          , demande_mesuresTypeCode = MesuresTypeCodeINDEX
           , demande_mesuresCorrigees = Nothing
           , demande_dateDebut = DateDebut $ Xsd.Date "2024-08-01"
           , demande_dateFin = DateFin $ Xsd.Date "2024-09-01"
-          , demande_sens = Sens_SOUTIRAGE
-          , demande_cadreAcces = CadreAcces_ACCORD_CLIENT
+          , demande_sens = SensSOUTIRAGE
+          , demande_cadreAcces = CadreAccesACCORDCLIENT
           }
         }
     return requestType

@@ -1,7 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use camelCase" #-}
 
 module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
   ( module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
@@ -121,10 +119,10 @@ instance SchemaType Demande where
 --    simpleTypeText (PointIdType x) = simpleTypeText x
  
 data MesuresTypeCodeType
-    = MesuresTypeCodeType_COURBE
-    | MesuresTypeCodeType_PMAX
-    | MesuresTypeCodeType_ENERGIE
-    | MesuresTypeCodeType_INDEX
+    = MesuresTypeCodeTypeCOURBE
+    | MesuresTypeCodeTypePMAX
+    | MesuresTypeCodeTypeENERGIE
+    | MesuresTypeCodeTypeINDEX
     deriving (Eq,Show,Enum)
 instance SchemaType MesuresTypeCodeType where
     parseSchemaType s = do
@@ -133,15 +131,15 @@ instance SchemaType MesuresTypeCodeType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType MesuresTypeCodeType where
-    acceptingParser =  do _ <- literal "COURBE"; return MesuresTypeCodeType_COURBE
-                      `onFail` do _ <- literal "PMAX"; return MesuresTypeCodeType_PMAX
-                      `onFail` do _ <- literal "ENERGIE"; return MesuresTypeCodeType_ENERGIE
-                      `onFail` do _ <- literal "INDEX"; return MesuresTypeCodeType_INDEX
+    acceptingParser =  do _ <- literal "COURBE"; return MesuresTypeCodeTypeCOURBE
+                      `onFail` do _ <- literal "PMAX"; return MesuresTypeCodeTypePMAX
+                      `onFail` do _ <- literal "ENERGIE"; return MesuresTypeCodeTypeENERGIE
+                      `onFail` do _ <- literal "INDEX"; return MesuresTypeCodeTypeINDEX
                       
-    simpleTypeText MesuresTypeCodeType_COURBE = "COURBE"
-    simpleTypeText MesuresTypeCodeType_PMAX = "PMAX"
-    simpleTypeText MesuresTypeCodeType_ENERGIE = "ENERGIE"
-    simpleTypeText MesuresTypeCodeType_INDEX = "INDEX"
+    simpleTypeText MesuresTypeCodeTypeCOURBE = "COURBE"
+    simpleTypeText MesuresTypeCodeTypePMAX = "PMAX"
+    simpleTypeText MesuresTypeCodeTypeENERGIE = "ENERGIE"
+    simpleTypeText MesuresTypeCodeTypeINDEX = "INDEX"
  
 data MesuresPasType
     = MesuresPasType_P1D
@@ -161,8 +159,8 @@ instance SimpleType MesuresPasType where
     simpleTypeText MesuresPasType_P1M = "P1M"
  
 data SensMesureType
-    = SensMesureType_INJECTION
-    | SensMesureType_SOUTIRAGE
+    = SensMesureTypeINJECTION
+    | SensMesureTypeSOUTIRAGE
     deriving (Eq,Show,Enum)
 instance SchemaType SensMesureType where
     parseSchemaType s = do
@@ -171,16 +169,16 @@ instance SchemaType SensMesureType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType SensMesureType where
-    acceptingParser =  do _ <- literal "INJECTION"; return SensMesureType_INJECTION
-                      `onFail` do _ <- literal "SOUTIRAGE"; return SensMesureType_SOUTIRAGE
+    acceptingParser =  do _ <- literal "INJECTION"; return SensMesureTypeINJECTION
+                      `onFail` do _ <- literal "SOUTIRAGE"; return SensMesureTypeSOUTIRAGE
                       
-    simpleTypeText SensMesureType_INJECTION = "INJECTION"
-    simpleTypeText SensMesureType_SOUTIRAGE = "SOUTIRAGE"
+    simpleTypeText SensMesureTypeINJECTION = "INJECTION"
+    simpleTypeText SensMesureTypeSOUTIRAGE = "SOUTIRAGE"
  
 data CadreAccesType
-    = CadreAccesType_ACCORD_CLIENT
-    | CadreAccesType_SERVICE_ACCES
-    | CadreAccesType_EST_TITULAIRE
+    = CadreAccesTypeACCORDCLIENT
+    | CadreAccesTypeSERVICEACCES
+    | CadreAccesTypeESTTITULAIRE
     deriving (Eq,Show,Enum)
 instance SchemaType CadreAccesType where
     parseSchemaType s = do
@@ -189,13 +187,13 @@ instance SchemaType CadreAccesType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType CadreAccesType where
-    acceptingParser =  do _ <- literal "ACCORD_CLIENT"; return CadreAccesType_ACCORD_CLIENT
-                      `onFail` do _ <- literal "SERVICE_ACCES"; return CadreAccesType_SERVICE_ACCES
-                      `onFail` do _ <- literal "EST_TITULAIRE"; return CadreAccesType_EST_TITULAIRE
+    acceptingParser =  do _ <- literal "ACCORD_CLIENT"; return CadreAccesTypeACCORDCLIENT
+                      `onFail` do _ <- literal "SERVICE_ACCES"; return CadreAccesTypeSERVICEACCES
+                      `onFail` do _ <- literal "EST_TITULAIRE"; return CadreAccesTypeESTTITULAIRE
                       
-    simpleTypeText CadreAccesType_ACCORD_CLIENT = "ACCORD_CLIENT"
-    simpleTypeText CadreAccesType_SERVICE_ACCES = "SERVICE_ACCES"
-    simpleTypeText CadreAccesType_EST_TITULAIRE = "EST_TITULAIRE"
+    simpleTypeText CadreAccesTypeACCORDCLIENT = "ACCORD_CLIENT"
+    simpleTypeText CadreAccesTypeSERVICEACCES = "SERVICE_ACCES"
+    simpleTypeText CadreAccesTypeESTTITULAIRE = "EST_TITULAIRE"
  
 data ConsulterMesuresDetailleesV3ResponseType = ConsulterMesuresDetailleesV3ResponseType
         { consulterMesuresDetailleesV3ResponseType_pointId :: Maybe PointIdType

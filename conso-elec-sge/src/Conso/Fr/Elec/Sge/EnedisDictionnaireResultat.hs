@@ -6,6 +6,23 @@ module Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
+    ( XMLParser,
+      SchemaType(..),
+      Content(CElem),
+      Commitment(commit),
+      SimpleType(..),
+      Restricts(..),
+      posnElement,
+      interior,
+      toXMLElement,
+      getAttribute,
+      toXMLAttribute,
+      element,
+      parseSimpleType,
+      toXMLText,
+      addXMLAttributes,
+      reparse,
+      Extension(..) )
 import Text.XML.HaXml.OneOfN ()
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 

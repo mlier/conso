@@ -8,14 +8,15 @@ module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
  
 import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Restricts(..))
 import Text.XML.HaXml.Schema.Schema as Schema
-    ( parseSimpleType,
-      toXMLElement,
-      toXMLText,
-      element,
+    ( Commitment(commit),
       interior,
+      toXMLElement,
+      element,
+      parseSimpleType,
+      toXMLText,
       literal,
-      onFail,
-      Commitment(commit) )
+      onFail )
+
 import Text.XML.HaXml.OneOfN ()
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
  

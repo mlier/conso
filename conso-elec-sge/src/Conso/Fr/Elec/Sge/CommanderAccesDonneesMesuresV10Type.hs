@@ -8,6 +8,26 @@ module Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
   ) where
 
 import Text.XML.HaXml.Schema.Schema as Schema
+    ( XMLParser,
+      SchemaType(..),
+      Content,
+      Commitment(commit, oneOf'),
+      SimpleType(..),
+      Restricts(..),
+      OneOf2(..),
+      posnElement,
+      interior,
+      apply,
+      toXMLElement,
+      optional,
+      getAttribute,
+      toXMLAttribute,
+      element,
+      parseSimpleType,
+      toXMLText,
+      foldOneOf2,
+      literal,
+      onFail )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
 -- Some hs-boot imports are required, for fwd-declaring types.

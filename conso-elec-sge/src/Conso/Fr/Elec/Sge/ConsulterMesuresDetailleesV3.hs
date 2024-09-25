@@ -6,9 +6,32 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 where
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
-import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
-import           Conso.Fr.Elec.Sge.Sge
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( PointIdType(PointIdType) )
+
+import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
+    ( elementConsulterMesuresDetailleesResponseV3,
+      elementToXMLConsulterMesuresDetailleesV3,
+      CadreAccesType(CadreAccesTypeACCORDCLIENT),
+      ConsulterMesuresDetailleesV3ResponseType,
+      ConsulterMesuresDetailleesV3Type(..),
+      Demande(Demande, demande_cadreAcces, demande_initiateurLogin,
+              demande_pointId, demande_mesuresTypeCode, demande_grandeurPhysique,
+              demande_dateDebut, demande_dateFin, demande_mesuresPas,
+              demande_mesuresCorrigees, demande_sens),
+      MesuresPasType,
+      MesuresTypeCodeType(MesuresTypeCodeTypeINDEX),
+      SensMesureType(SensMesureTypeSOUTIRAGE) )
+
+import Conso.Fr.Elec.Sge.Sge
+    ( getEnv,
+      sgeRequest,
+      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
+               elementToXMLRequest, xmlTag),
+      Env(sge),
+      RequestType,
+      ResponseType,
+      Sge(userB2b) )
 
 
 instance RequestType ConsulterMesuresDetailleesV3Type
@@ -53,6 +76,6 @@ wsRequest r = sgeRequest r configWS
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956" MesuresTypeCodeType_INDEX "EA" "2024-08-01" "2024-09-01" 
-                       Nothing False SensMesureType_SOUTIRAGE CadreAccesType_ACCORD_CLIENT
+    myType <- initType "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
+                       Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
     wsRequest myType

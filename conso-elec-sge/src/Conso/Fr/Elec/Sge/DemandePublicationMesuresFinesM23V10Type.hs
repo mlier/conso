@@ -1,7 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances  #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Use camelCase" #-}
 {-# LANGUAGE InstanceSigs #-}
 
 module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
@@ -189,8 +187,8 @@ instance SchemaType DonneesGenerales where
             ]
  
 data Format
-    = Format_JSON
-    | Format_CSV
+    = FormatJSON
+    | FormatCSV
     deriving (Eq,Show,Enum)
 instance SchemaType Format where
     parseSchemaType s = do
@@ -199,11 +197,11 @@ instance SchemaType Format where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType Format where
-    acceptingParser =  do _ <- literal "JSON"; return Format_JSON
-                      `onFail` do _ <- literal "CSV"; return Format_CSV
+    acceptingParser =  do _ <- literal "JSON"; return FormatJSON
+                      `onFail` do _ <- literal "CSV"; return FormatCSV
                       
-    simpleTypeText Format_JSON = "JSON"
-    simpleTypeText Format_CSV = "CSV"
+    simpleTypeText FormatJSON = "JSON"
+    simpleTypeText FormatCSV = "CSV"
  
 newtype PointId = PointId Xsd.XsdString deriving (Eq,Show)
 instance Restricts PointId Xsd.XsdString where
@@ -225,10 +223,10 @@ instance SimpleType PointId where
     simpleTypeText (PointId x) = simpleTypeText x
  
 data MesuresTypeCode
-    = MesuresTypeCode_COURBES
-    | MesuresTypeCode_ENERGIE
-    | MesuresTypeCode_PMAX
-    | MesuresTypeCode_INDEX
+    = MesuresTypeCodeCOURBES
+    | MesuresTypeCodeENERGIE
+    | MesuresTypeCodePMAX
+    | MesuresTypeCodeINDEX
     deriving (Eq,Show,Enum)
 instance SchemaType MesuresTypeCode where
     parseSchemaType s = do
@@ -237,16 +235,16 @@ instance SchemaType MesuresTypeCode where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType MesuresTypeCode where
-    acceptingParser =  do _ <- literal "COURBES"; return MesuresTypeCode_COURBES
-                      `onFail` do _ <- literal "ENERGIE"; return MesuresTypeCode_ENERGIE
-                      `onFail` do _ <- literal "PMAX"; return MesuresTypeCode_PMAX
-                      `onFail` do _ <- literal "INDEX"; return MesuresTypeCode_INDEX
+    acceptingParser =  do _ <- literal "COURBES"; return MesuresTypeCodeCOURBES
+                      `onFail` do _ <- literal "ENERGIE"; return MesuresTypeCodeENERGIE
+                      `onFail` do _ <- literal "PMAX"; return MesuresTypeCodePMAX
+                      `onFail` do _ <- literal "INDEX"; return MesuresTypeCodeINDEX
                       
     simpleTypeText :: MesuresTypeCode -> String
-    simpleTypeText MesuresTypeCode_COURBES = "COURBES"
-    simpleTypeText MesuresTypeCode_ENERGIE = "ENERGIE"
-    simpleTypeText MesuresTypeCode_PMAX = "PMAX"
-    simpleTypeText MesuresTypeCode_INDEX = "INDEX"
+    simpleTypeText MesuresTypeCodeCOURBES = "COURBES"
+    simpleTypeText MesuresTypeCodeENERGIE = "ENERGIE"
+    simpleTypeText MesuresTypeCodePMAX = "PMAX"
+    simpleTypeText MesuresTypeCodeINDEX = "INDEX"
  
 newtype MesuresCorrigees = MesuresCorrigees Xsd.Boolean deriving (Eq,Show)
 instance Restricts MesuresCorrigees Xsd.Boolean where
@@ -294,8 +292,8 @@ instance SimpleType DateFin where
     simpleTypeText (DateFin x) = simpleTypeText x
  
 data Sens
-    = Sens_SOUTIRAGE
-    | Sens_INJECTION
+    = SensSOUTIRAGE
+    | SensINJECTION
     deriving (Eq,Show,Enum)
 instance SchemaType Sens where
     parseSchemaType s = do
@@ -304,15 +302,15 @@ instance SchemaType Sens where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType Sens where
-    acceptingParser =  do _ <- literal "SOUTIRAGE"; return Sens_SOUTIRAGE
-                      `onFail` do _ <- literal "INJECTION"; return Sens_INJECTION
+    acceptingParser =  do _ <- literal "SOUTIRAGE"; return SensSOUTIRAGE
+                      `onFail` do _ <- literal "INJECTION"; return SensINJECTION
                       
-    simpleTypeText Sens_SOUTIRAGE = "SOUTIRAGE"
-    simpleTypeText Sens_INJECTION = "INJECTION"
+    simpleTypeText SensSOUTIRAGE = "SOUTIRAGE"
+    simpleTypeText SensINJECTION = "INJECTION"
  
 data CadreAcces
-    = CadreAcces_SERVICE_ACCES
-    | CadreAcces_ACCORD_CLIENT
+    = CadreAccesSERVICEACCES
+    | CadreAccesACCORDCLIENT
     deriving (Eq,Show,Enum)
 instance SchemaType CadreAcces where
     parseSchemaType s = do
@@ -321,11 +319,11 @@ instance SchemaType CadreAcces where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType CadreAcces where
-    acceptingParser =  do _ <- literal "SERVICE_ACCES"; return CadreAcces_SERVICE_ACCES
-                      `onFail` do _ <- literal "ACCORD_CLIENT"; return CadreAcces_ACCORD_CLIENT
+    acceptingParser =  do _ <- literal "SERVICE_ACCES"; return CadreAccesSERVICEACCES
+                      `onFail` do _ <- literal "ACCORD_CLIENT"; return CadreAccesACCORDCLIENT
                       
-    simpleTypeText CadreAcces_SERVICE_ACCES = "SERVICE_ACCES"
-    simpleTypeText CadreAcces_ACCORD_CLIENT = "ACCORD_CLIENT"
+    simpleTypeText CadreAccesSERVICEACCES = "SERVICE_ACCES"
+    simpleTypeText CadreAccesACCORDCLIENT = "ACCORD_CLIENT"
  
 newtype PointIds = PointIds
         { pointIds_pointId :: [PointId]
