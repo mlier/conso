@@ -38,13 +38,11 @@ instance RequestType ConsulterMesuresDetailleesV3Type
 instance ResponseType ConsulterMesuresDetailleesV3ResponseType
                
 
-initType :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+initType :: Sge -> String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
             Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
-initType myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
+initType envSge myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
          mesuresPas mesuresCorrigees sens cadreAcces = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
+    let loginUtilisateur = userB2b envSge
 
     let requestType = ConsulterMesuresDetailleesV3Type{ 
           consulterMesuresDetailleesV3Type_demande = Demande {
@@ -63,8 +61,8 @@ initType myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin
     return requestType
 
 
-wsRequest :: ConsulterMesuresDetailleesV3Type -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> ConsulterMesuresDetailleesV3Type -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationMesuresDetaillees/v3.0"
                 , soapAction = "http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v3.0"
@@ -76,6 +74,8 @@ wsRequest r = sgeRequest r configWS
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
+    env <- getEnv
+    let envSge = sge env
+    myType <- initType envSge "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
                        Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
-    wsRequest myType
+    wsRequest envSge myType

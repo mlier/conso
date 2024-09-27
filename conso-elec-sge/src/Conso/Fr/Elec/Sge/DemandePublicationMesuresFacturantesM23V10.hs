@@ -45,12 +45,10 @@ instance RequestType DemandePublicationMesuresFacturantes
 instance ResponseType AffaireId
                
 
-initType :: String -> String -> String -> IO DemandePublicationMesuresFacturantes
-initType myPointId dateDebut dateFin = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> String -> String -> IO DemandePublicationMesuresFacturantes
+initType envSge myPointId dateDebut dateFin = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     let requestType = DemandePublicationMesuresFacturantes{
           demandePublicationMesuresFacturantes_donneesGenerales = DonneesGenerales
@@ -74,8 +72,8 @@ initType myPointId dateDebut dateFin = do
     return requestType
 
 
-wsRequest :: DemandePublicationMesuresFacturantes -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> DemandePublicationMesuresFacturantes -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeHistoriqueDonneesMesuresFacturantes/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -89,5 +87,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
-    wsRequest myType
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
+    wsRequest envSge myType

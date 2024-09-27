@@ -49,11 +49,9 @@ instance RequestType RechercherPointType
 instance ResponseType RechercherPointResponseType
 
 
-initType :: String -> String -> String -> String -> Bool -> IO RechercherPointType
-initType myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
+initType :: Sge -> String -> String -> String -> String -> Bool -> IO RechercherPointType
+initType envSge myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
+    let loginUtilisateur = userB2b envSge
 
     let requestType = RechercherPointType
             { rechercherPointType_criteres = CriteresType
@@ -77,8 +75,8 @@ initType myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal my
     return requestType
 
 
-wsRequest :: RechercherPointType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> RechercherPointType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                           urlSge = "/RecherchePoint/v2.0"
                         , soapAction = "nimportequoimaispasvide"
@@ -91,7 +89,8 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType  (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
+    let envSge = sge env
+    myType <- initType  envSge (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
                         (T.unpack $ codePostal testEnv) (T.unpack $ codeInseeCommune testEnv) True
-    wsRequest myType
+    wsRequest envSge myType
     pPrint myType

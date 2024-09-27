@@ -72,7 +72,6 @@ library
         Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10
         Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10
         Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10
-        --Conso.Fr.Elec.Sge.CommanderTransmissionHistoriqueMesuresV10
 
     -- Modules included in this library but not exported.
     other-modules:
@@ -89,7 +88,6 @@ library
         Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Type
         Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
         Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
-        --Conso.Fr.Elec.Sge.CommanderTransmissionHistoriqueMesuresV10Type
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireResultat

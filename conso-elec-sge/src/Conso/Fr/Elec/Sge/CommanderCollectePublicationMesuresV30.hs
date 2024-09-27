@@ -63,12 +63,10 @@ instance RequestType CommanderCollectePublicationMesuresType
 instance ResponseType CommanderCollectePublicationMesuresResponseType
                
 
-initType :: String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
-initType myPointId autorisationClient nom mesuresTypeCode = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+initType envSge myPointId autorisationClient nom mesuresTypeCode = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     currentTime <- getCurrentTime
     let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
@@ -110,8 +108,8 @@ initType myPointId autorisationClient nom mesuresTypeCode = do
     return requestType
 
 
-wsRequest :: CommanderCollectePublicationMesuresType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> CommanderCollectePublicationMesuresType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeCollectePublicationMesures/v3.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -126,6 +124,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) True 
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC"
-    wsRequest myType
+    wsRequest envSge myType

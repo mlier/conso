@@ -34,12 +34,10 @@ instance RequestType RechercherServicesSouscritsMesuresType
 instance ResponseType RechercherServicesSouscritsMesuresResponseType
 
 
-initType :: String -> IO RechercherServicesSouscritsMesuresType
-initType myPointId = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> IO RechercherServicesSouscritsMesuresType
+initType envSge myPointId = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     let requestType = RechercherServicesSouscritsMesuresType{ 
               rechercherServicesSouscritsMesuresType_criteres = CriteresType
@@ -51,8 +49,8 @@ initType myPointId = do
     return requestType
 
 
-wsRequest :: RechercherServicesSouscritsMesuresType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> RechercherServicesSouscritsMesuresType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                           urlSge = "/RechercheServicesSouscritsMesures/v1.0"
                         , soapAction = "nimportequoimaispasvide"
@@ -65,6 +63,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv)
-    wsRequest myType
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv)
+    wsRequest envSge myType
     pPrint myType

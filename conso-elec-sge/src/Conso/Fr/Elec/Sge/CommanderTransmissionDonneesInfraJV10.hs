@@ -57,12 +57,10 @@ instance RequestType CommanderTransmissionDonneesInfraJType
 instance ResponseType CommanderTransmissionDonneesInfraJResponseType
                
 
-initType :: String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
-initType myPointId autorisationClient nom = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initType envSge myPointId autorisationClient nom = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     let requestType = CommanderTransmissionDonneesInfraJType{
           commanderTransmissionDonneesInfraJType_demande = DemandeType
@@ -95,8 +93,8 @@ initType myPointId autorisationClient nom = do
     return requestType
 
 
-wsRequest :: CommanderTransmissionDonneesInfraJType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> CommanderTransmissionDonneesInfraJType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeTransmissionDonneesInfraJ/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -111,6 +109,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) True 
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv)
-    wsRequest myType
+    wsRequest envSge myType

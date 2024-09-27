@@ -11,8 +11,47 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2) ) 
 
 import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
+    ( CommanderAccesDonneesMesuresType(..),
+      CommanderAccesDonneesMesuresResponseType,
+      DemandeType(DemandeType, demandeType_accesDonnees,
+                  demandeType_donneesGenerales),
+      Chaine255Type(Chaine255Type),
+      DonneesGeneralesType(DonneesGeneralesType,
+                           donneesGeneralesType_contrat, donneesGeneralesType_refExterne,
+                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
+                           donneesGeneralesType_initiateurLogin),
+      AccesDonneesType(AccesDonneesType, accesDonneesType_injection,
+                       accesDonneesType_dateDebut, accesDonneesType_dateFin,
+                       accesDonneesType_declarationAccordClient,
+                       accesDonneesType_typeDonnees, accesDonneesType_soutirage),
+      DemandeObjetCodeType(DemandeObjetCodeType),
+      PointIdType(PointIdType),
+      ContratType(ContratType, contratType_contratType,
+                  contratType_contratId, contratType_acteurMarcheCode),
+      DeclarationAccordClientType(DeclarationAccordClientType,
+                                  declarationAccordClientType_choice1,
+                                  declarationAccordClientType_accord),
+      BooleenType(BooleenType),
+      PersonnePhysiqueType(PersonnePhysiqueType,
+                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
+                           personnePhysiqueType_nom),
+      DateType(DateType),
+      TypeDonneesType(TypeDonneesType),
+      ContratIdType(ContratIdType),
+      AdresseEmailType(AdresseEmailType),
+      elementToXMLCommanderAccesDonneesMesures,
+      elementCommanderAccesDonneesMesuresResponse )
     
 import Conso.Fr.Elec.Sge.Sge
+    ( getEnv,
+      sgeRequest,
+      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
+               elementToXMLRequest, xmlTag),
+      Env(test, sge),
+      RequestType,
+      ResponseType,
+      Sge(contractId, userB2b),
+      Test(nomClientFinalOuDenominationSociale, pointId) )
  
 
 
@@ -20,12 +59,10 @@ instance RequestType CommanderAccesDonneesMesuresType
 instance ResponseType CommanderAccesDonneesMesuresResponseType
                
 
-initType :: String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
-initType myPointId autorisationClient nom typeDonnees = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
+initType envSge myPointId autorisationClient nom typeDonnees = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     currentTime <- getCurrentTime
     let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
@@ -66,8 +103,8 @@ initType myPointId autorisationClient nom typeDonnees = do
     return requestType
 
 
-wsRequest :: CommanderAccesDonneesMesuresType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> CommanderAccesDonneesMesuresType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommanderAccesDonneesMesures/v1.0"
                 , soapAction = " "
@@ -81,6 +118,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) True 
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv) True 
                         (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC" 
-    wsRequest myType
+    wsRequest envSge myType

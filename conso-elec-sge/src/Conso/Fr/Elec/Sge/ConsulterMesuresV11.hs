@@ -34,12 +34,10 @@ instance RequestType ConsulterMesuresType
 instance ResponseType ConsulterMesuresResponseType
                
 
-initType :: String -> IO ConsulterMesuresType
-initType myPointId= do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> IO ConsulterMesuresType
+initType envSge myPointId= do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     let requestType = ConsulterMesuresType
             { consulterMesuresType_pointId = PointIdType $ Xsd.XsdString myPointId
@@ -50,8 +48,8 @@ initType myPointId= do
     return requestType
 
 
-wsRequest :: ConsulterMesuresType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> ConsulterMesuresType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationMesures/v1.1"
                 , soapAction = "nimportequoimaispasvide"
@@ -65,5 +63,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv)
-    wsRequest myType
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv)
+    wsRequest envSge myType

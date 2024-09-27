@@ -44,12 +44,10 @@ instance RequestType CommanderArretServiceSouscritMesuresType
 instance ResponseType CommanderArretServiceSouscritMesuresResponseType
                
 
-initType :: String -> String -> IO CommanderArretServiceSouscritMesuresType
-initType myPointId serviceSouscritId = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
-    let contratId = contractId sgeEnv
+initType :: Sge -> String -> String -> IO CommanderArretServiceSouscritMesuresType
+initType envSge myPointId serviceSouscritId = do
+    let loginUtilisateur = userB2b envSge
+    let contratId = contractId envSge
 
     let requestType = CommanderArretServiceSouscritMesuresType{ 
           commanderArretServiceSouscritMesuresType_demande = DemandeType
@@ -68,8 +66,8 @@ initType myPointId serviceSouscritId = do
     return requestType
 
 
-wsRequest :: CommanderArretServiceSouscritMesuresType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> CommanderArretServiceSouscritMesuresType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeArretServiceSouscritMesures/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -83,5 +81,6 @@ myrequest :: String -> IO()
 myrequest serviceSouscritId = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) serviceSouscritId 
-    wsRequest myType
+    let envSge = sge env
+    myType <- initType envSge (T.unpack $ pointId testEnv) serviceSouscritId 
+    wsRequest envSge myType

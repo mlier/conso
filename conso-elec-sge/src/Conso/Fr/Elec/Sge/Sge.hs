@@ -108,10 +108,8 @@ readEnv = do
         decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
 
 
-sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> ConfigWS a b -> IO ()
-sgeRequest req config = do
-    env <- readEnv
-    let sgeEnv = sge env
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Sge -> a -> ConfigWS a b -> IO ()
+sgeRequest envSge req config = do
     let xml = PP.render . P.content . head . elementToXMLRequest config $ req
     let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
     let xmlConduit =  node . X.NodeElement $ u
@@ -119,7 +117,7 @@ sgeRequest req config = do
     print $ soapAction config
     pPrint req
     pPrint xmlConduit
-    sRequest <- soapRequest sgeEnv (urlSge config) (soapAction config) xmlConduit
+    sRequest <- soapRequest envSge (urlSge config) (soapAction config) xmlConduit
     putStrLn sRequest
     hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
     case hsType of
@@ -139,18 +137,18 @@ getHaskellType myXmlTag myElementResponse root = plans
 
 
 soapRequest :: Sge -> String -> String -> XML -> IO String
-soapRequest sgeEnv myUrlSge mySoapAction body = do
+soapRequest envSge myUrlSge mySoapAction body = do
     myHD <- myHomeDirectory
     let myHDT = T.pack $ myHD <> "/.conso/"
-    let certPath = T.unpack $ T.append myHDT (cert sgeEnv) :: FilePath
-    let keyPath = T.unpack $ T.append myHDT (key sgeEnv) :: FilePath
-    let fullUrlSge = T.unpack (url sgeEnv) ++ myUrlSge
+    let certPath = T.unpack $ T.append myHDT (cert envSge) :: FilePath
+    let keyPath = T.unpack $ T.append myHDT (key envSge) :: FilePath
+    let fullUrlSge = T.unpack (url envSge) ++ myUrlSge
 
     --settings <- makeSettings (Just "production.crt") (Just "production.key") validateDefault
     settings <- makeSettings (Just certPath) (Just keyPath) (\_ _ _ _ -> return [])
 
-    let loginUtilisateurBS =  T.encodeUtf8 $ userB2b sgeEnv
-    let passwordUtilisateurBS = T.encodeUtf8 $ password sgeEnv
+    let loginUtilisateurBS =  T.encodeUtf8 $ userB2b envSge
+    let passwordUtilisateurBS = T.encodeUtf8 $ password envSge
 
     transport <- initTransportWithM
         settings

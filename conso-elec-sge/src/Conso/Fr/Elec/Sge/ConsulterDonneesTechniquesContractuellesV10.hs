@@ -32,11 +32,9 @@ instance RequestType ConsulterDonneesTechniquesContractuellesType
 instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType
 
 
-initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
-initType myPointId autorisationClient = do
-    env <- getEnv
-    let sgeEnv = sge env
-    let loginUtilisateur = userB2b sgeEnv
+initType :: Sge -> String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
+initType envSge myPointId autorisationClient = do
+    let loginUtilisateur = userB2b envSge
 
     let requestType = ConsulterDonneesTechniquesContractuellesType{
           consulterDonneesTechniquesContractuellesType_pointId = PointIdType $ XsdString myPointId
@@ -46,8 +44,8 @@ initType myPointId autorisationClient = do
     return requestType
 
 
-wsRequest :: ConsulterDonneesTechniquesContractuellesType -> IO ()
-wsRequest r = sgeRequest r configWS
+wsRequest :: Sge -> ConsulterDonneesTechniquesContractuellesType -> IO ()
+wsRequest envSge r = sgeRequest envSge r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationDonneesTechniquesContractuelles/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -61,6 +59,7 @@ myrequest :: Maybe String -> IO()
 myrequest mPointId = do
     env <- getEnv
     let testEnv = test env
+    let envSge = sge env
     let myPointId = fromMaybe (T.unpack $ pointId testEnv) mPointId
-    myType <- initType myPointId False
-    wsRequest myType
+    myType <- initType envSge myPointId False
+    wsRequest envSge myType
