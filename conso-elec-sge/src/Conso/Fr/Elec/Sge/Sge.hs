@@ -138,8 +138,8 @@ sgeRequest prod req config = do
     putStrLn sRequest
     hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
     case hsType of
-        Left resp -> pPrint resp
-        Right (c, l) -> do
+        Right resp -> pPrint resp
+        Left (c, l) -> do
             putStr "Erreur "
             putStrLn c
             putStrLn l
@@ -180,14 +180,14 @@ soapRequest envSge myUrlSge mySoapAction body = do
         withBasicAuth username passw req = pure (applyBasicAuth username passw req)
 
 
-xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either a (String, String) )
+xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either (String, String) a)
 xml2hsType myXmlTag myElementResponse xml = do
     return $ case checkXMLerror xml of
-        (Left root ) -> Left $ getHaskellType myXmlTag myElementResponse root
-        (Right (c, l) ) -> Right (c, l)
+        (Right root ) -> Right $ getHaskellType myXmlTag myElementResponse root
+        (Left (c, l) ) -> Left (c, l)
 
 
-checkXMLerror :: String -> Either (Element Posn) (String, String)
+checkXMLerror :: String -> Either (String, String) (Element Posn)
 checkXMLerror xmlResp =  do
     let (Document _ _ root _) = xmlParse "(No Document)" xmlResp
     let resultatXml = deep (tag "resultat") $ CElem root noPos
@@ -198,14 +198,14 @@ checkXMLerror xmlResp =  do
                   ( ResultatLibelleType ( XsdString _ ) )
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) } )
               ), _)
-                        -> Left root
+                        -> Right root
 
 
         (Right ( ResultatType
                   ( ResultatLibelleType ( XsdString l ) )
                   ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) } )
               ), _)
-                        -> Right (a, l)
-        _               -> Left root
+                        -> Left (a, l)
+        _               -> Right root
 
 
