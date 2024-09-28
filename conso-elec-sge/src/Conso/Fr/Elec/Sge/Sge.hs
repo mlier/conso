@@ -50,7 +50,8 @@ import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
 
 
 data Env =
-    Env { sge :: Sge
+    Env { production :: Sge
+        , homologation :: Sge
         , test :: Test
     } deriving (Show,Generic)
 
@@ -95,6 +96,15 @@ class ResponseType a
 getEnv :: IO Env
 getEnv = readEnv
 
+getEnvSge :: Bool -> IO Sge
+getEnvSge prod = do 
+            env <- readEnv
+            if prod then 
+                return $ production env
+            else 
+                return $ homologation env
+      
+
 myHomeDirectory :: IO String
 myHomeDirectory = do
     name <- getEffectiveUserName
@@ -108,8 +118,15 @@ readEnv = do
         decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
 
 
-sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Sge -> a -> ConfigWS a b -> IO ()
-sgeRequest envSge req config = do
+getLoginContrat :: Bool -> IO (String, String)
+getLoginContrat prod = do
+    envSge <- getEnvSge prod
+    return (T.unpack $ userB2b envSge, T.unpack $ contractId envSge)
+
+
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Bool -> a -> ConfigWS a b -> IO ()
+sgeRequest prod req config = do
+    envSge <- getEnvSge prod
     let xml = PP.render . P.content . head . elementToXMLRequest config $ req
     let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
     let xmlConduit =  node . X.NodeElement $ u

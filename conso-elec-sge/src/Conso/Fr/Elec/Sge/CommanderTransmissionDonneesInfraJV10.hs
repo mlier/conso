@@ -47,20 +47,19 @@ import Conso.Fr.Elec.Sge.Sge
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
       Test(nomClientFinalOuDenominationSociale, pointId),
-      Sge(contractId, userB2b),
-      Env(test, sge),
+      Env(test),
       getEnv,
-      sgeRequest )
+      sgeRequest,
+      getLoginContrat )
 
 
 instance RequestType CommanderTransmissionDonneesInfraJType
 instance ResponseType CommanderTransmissionDonneesInfraJResponseType
                
 
-initType :: Sge -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
-initType envSge myPointId autorisationClient nom = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initType prod myPointId autorisationClient nom = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = CommanderTransmissionDonneesInfraJType{
           commanderTransmissionDonneesInfraJType_demande = DemandeType
@@ -68,8 +67,8 @@ initType envSge myPointId autorisationClient nom = do
             { donneesGeneralesType_refExterne = Nothing
             , donneesGeneralesType_objetCode = Ds.DemandeObjetCodeType $ Xsd.XsdString "AME"
             , donneesGeneralesType_pointId = Ds.PointIdType $ Xsd.XsdString myPointId
-            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString $ T.unpack loginUtilisateur
-            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString $ T.unpack contratId
+            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString loginUtilisateur
+            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString contratId
             }
           , demandeType_accesDonnees = DemandeAccesDonneesType
             { demandeAccesDonneesType_declarationAccordClient = [DeclarationAccordClientType
@@ -93,8 +92,8 @@ initType envSge myPointId autorisationClient nom = do
     return requestType
 
 
-wsRequest :: Sge -> CommanderTransmissionDonneesInfraJType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> CommanderTransmissionDonneesInfraJType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeTransmissionDonneesInfraJ/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -109,7 +108,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv) True 
+    myType <- initType True (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv)
-    wsRequest envSge myType
+    wsRequest True myType

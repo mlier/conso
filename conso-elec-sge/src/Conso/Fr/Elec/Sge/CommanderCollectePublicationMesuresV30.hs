@@ -48,25 +48,24 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
       Chaine255Type(Chaine255Type) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType,
-      ResponseType,
-      Env(test, sge),
-      Sge(contractId, userB2b),
+    ( ResponseType,
+      RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
       Test(nomClientFinalOuDenominationSociale, pointId),
+      Env(test),
       getEnv,
-      sgeRequest )
+      sgeRequest,
+      getLoginContrat )
 
 
 instance RequestType CommanderCollectePublicationMesuresType
 instance ResponseType CommanderCollectePublicationMesuresResponseType
                
 
-initType :: Sge -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
-initType envSge myPointId autorisationClient nom mesuresTypeCode = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+initType prod myPointId autorisationClient nom mesuresTypeCode = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     currentTime <- getCurrentTime
     let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
@@ -80,8 +79,8 @@ initType envSge myPointId autorisationClient nom mesuresTypeCode = do
             { donneesGeneralesType_refExterne = Nothing
             , donneesGeneralesType_objetCode = Ds.DemandeObjetCodeType $ Xsd.XsdString "AME"
             , donneesGeneralesType_pointId = Ds.PointIdType $ Xsd.XsdString myPointId
-            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString $ T.unpack loginUtilisateur
-            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString $ T.unpack contratId
+            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString loginUtilisateur
+            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString contratId
             }
           , demandeType_accesMesures = DemandeAccesMesures
             { demandeAccesMesures_dateDebut = Ds.DateType $ Xsd.Date dateDebut
@@ -108,8 +107,8 @@ initType envSge myPointId autorisationClient nom mesuresTypeCode = do
     return requestType
 
 
-wsRequest :: Sge -> CommanderCollectePublicationMesuresType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> CommanderCollectePublicationMesuresType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeCollectePublicationMesures/v3.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -124,7 +123,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv) True 
+    myType <- initType True (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC"
-    wsRequest envSge myType
+    wsRequest True myType

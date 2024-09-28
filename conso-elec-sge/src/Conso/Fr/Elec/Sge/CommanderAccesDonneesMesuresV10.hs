@@ -43,15 +43,15 @@ import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
       elementCommanderAccesDonneesMesuresResponse )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( getEnv,
-      sgeRequest,
+    ( ResponseType,
+      RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
-      Env(test, sge),
-      RequestType,
-      ResponseType,
-      Sge(contractId, userB2b),
-      Test(nomClientFinalOuDenominationSociale, pointId) )
+      Test(nomClientFinalOuDenominationSociale, pointId),
+      Env(test),
+      getEnv,
+      sgeRequest,
+      getLoginContrat )
  
 
 
@@ -59,10 +59,9 @@ instance RequestType CommanderAccesDonneesMesuresType
 instance ResponseType CommanderAccesDonneesMesuresResponseType
                
 
-initType :: Sge -> String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
-initType envSge myPointId autorisationClient nom typeDonnees = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
+initType prod myPointId autorisationClient nom typeDonnees = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     currentTime <- getCurrentTime
     let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
@@ -76,9 +75,9 @@ initType envSge myPointId autorisationClient nom typeDonnees = do
             { donneesGeneralesType_refExterne = Nothing
             , donneesGeneralesType_objetCode = DemandeObjetCodeType $ Xsd.XsdString "AME"
             , donneesGeneralesType_pointId = PointIdType $ Xsd.XsdString myPointId
-            , donneesGeneralesType_initiateurLogin =  AdresseEmailType $ Xsd.XsdString $ T.unpack loginUtilisateur
+            , donneesGeneralesType_initiateurLogin =  AdresseEmailType $ Xsd.XsdString loginUtilisateur
             , donneesGeneralesType_contrat = ContratType
-              { contratType_contratId = Just $ ContratIdType $ Xsd.XsdString $ T.unpack contratId
+              { contratType_contratId = Just $ ContratIdType $ Xsd.XsdString contratId
               , contratType_acteurMarcheCode = Nothing
               , contratType_contratType = Nothing
               }
@@ -103,8 +102,8 @@ initType envSge myPointId autorisationClient nom typeDonnees = do
     return requestType
 
 
-wsRequest :: Sge -> CommanderAccesDonneesMesuresType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> CommanderAccesDonneesMesuresType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommanderAccesDonneesMesures/v1.0"
                 , soapAction = " "
@@ -118,7 +117,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv) True 
+    myType <- initType True (T.unpack $ pointId testEnv) True 
                         (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC" 
-    wsRequest envSge myType
+    wsRequest True myType

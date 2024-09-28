@@ -38,20 +38,19 @@ import Conso.Fr.Elec.Sge.Sge
                elementToXMLRequest, xmlTag),
       Test(codeInseeCommune, nomClientFinalOuDenominationSociale,
            numeroEtNomVoie, codePostal),
-      Sge(userB2b),
-      Env(test, sge),
+      Env(test),
       getEnv,
-      sgeRequest )
-
+      sgeRequest,
+      getLoginContrat )
     
 
 instance RequestType RechercherPointType
 instance ResponseType RechercherPointResponseType
 
 
-initType :: Sge -> String -> String -> String -> String -> Bool -> IO RechercherPointType
-initType envSge myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
-    let loginUtilisateur = userB2b envSge
+initType :: Bool -> String -> String -> String -> String -> Bool -> IO RechercherPointType
+initType prod myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
+    (loginUtilisateur, _) <- getLoginContrat prod
 
     let requestType = RechercherPointType
             { rechercherPointType_criteres = CriteresType
@@ -70,13 +69,13 @@ initType envSge myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePo
                 , criteresType_categorieClientFinalCode = Nothing
                 , criteresType_rechercheHorsPerimetre = Just rechercheHorsPerimetre
                 }
-                , rechercherPointType_loginUtilisateur = Ds.AdresseEmailType $ XsdString $ T.unpack loginUtilisateur
+                , rechercherPointType_loginUtilisateur = Ds.AdresseEmailType $ XsdString loginUtilisateur
             }
     return requestType
 
 
-wsRequest :: Sge -> RechercherPointType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> RechercherPointType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                           urlSge = "/RecherchePoint/v2.0"
                         , soapAction = "nimportequoimaispasvide"
@@ -89,8 +88,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType  envSge (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
+    myType <- initType True (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
                         (T.unpack $ codePostal testEnv) (T.unpack $ codeInseeCommune testEnv) True
-    wsRequest envSge myType
+    wsRequest True myType
     pPrint myType

@@ -35,25 +35,24 @@ import Conso.Fr.Elec.Sge.Sge
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
       Test(pointId),
-      Sge(contractId, userB2b),
-      Env(test, sge),
+      Env(test),
       getEnv,
-      sgeRequest )
+      sgeRequest,
+      getLoginContrat )
 
 
 instance RequestType DemandePublicationMesuresFacturantes
 instance ResponseType AffaireId
                
 
-initType :: Sge -> String -> String -> String -> IO DemandePublicationMesuresFacturantes
-initType envSge myPointId dateDebut dateFin = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> String -> String -> IO DemandePublicationMesuresFacturantes
+initType prod myPointId dateDebut dateFin = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationMesuresFacturantes{
           demandePublicationMesuresFacturantes_donneesGenerales = DonneesGenerales
-          { donneesGenerales_initiateurLogin =  InitiateurLogin $ Xsd.XsdString $ T.unpack loginUtilisateur
-          , donneesGenerales_contratId = ContratId $ Xsd.XsdString $ T.unpack contratId
+          { donneesGenerales_initiateurLogin =  InitiateurLogin $ Xsd.XsdString loginUtilisateur
+          , donneesGenerales_contratId = ContratId $ Xsd.XsdString contratId
           , donneesGenerales_referenceDemandeur = Nothing
           , donneesGenerales_affaireReference = Nothing
           , donneesGenerales_referenceRegroupement = Nothing
@@ -72,8 +71,8 @@ initType envSge myPointId dateDebut dateFin = do
     return requestType
 
 
-wsRequest :: Sge -> DemandePublicationMesuresFacturantes -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> DemandePublicationMesuresFacturantes -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeHistoriqueDonneesMesuresFacturantes/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -87,6 +86,5 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
-    wsRequest envSge myType
+    myType <- initType True (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
+    wsRequest True myType

@@ -38,25 +38,24 @@ import Conso.Fr.Elec.Sge.Sge
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
       Test(pointId),
-      Sge(contractId, userB2b),
-      Env(test, sge),
+      Env(test),
       getEnv,
-      sgeRequest )
+      sgeRequest,
+      getLoginContrat )
 
 
 instance RequestType DemandePublicationMesuresFines
 instance ResponseType AffaireId
                
 
-initType :: Sge -> String -> IO DemandePublicationMesuresFines
-initType envSge myPointId = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> IO DemandePublicationMesuresFines
+initType prod myPointId = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationMesuresFines{
           demandePublicationMesuresFines_donneesGenerales = DonneesGenerales
-          { donneesGenerales_initiateurLogin =  InitiateurLogin $ Xsd.XsdString $ T.unpack loginUtilisateur
-          , donneesGenerales_contratId = ContratId $ Xsd.XsdString $ T.unpack contratId
+          { donneesGenerales_initiateurLogin =  InitiateurLogin $ Xsd.XsdString loginUtilisateur
+          , donneesGenerales_contratId = ContratId $ Xsd.XsdString contratId
           , donneesGenerales_referenceDemandeur = Nothing
           , donneesGenerales_affaireReference = Nothing
           , donneesGenerales_referenceRegroupement = Nothing
@@ -78,8 +77,8 @@ initType envSge myPointId = do
 
 
 
-wsRequest :: Sge -> DemandePublicationMesuresFines -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> DemandePublicationMesuresFines -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeHistoriqueDonneesMesuresFines/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -93,6 +92,5 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv)
-    wsRequest envSge myType
+    myType <- initType True (T.unpack $ pointId testEnv)
+    wsRequest True myType

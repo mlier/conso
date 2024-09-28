@@ -24,29 +24,27 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
       SensMesureType(SensMesureTypeSOUTIRAGE) )
 
 import Conso.Fr.Elec.Sge.Sge
-    ( getEnv,
-      sgeRequest,
+    ( ResponseType,
+      RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
-      Env(sge),
-      RequestType,
-      ResponseType,
-      Sge(userB2b) )
+      sgeRequest,
+      getLoginContrat )
 
 
 instance RequestType ConsulterMesuresDetailleesV3Type
 instance ResponseType ConsulterMesuresDetailleesV3ResponseType
                
 
-initType :: Sge -> String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+initType :: Bool -> String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
             Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
-initType envSge myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
+initType prod myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
          mesuresPas mesuresCorrigees sens cadreAcces = do
-    let loginUtilisateur = userB2b envSge
+    (loginUtilisateur, _) <- getLoginContrat prod
 
     let requestType = ConsulterMesuresDetailleesV3Type{ 
           consulterMesuresDetailleesV3Type_demande = Demande {
-                  demande_initiateurLogin = Xsd.XsdString $ T.unpack loginUtilisateur
+                  demande_initiateurLogin = Xsd.XsdString loginUtilisateur
                 , demande_pointId = PointIdType $ Xsd.XsdString myPointId
                 , demande_mesuresTypeCode = mesuresTypeCode
                 , demande_grandeurPhysique = Xsd.XsdString grandeurPhysique
@@ -61,8 +59,8 @@ initType envSge myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin
     return requestType
 
 
-wsRequest :: Sge -> ConsulterMesuresDetailleesV3Type -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> ConsulterMesuresDetailleesV3Type -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationMesuresDetaillees/v3.0"
                 , soapAction = "http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v3.0"
@@ -74,8 +72,6 @@ wsRequest envSge r = sgeRequest envSge r configWS
 
 myrequest :: IO()
 myrequest = do 
-    env <- getEnv
-    let envSge = sge env
-    myType <- initType envSge "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
+    myType <- initType True "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
                        Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
-    wsRequest envSge myType
+    wsRequest True myType

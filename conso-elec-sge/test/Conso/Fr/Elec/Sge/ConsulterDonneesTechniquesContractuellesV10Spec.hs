@@ -11,6 +11,8 @@ spec = do
 
     describe "Demandes recevables" $ do
         it "ADP-R1 - Accès aux données d’un point pour un acteur tiers avec une autorisation client" $ do
+            --myType <- initType True pointIdC5 True
+            --wsRequest True myType
             odd 1  `shouldBe`  True
 
         it "ADP-R2 - Accès aux données d’un point en service pour un acteur tiers sans autorisation client" $ do

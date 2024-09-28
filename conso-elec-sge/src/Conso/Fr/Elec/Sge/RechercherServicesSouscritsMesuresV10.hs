@@ -19,38 +19,37 @@ import Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
       RechercherServicesSouscritsMesuresResponseType,
       RechercherServicesSouscritsMesuresType(..) )
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType,
-      ResponseType,
-      Env(test, sge),
-      Sge(contractId, userB2b),
+    ( ResponseType,
+      RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
       Test(pointId),
+      Env(test),
       getEnv,
-      sgeRequest )
+      sgeRequest,
+      getLoginContrat )
     
 
 instance RequestType RechercherServicesSouscritsMesuresType
 instance ResponseType RechercherServicesSouscritsMesuresResponseType
 
 
-initType :: Sge -> String -> IO RechercherServicesSouscritsMesuresType
-initType envSge myPointId = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> IO RechercherServicesSouscritsMesuresType
+initType prod myPointId = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = RechercherServicesSouscritsMesuresType{ 
               rechercherServicesSouscritsMesuresType_criteres = CriteresType
                 { criteresType_pointId = PointIdType $ XsdString myPointId
-                , criteresType_contratId = ContratIdType $ XsdString $ T.unpack contratId
+                , criteresType_contratId = ContratIdType $ XsdString contratId
                 }
-            , rechercherServicesSouscritsMesuresType_loginUtilisateur = Ds.AdresseEmailType $ XsdString $ T.unpack loginUtilisateur
+            , rechercherServicesSouscritsMesuresType_loginUtilisateur = Ds.AdresseEmailType $ XsdString loginUtilisateur
             }
     return requestType
 
 
-wsRequest :: Sge -> RechercherServicesSouscritsMesuresType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> RechercherServicesSouscritsMesuresType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                           urlSge = "/RechercheServicesSouscritsMesures/v1.0"
                         , soapAction = "nimportequoimaispasvide"
@@ -63,7 +62,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv)
-    wsRequest envSge myType
+    myType <- initType True (T.unpack $ pointId testEnv)
+    wsRequest True myType
     pPrint myType

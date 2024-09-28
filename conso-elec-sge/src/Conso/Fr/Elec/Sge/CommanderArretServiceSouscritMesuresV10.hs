@@ -28,15 +28,15 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
       PointIdType(PointIdType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( getEnv,
-      sgeRequest,
+    ( ResponseType,
+      RequestType,
       ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
                elementToXMLRequest, xmlTag),
-      Env(test, sge),
-      RequestType,
-      ResponseType,
-      Sge(contractId, userB2b),
-      Test(pointId) )
+      Test(pointId),
+      Env(test),
+      getEnv,
+      sgeRequest,
+      getLoginContrat )
  
 
 
@@ -44,10 +44,9 @@ instance RequestType CommanderArretServiceSouscritMesuresType
 instance ResponseType CommanderArretServiceSouscritMesuresResponseType
                
 
-initType :: Sge -> String -> String -> IO CommanderArretServiceSouscritMesuresType
-initType envSge myPointId serviceSouscritId = do
-    let loginUtilisateur = userB2b envSge
-    let contratId = contractId envSge
+initType :: Bool -> String -> String -> IO CommanderArretServiceSouscritMesuresType
+initType prod myPointId serviceSouscritId = do
+    (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = CommanderArretServiceSouscritMesuresType{ 
           commanderArretServiceSouscritMesuresType_demande = DemandeType
@@ -55,8 +54,8 @@ initType envSge myPointId serviceSouscritId = do
             { donneesGeneralesType_refFrn = Nothing
             , donneesGeneralesType_objetCode = Ds.DemandeObjetCodeType $ Xsd.XsdString "ASS"
             , donneesGeneralesType_pointId = Ds.PointIdType $ Xsd.XsdString myPointId
-            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString $ T.unpack loginUtilisateur
-            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString $ T.unpack contratId
+            , donneesGeneralesType_initiateurLogin =  Ds.AdresseEmailType $ Xsd.XsdString loginUtilisateur
+            , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString contratId
             }
           , demandeType_arretServiceSouscrit = ArretServiceSouscritType
             { arretServiceSouscritType_serviceSouscritId  = Ds.Chaine15Type $ Xsd.XsdString serviceSouscritId
@@ -66,8 +65,8 @@ initType envSge myPointId serviceSouscritId = do
     return requestType
 
 
-wsRequest :: Sge -> CommanderArretServiceSouscritMesuresType -> IO ()
-wsRequest envSge r = sgeRequest envSge r configWS
+wsRequest :: Bool -> CommanderArretServiceSouscritMesuresType -> IO ()
+wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeArretServiceSouscritMesures/v1.0"
                 , soapAction = "nimportequoimaispasvide"
@@ -81,6 +80,5 @@ myrequest :: String -> IO()
 myrequest serviceSouscritId = do 
     env <- getEnv
     let testEnv = test env
-    let envSge = sge env
-    myType <- initType envSge (T.unpack $ pointId testEnv) serviceSouscritId 
-    wsRequest envSge myType
+    myType <- initType True (T.unpack $ pointId testEnv) serviceSouscritId 
+    wsRequest True myType
