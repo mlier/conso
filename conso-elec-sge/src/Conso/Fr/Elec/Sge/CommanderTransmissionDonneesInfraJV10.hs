@@ -6,6 +6,7 @@ module Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10 where
 import qualified Data.Text as T
 import           Text.XML.HaXml.OneOfN ( OneOf2(OneOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10Type
     ( PersonnePhysiqueType(PersonnePhysiqueType,
@@ -92,7 +93,8 @@ initType prod myPointId autorisationClient nom = do
     return requestType
 
 
-wsRequest :: Bool -> CommanderTransmissionDonneesInfraJType -> IO ()
+wsRequest :: Bool -> CommanderTransmissionDonneesInfraJType -> 
+              IO ( Either (String, String) CommanderTransmissionDonneesInfraJResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeTransmissionDonneesInfraJ/v1.0"
@@ -110,4 +112,5 @@ myrequest = do
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv)
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep 

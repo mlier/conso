@@ -6,6 +6,7 @@ module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
 import qualified Data.Text as T
 import           Data.Maybe ( fromMaybe )
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), )
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( PointIdType(PointIdType),
@@ -44,7 +45,8 @@ initType prod myPointId autorisationClient = do
     return requestType
 
 
-wsRequest :: Bool -> ConsulterDonneesTechniquesContractuellesType -> IO ()
+wsRequest :: Bool -> ConsulterDonneesTechniquesContractuellesType -> 
+              IO ( Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationDonneesTechniquesContractuelles/v1.0"
@@ -61,4 +63,5 @@ myrequest mPointId = do
     let testEnv = test env
     let myPointId = fromMaybe (T.unpack $ pointId testEnv) mPointId
     myType <- initType True myPointId False
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

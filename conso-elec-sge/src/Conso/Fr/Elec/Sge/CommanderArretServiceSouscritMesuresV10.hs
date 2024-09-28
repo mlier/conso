@@ -5,6 +5,7 @@ module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10 where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
     ( elementCommanderArretServiceSouscritMesuresResponse,
@@ -65,7 +66,8 @@ initType prod myPointId serviceSouscritId = do
     return requestType
 
 
-wsRequest :: Bool -> CommanderArretServiceSouscritMesuresType -> IO ()
+wsRequest :: Bool -> CommanderArretServiceSouscritMesuresType -> 
+              IO ( Either (String, String) CommanderArretServiceSouscritMesuresResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeArretServiceSouscritMesures/v1.0"
@@ -81,4 +83,5 @@ myrequest serviceSouscritId = do
     env <- getEnv
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv) serviceSouscritId 
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

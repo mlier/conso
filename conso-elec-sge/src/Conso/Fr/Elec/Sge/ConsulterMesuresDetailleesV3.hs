@@ -5,6 +5,7 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( PointIdType(PointIdType) )
@@ -59,7 +60,8 @@ initType prod myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin
     return requestType
 
 
-wsRequest :: Bool -> ConsulterMesuresDetailleesV3Type -> IO ()
+wsRequest :: Bool -> ConsulterMesuresDetailleesV3Type -> 
+              IO ( Either (String, String) ConsulterMesuresDetailleesV3ResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationMesuresDetaillees/v3.0"
@@ -74,4 +76,5 @@ myrequest :: IO()
 myrequest = do 
     myType <- initType True "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
                        Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

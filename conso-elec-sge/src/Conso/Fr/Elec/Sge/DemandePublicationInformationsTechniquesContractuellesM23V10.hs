@@ -5,6 +5,7 @@ module Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
     ( elementAffaireId,
@@ -66,7 +67,7 @@ initType prod myPointId = do
     return requestType
 
 
-wsRequest :: Bool -> DemandePublicationITC -> IO ()
+wsRequest :: Bool -> DemandePublicationITC -> IO ( Either (String, String) AffaireId )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeInformationsTechniquesEtContractuelles/v1.0"
@@ -83,4 +84,5 @@ myrequest = do
     env <- getEnv
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv)
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

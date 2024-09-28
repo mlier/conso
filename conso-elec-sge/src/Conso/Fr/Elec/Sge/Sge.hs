@@ -124,25 +124,26 @@ getLoginContrat prod = do
     return (T.unpack $ userB2b envSge, T.unpack $ contractId envSge)
 
 
-sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Bool -> a -> ConfigWS a b -> IO ()
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Bool -> a -> ConfigWS a b -> IO ( Either (String, String) b )
 sgeRequest prod req config = do
     envSge <- getEnvSge prod
     let xml = PP.render . P.content . head . elementToXMLRequest config $ req
     let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
     let xmlConduit =  node . X.NodeElement $ u
-    print $ urlSge config
-    print $ soapAction config
-    pPrint req
-    pPrint xmlConduit
+    --print $ urlSge config
+    --print $ soapAction config
+    --pPrint req
+    --pPrint xmlConduit
     sRequest <- soapRequest envSge (urlSge config) (soapAction config) xmlConduit
-    putStrLn sRequest
-    hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
-    case hsType of
-        Right resp -> pPrint resp
-        Left (c, l) -> do
-            putStr "Erreur "
-            putStrLn c
-            putStrLn l
+    --putStrLn sRequest
+    --hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
+    xml2hsType (xmlTag config) (elementResponse config) sRequest
+    --case hsType of
+    --    Right resp -> pPrint resp
+    --    Left (c, l) -> do
+    --        putStr "Erreur "
+    --        putStrLn c
+    --        putStrLn l
 
 
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a

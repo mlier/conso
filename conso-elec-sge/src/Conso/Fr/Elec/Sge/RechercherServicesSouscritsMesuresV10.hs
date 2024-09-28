@@ -48,7 +48,8 @@ initType prod myPointId = do
     return requestType
 
 
-wsRequest :: Bool -> RechercherServicesSouscritsMesuresType -> IO ()
+wsRequest :: Bool -> RechercherServicesSouscritsMesuresType ->  
+              IO ( Either (String, String) RechercherServicesSouscritsMesuresResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                           urlSge = "/RechercheServicesSouscritsMesures/v1.0"
@@ -63,5 +64,5 @@ myrequest = do
     env <- getEnv
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv)
-    wsRequest True myType
-    pPrint myType
+    rep <- wsRequest True myType
+    pPrint rep

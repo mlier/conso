@@ -5,6 +5,7 @@ module Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10 where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Type
     ( Demande(Demande, demande_cadreAcces, demande_format,
@@ -71,7 +72,7 @@ initType prod myPointId dateDebut dateFin = do
     return requestType
 
 
-wsRequest :: Bool -> DemandePublicationMesuresFacturantes -> IO ()
+wsRequest :: Bool -> DemandePublicationMesuresFacturantes -> IO ( Either (String, String) AffaireId )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommandeHistoriqueDonneesMesuresFacturantes/v1.0"
@@ -87,4 +88,5 @@ myrequest = do
     env <- getEnv
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

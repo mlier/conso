@@ -74,7 +74,8 @@ initType prod myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePost
     return requestType
 
 
-wsRequest :: Bool -> RechercherPointType -> IO ()
+wsRequest :: Bool -> RechercherPointType -> 
+                IO ( Either (String, String) RechercherPointResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                           urlSge = "/RecherchePoint/v2.0"
@@ -90,5 +91,5 @@ myrequest = do
     let testEnv = test env
     myType <- initType True (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
                         (T.unpack $ codePostal testEnv) (T.unpack $ codeInseeCommune testEnv) True
-    wsRequest True myType
-    pPrint myType
+    rep <- wsRequest True myType
+    pPrint rep

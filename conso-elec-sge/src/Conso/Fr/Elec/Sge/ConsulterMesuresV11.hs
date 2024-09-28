@@ -6,6 +6,7 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresV11 where
 import qualified Data.Text as T
 import           Text.XML.HaXml.OneOfN ( OneOf2(TwoOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( AdresseEmailType(AdresseEmailType),
@@ -48,7 +49,7 @@ initType prod myPointId= do
     return requestType
 
 
-wsRequest :: Bool -> ConsulterMesuresType -> IO ()
+wsRequest :: Bool -> ConsulterMesuresType -> IO ( Either (String, String) ConsulterMesuresResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/ConsultationMesures/v1.1"
@@ -64,4 +65,5 @@ myrequest = do
     env <- getEnv
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv)
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep

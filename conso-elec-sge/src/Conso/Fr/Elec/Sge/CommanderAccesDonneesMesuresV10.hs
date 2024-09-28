@@ -9,6 +9,7 @@ import           Data.Time.Format (formatTime, defaultTimeLocale)
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2) ) 
+import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
     ( CommanderAccesDonneesMesuresType(..),
@@ -102,7 +103,8 @@ initType prod myPointId autorisationClient nom typeDonnees = do
     return requestType
 
 
-wsRequest :: Bool -> CommanderAccesDonneesMesuresType -> IO ()
+wsRequest :: Bool -> CommanderAccesDonneesMesuresType -> 
+              IO ( Either (String, String) CommanderAccesDonneesMesuresResponseType )
 wsRequest prod r = sgeRequest prod r configWS
     where configWS = ConfigWS{
                   urlSge = "/CommanderAccesDonneesMesures/v1.0"
@@ -119,4 +121,5 @@ myrequest = do
     let testEnv = test env
     myType <- initType True (T.unpack $ pointId testEnv) True 
                         (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC" 
-    wsRequest True myType
+    rep <- wsRequest True myType
+    pPrint rep
