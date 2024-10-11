@@ -179,5 +179,8 @@ test-suite conso-elec-sge-test
         , conso-elec-sge
         , hspec
         , hspec-discover
+        , hspec-expectations
+        , pretty-simple
+        
     build-tool-depends: 
         hspec-discover:hspec-discover == 2.*

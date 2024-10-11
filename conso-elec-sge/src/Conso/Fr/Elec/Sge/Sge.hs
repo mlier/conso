@@ -130,7 +130,7 @@ sgeRequest prod req config = do
     let xml = PP.render . P.content . head . elementToXMLRequest config $ req
     let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
     let xmlConduit =  node . X.NodeElement $ u
-    --print $ urlSge config
+    print $ urlSge config
     --print $ soapAction config
     --pPrint req
     --pPrint xmlConduit

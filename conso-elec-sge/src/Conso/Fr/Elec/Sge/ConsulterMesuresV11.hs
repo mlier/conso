@@ -36,15 +36,15 @@ instance RequestType ConsulterMesuresType
 instance ResponseType ConsulterMesuresResponseType
                
 
-initType :: Bool -> String -> IO ConsulterMesuresType
-initType prod myPointId= do
+initType :: Bool -> String -> Bool -> IO ConsulterMesuresType
+initType prod myPointId autorisationClient = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = ConsulterMesuresType
             { consulterMesuresType_pointId = PointIdType $ Xsd.XsdString myPointId
             , consulterMesuresType_loginDemandeur = AdresseEmailType $ Xsd.XsdString loginUtilisateur
             , consulterMesuresType_contratId = ContratIdType $ Xsd.XsdString contratId
-            , consulterMesuresType_choice3 = Just ( TwoOf2 $ Xsd.BooleenType True )
+            , consulterMesuresType_choice3 = Just ( TwoOf2 $ Xsd.BooleenType autorisationClient )
             }
     return requestType
 
@@ -64,6 +64,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv)
+    myType <- initType True (T.unpack $ pointId testEnv) True
     rep <- wsRequest True myType
     pPrint rep
