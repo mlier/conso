@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, MultiParamTypeClasses, AllowAmbiguousTypes #-}
 
 module Conso.Fr.Elec.Sge.Sge  where
 
@@ -7,7 +7,6 @@ import qualified Data.Text as T
 import           Data.Text.Encoding as T ( encodeUtf8 )
 import           Data.Text ( Text )
 import qualified Data.Text.Lazy as L
-import           Text.Pretty.Simple (pPrint)
 
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
@@ -81,29 +80,50 @@ instance ToJSON Sge
 instance FromJSON Test
 instance ToJSON Test
 
-data ConfigWS a b = ConfigWS{
+
+data ConfigRequest a = ConfigRequest{
           urlSge :: String
         , soapAction :: String
         , elementToXMLRequest :: a -> [Content ()]
-        , xmlTag :: String
+}
+
+data ConfigResponse b = ConfigResponse{
+          xmlTag :: String
         , elementResponse :: XMLParser b
 }
 
 class RequestType a where
-class ResponseType a
+    configReq :: ConfigRequest a
+
+class ResponseType b where
+    configResp :: ConfigResponse b
+
+
+
+wsRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> IO ( Either (String, String) b )
+wsRequest = sgeRequest True
+
+xmlRequest :: (RequestType a, Show a) => a -> IO String
+xmlRequest = sgeXmlRequest True
+
+wsRequestTest :: (RequestType a, Show a, ResponseType b, Show b) => a -> IO ( Either (String, String) b )
+wsRequestTest = sgeRequest False
+
+xmlRequestTest :: (RequestType a, Show a) => a -> IO String
+xmlRequestTest = sgeXmlRequest False
 
 
 getEnv :: IO Env
 getEnv = readEnv
 
 getEnvSge :: Bool -> IO Sge
-getEnvSge prod = do 
+getEnvSge prod = do
             env <- readEnv
-            if prod then 
+            if prod then
                 return $ production env
-            else 
+            else
                 return $ homologation env
-      
+
 
 myHomeDirectory :: IO String
 myHomeDirectory = do
@@ -124,26 +144,28 @@ getLoginContrat prod = do
     return (T.unpack $ userB2b envSge, T.unpack $ contractId envSge)
 
 
-sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Bool -> a -> ConfigWS a b -> IO ( Either (String, String) b )
-sgeRequest prod req config = do
+sgeRequest :: (RequestType a, Show a, ResponseType b, Show b) => Bool -> a -> IO ( Either (String, String) b )
+sgeRequest prod req = do
+    let cresp = createConfigResp
+    sRequest <- sgeXmlRequest prod req
+    xml2hsType (xmlTag cresp) (elementResponse cresp) sRequest
+
+
+createConfigReq :: (RequestType a) => ConfigRequest a
+createConfigReq = configReq
+
+createConfigResp :: (ResponseType b) => ConfigResponse b
+createConfigResp = configResp
+
+
+sgeXmlRequest :: (RequestType a, Show a) => Bool -> a -> IO String
+sgeXmlRequest prod req = do
     envSge <- getEnvSge prod
-    let xml = PP.render . P.content . head . elementToXMLRequest config $ req
+    let creq = createConfigReq
+    let xml = PP.render . P.content . head . elementToXMLRequest creq $ req
     let (X.Document _ u _) = X.parseText_ X.def $ L.pack xml
     let xmlConduit =  node . X.NodeElement $ u
-    print $ urlSge config
-    --print $ soapAction config
-    --pPrint req
-    --pPrint xmlConduit
-    sRequest <- soapRequest envSge (urlSge config) (soapAction config) xmlConduit
-    --putStrLn sRequest
-    --hsType <- xml2hsType (xmlTag config) (elementResponse config) sRequest
-    xml2hsType (xmlTag config) (elementResponse config) sRequest
-    --case hsType of
-    --    Right resp -> pPrint resp
-    --    Left (c, l) -> do
-    --        putStr "Erreur "
-    --        putStrLn c
-    --        putStrLn l
+    soapRequest envSge (urlSge creq) (soapAction creq) xmlConduit
 
 
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a

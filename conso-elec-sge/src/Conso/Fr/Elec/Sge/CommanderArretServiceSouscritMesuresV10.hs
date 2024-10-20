@@ -8,12 +8,12 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
-    ( elementCommanderArretServiceSouscritMesuresResponse,
+    ( CommanderArretServiceSouscritMesuresType(..),
       elementToXMLCommanderArretServiceSouscritMesures,
+      CommanderArretServiceSouscritMesuresResponseType,
+      elementCommanderArretServiceSouscritMesuresResponse,
       ArretServiceSouscritType(ArretServiceSouscritType,
                                arretServiceSouscritType_serviceSouscritId),
-      CommanderArretServiceSouscritMesuresResponseType,
-      CommanderArretServiceSouscritMesuresType(..),
       DemandeType(DemandeType, demandeType_arretServiceSouscrit,
                   demandeType_donneesGenerales),
       DonneesGeneralesType(DonneesGeneralesType,
@@ -22,31 +22,41 @@ import Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
                            donneesGeneralesType_initiateurLogin) )
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( AdresseEmailType(AdresseEmailType),
-      Chaine15Type(Chaine15Type),
+    ( Chaine15Type(Chaine15Type),
+      PointIdType(PointIdType),
       ContratIdType(ContratIdType),
       DemandeObjetCodeType(DemandeObjetCodeType),
-      PointIdType(PointIdType) )
+      AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(pointId) )
  
 
+instance RequestType CommanderArretServiceSouscritMesuresType where
+  configReq = ConfigRequest{
+                     urlSge = "/CommandeArretServiceSouscritMesures/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLCommanderArretServiceSouscritMesures
+                   }
 
-instance RequestType CommanderArretServiceSouscritMesuresType
-instance ResponseType CommanderArretServiceSouscritMesuresResponseType
-               
+instance ResponseType CommanderArretServiceSouscritMesuresResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:commanderArretServiceSouscritMesuresResponse"
+                   , elementResponse = elementCommanderArretServiceSouscritMesuresResponse
+                   }
+             
 
-initType :: Bool -> String -> String -> IO CommanderArretServiceSouscritMesuresType
-initType prod myPointId serviceSouscritId = do
+initType_ :: Bool -> String -> String -> IO CommanderArretServiceSouscritMesuresType
+initType_ prod myPointId serviceSouscritId = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = CommanderArretServiceSouscritMesuresType{ 
@@ -65,23 +75,17 @@ initType prod myPointId serviceSouscritId = do
         }
     return requestType
 
+initType :: String -> String -> IO CommanderArretServiceSouscritMesuresType
+initType = initType_ True
 
-wsRequest :: Bool -> CommanderArretServiceSouscritMesuresType -> 
-              IO ( Either (String, String) CommanderArretServiceSouscritMesuresResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommandeArretServiceSouscritMesures/v1.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLCommanderArretServiceSouscritMesures
-                , xmlTag = "ns4:commanderArretServiceSouscritMesuresResponse"
-                , elementResponse = elementCommanderArretServiceSouscritMesuresResponse
-}  
+initTypeTest :: String -> String -> IO CommanderArretServiceSouscritMesuresType
+initTypeTest = initType_ False
 
 
 myrequest :: String -> IO()
 myrequest serviceSouscritId = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) serviceSouscritId 
-    rep <- wsRequest True myType
+    myType <- initType (T.unpack $ pointId testEnv) serviceSouscritId 
+    rep <- wsRequest myType :: IO ( Either (String, String) CommanderArretServiceSouscritMesuresResponseType )
     pPrint rep

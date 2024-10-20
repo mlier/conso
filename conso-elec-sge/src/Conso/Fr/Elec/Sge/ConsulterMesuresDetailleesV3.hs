@@ -3,7 +3,6 @@
 
 module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 where
 
-import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
@@ -25,21 +24,32 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
       SensMesureType(SensMesureTypeSOUTIRAGE) )
 
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      sgeRequest,
-      getLoginContrat )
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
+      getLoginContrat,
+      wsRequest )
 
 
-instance RequestType ConsulterMesuresDetailleesV3Type
-instance ResponseType ConsulterMesuresDetailleesV3ResponseType
-               
+instance RequestType ConsulterMesuresDetailleesV3Type where
+  configReq = ConfigRequest{
+                     urlSge = "/ConsultationMesuresDetaillees/v3.0"
+                   , soapAction = "http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v3.0"
+                   , elementToXMLRequest = elementToXMLConsulterMesuresDetailleesV3
+                   }
 
-initType :: Bool -> String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+instance ResponseType ConsulterMesuresDetailleesV3ResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:consulterMesuresDetailleesResponseV3"
+                   , elementResponse = elementConsulterMesuresDetailleesResponseV3
+                   }
+             
+
+initType_ :: Bool -> String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
             Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
-initType prod myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
+initType_ prod myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin 
          mesuresPas mesuresCorrigees sens cadreAcces = do
     (loginUtilisateur, _) <- getLoginContrat prod
 
@@ -59,22 +69,19 @@ initType prod myPointId mesuresTypeCode grandeurPhysique dateDebut dateFin
         }
     return requestType
 
+initType :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+            Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
+initType = initType_ True
 
-wsRequest :: Bool -> ConsulterMesuresDetailleesV3Type -> 
-              IO ( Either (String, String) ConsulterMesuresDetailleesV3ResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/ConsultationMesuresDetaillees/v3.0"
-                , soapAction = "http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v3.0"
-                , elementToXMLRequest = elementToXMLConsulterMesuresDetailleesV3
-                , xmlTag = "ns4:consulterMesuresDetailleesResponseV3"
-                , elementResponse = elementConsulterMesuresDetailleesResponseV3
-}  
+initTypeTest :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+            Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
+initTypeTest = initType_ False 
 
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType True "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
+    myType <- initType "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
                        Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
-    rep <- wsRequest True myType
+    rep <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
+    --rep <- xmlRequest myType
     pPrint rep

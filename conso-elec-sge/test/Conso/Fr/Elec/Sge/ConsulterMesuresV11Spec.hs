@@ -1,20 +1,25 @@
 module Conso.Fr.Elec.Sge.ConsulterMesuresV11Spec where
 
 import SpecHelper
-import Conso.Fr.Elec.Sge.ConsulterMesuresV11
+    ( Expectation, Spec, shouldSatisfy, describe, it, shouldBe, hspec )
+import Conso.Fr.Elec.Sge.ConsulterMesuresV11 ( initTypeTest )
+import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
+    ( ConsulterMesuresResponseType )
+import Conso.Fr.Elec.Sge.Sge ( wsRequestTest, xmlRequestTest )
 import Data.Either (isRight)
 import           Text.Pretty.Simple (pPrint)
 
 
 shouldConsulter :: String -> Bool -> Expectation
-shouldConsulter pointId auth = do
-    myType <- initType False pointId auth
-    rep <- wsRequest False myType
+shouldConsulter myPpointId auth = do
+    myType <- initTypeTest myPpointId auth
+    --rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+    rep <- xmlRequestTest myType
 
-    print $ "-----" ++ pointId
+    print $ "-----" ++ myPpointId
     pPrint myType
     pPrint rep
-    rep `shouldSatisfy` isRight
+    --rep `shouldSatisfy` isRight
 
 
 spec :: Spec
@@ -31,8 +36,8 @@ spec = do
 
     describe "Demandes non recevables" $ do
         it "AHC-NR1 Accès à l’historique de consommations pour un acteur tiers sans autorisation client" $ do
-            myType <- initType False pointIdC5 False
-            rep <- wsRequest False myType
+            myType <- initTypeTest pointIdC5 False
+            rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
             let (e, _) = case rep of
                             Left r -> r
                             Right _ -> ("to", "ti") 

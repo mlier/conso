@@ -8,48 +8,61 @@ import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString) )
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( CommuneFranceCodeInseeType(CommuneFranceCodeInseeType),
+    ( Chaine255Type(Chaine255Type),
+      AdresseAfnorLigneType(AdresseAfnorLigneType),
       CodePostalFrancaisType(CodePostalFrancaisType),
-      Chaine255Type(Chaine255Type),
-      AdresseEmailType(AdresseEmailType),
-      AdresseAfnorLigneType(AdresseAfnorLigneType) )
+      CommuneFranceCodeInseeType(CommuneFranceCodeInseeType),
+      AdresseEmailType(AdresseEmailType) )
+
 import Conso.Fr.Elec.Sge.RechercherPointV20Type
-    ( AdresseInstallationType(AdresseInstallationType,
+    ( RechercherPointType(..),
+      elementToXMLRechercherPoint,
+      RechercherPointResponseType,
+      AdresseInstallationType(AdresseInstallationType,
                               adresseInstallationType_codeInseeCommune,
                               adresseInstallationType_escalierEtEtageEtAppartement,
                               adresseInstallationType_batiment,
                               adresseInstallationType_numeroEtNomVoie,
                               adresseInstallationType_lieuDit,
                               adresseInstallationType_codePostal),
+      elementRechercherPointResponse,
       CriteresType(CriteresType, criteresType_rechercheHorsPerimetre,
                    criteresType_adresseInstallation, criteresType_numSiret,
                    criteresType_matriculeOuNumeroSerie,
                    criteresType_domaineTensionAlimentationCode,
                    criteresType_nomClientFinalOuDenominationSociale,
-                   criteresType_categorieClientFinalCode),
-      RechercherPointResponseType,
-      RechercherPointType(..),
-      elementToXMLRechercherPoint,
-      elementRechercherPointResponse )
+                   criteresType_categorieClientFinalCode) )
+
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(codeInseeCommune, nomClientFinalOuDenominationSociale,
-           numeroEtNomVoie, codePostal),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(codeInseeCommune, nomClientFinalOuDenominationSociale,
+           numeroEtNomVoie, codePostal) )
+
     
+instance RequestType RechercherPointType where
+  configReq = ConfigRequest{
+                     urlSge = "/RecherchePoint/v2.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLRechercherPoint
+                   }
 
-instance RequestType RechercherPointType
-instance ResponseType RechercherPointResponseType
+instance ResponseType RechercherPointResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns1:rechercherPointResponse" 
+                   , elementResponse = elementRechercherPointResponse
+                   }
 
 
-initType :: Bool -> String -> String -> String -> String -> Bool -> IO RechercherPointType
-initType prod myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
+initType_ :: Bool -> String -> String -> String -> String -> Bool -> IO RechercherPointType
+initType_ prod myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePostal myCodeInseeCommune rechercheHorsPerimetre = do
     (loginUtilisateur, _) <- getLoginContrat prod
 
     let requestType = RechercherPointType
@@ -73,23 +86,18 @@ initType prod myNomClientFinalOuDenominationSociale myNumeroEtNomVoie myCodePost
             }
     return requestType
 
+initType :: String -> String -> String -> String -> Bool -> IO RechercherPointType
+initType = initType_ True
 
-wsRequest :: Bool -> RechercherPointType -> 
-                IO ( Either (String, String) RechercherPointResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                          urlSge = "/RecherchePoint/v2.0"
-                        , soapAction = "nimportequoimaispasvide"
-                        , elementToXMLRequest = elementToXMLRechercherPoint
-                        , xmlTag = "ns1:rechercherPointResponse" 
-                        , elementResponse = elementRechercherPointResponse
-    }
+initTypeTest :: String -> String -> String -> String -> Bool -> IO RechercherPointType
+initTypeTest = initType_ False
+
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
+    myType <- initType (T.unpack $ nomClientFinalOuDenominationSociale testEnv) (T.unpack $ numeroEtNomVoie testEnv) 
                         (T.unpack $ codePostal testEnv) (T.unpack $ codeInseeCommune testEnv) True
-    rep <- wsRequest True myType
+    rep <- wsRequest myType :: IO ( Either (String, String) RechercherPointResponseType )
     pPrint rep

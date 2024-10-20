@@ -9,61 +9,50 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( AdresseEmailType(AdresseEmailType),
-      ContratIdType(ContratIdType),
-      PointIdType(PointIdType) )
+
 import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
-    ( ConsulterMesuresResponseType,
-      ConsulterMesuresType(..),
-      elementToXMLConsulterMesures,
-      elementConsulterMesuresResponse )
+
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
-      getEnv,
-      sgeRequest,
-      getLoginContrat )
+  
+
+instance RequestType ConsulterMesuresType where
+  configReq = ConfigRequest{
+                     urlSge = "/ConsultationMesures/v1.1"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLConsulterMesures
+                   }
+
+instance ResponseType ConsulterMesuresResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:consulterMesuresResponse"
+                   , elementResponse = elementConsulterMesuresResponse
+                   }
 
 
-import qualified Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Xsd
-
-
-instance RequestType ConsulterMesuresType 
-instance ResponseType ConsulterMesuresResponseType
-               
-
-initType :: Bool -> String -> Bool -> IO ConsulterMesuresType
-initType prod myPointId autorisationClient = do
+initType_ :: Bool -> String -> Bool -> IO ConsulterMesuresType
+initType_ prod myPointId autorisationClient = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = ConsulterMesuresType
             { consulterMesuresType_pointId = PointIdType $ Xsd.XsdString myPointId
             , consulterMesuresType_loginDemandeur = AdresseEmailType $ Xsd.XsdString loginUtilisateur
             , consulterMesuresType_contratId = ContratIdType $ Xsd.XsdString contratId
-            , consulterMesuresType_choice3 = Just ( TwoOf2 $ Xsd.BooleenType autorisationClient )
+            , consulterMesuresType_choice3 = Just ( TwoOf2 $ Ds.BooleenType autorisationClient )
             }
     return requestType
 
+initType :: String -> Bool -> IO ConsulterMesuresType
+initType = initType_ True
 
-wsRequest :: Bool -> ConsulterMesuresType -> IO ( Either (String, String) ConsulterMesuresResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/ConsultationMesures/v1.1"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLConsulterMesures
-                , xmlTag = "ns4:consulterMesuresResponse"
-                , elementResponse = elementConsulterMesuresResponse
-}  
+initTypeTest :: String -> Bool -> IO ConsulterMesuresType
+initTypeTest = initType_ False
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) True
-    rep <- wsRequest True myType
+    myType <- initType (T.unpack $ pointId testEnv) True
+    rep <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+    --rep <- xmlRequest myType
     pPrint rep

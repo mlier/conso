@@ -8,43 +8,54 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
-    ( elementAffaireId,
+    ( DemandePublicationITC(..),
       elementToXMLDemandePublicationITC,
       AffaireId,
+      PointId(PointId),
+      Format(Format_JSON),
+      elementAffaireId,
       CadreAcces(CadreAcces_ACCORD_CLIENT),
       ContratId(ContratId),
       Demande(Demande, demande_cadreAcces, demande_format,
               demande_pointIds, demande_sens),
-      DemandePublicationITC(..),
       DonneesGenerales(DonneesGenerales,
                        donneesGenerales_referenceRegroupement,
                        donneesGenerales_initiateurLogin, donneesGenerales_contratId,
                        donneesGenerales_referenceDemandeur,
                        donneesGenerales_affaireReference),
-      Format(Format_JSON),
       InitiateurLogin(InitiateurLogin),
-      PointId(PointId),
       PointIds(PointIds, pointIds_pointId),
       Sens(Sens_SOUTIRAGE) )
   
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(pointId) )
 
 
-instance RequestType DemandePublicationITC
-instance ResponseType AffaireId
+instance RequestType DemandePublicationITC where
+  configReq = ConfigRequest{
+                     urlSge = "/CommandeInformationsTechniquesEtContractuelles/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLDemandePublicationITC
+                   }
+
+instance ResponseType AffaireId where
+  configResp = ConfigResponse{
+                     xmlTag = "v1:affaireId"
+                   , elementResponse = elementAffaireId
+                   }
                
 
-initType :: Bool -> String -> IO DemandePublicationITC
-initType prod myPointId = do
+initType_ :: Bool -> String -> IO DemandePublicationITC
+initType_ prod myPointId = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationITC{
@@ -66,23 +77,17 @@ initType prod myPointId = do
         }
     return requestType
 
+initType :: String -> IO DemandePublicationITC
+initType = initType_ True
 
-wsRequest :: Bool -> DemandePublicationITC -> IO ( Either (String, String) AffaireId )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommandeInformationsTechniquesEtContractuelles/v1.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLDemandePublicationITC
-                , xmlTag = "v1:affaireId"
-                , elementResponse = elementAffaireId
-}  
-
+initTypeTest :: String -> IO DemandePublicationITC
+initTypeTest = initType_ False
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv)
-    rep <- wsRequest True myType
+    myType <- initType (T.unpack $ pointId testEnv)
+    rep <- wsRequest myType :: IO ( Either (String, String) AffaireId )
     pPrint rep

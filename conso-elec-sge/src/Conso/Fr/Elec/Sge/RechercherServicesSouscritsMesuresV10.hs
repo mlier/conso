@@ -19,23 +19,35 @@ import Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
       RechercherServicesSouscritsMesuresResponseType,
       RechercherServicesSouscritsMesuresType(..) )
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(pointId) )
+ 
     
 
-instance RequestType RechercherServicesSouscritsMesuresType
-instance ResponseType RechercherServicesSouscritsMesuresResponseType
+instance RequestType RechercherServicesSouscritsMesuresType where
+  configReq = ConfigRequest{
+                     urlSge = "/RechercheServicesSouscritsMesures/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLRechercherServicesSouscritsMesures
+                   }
+
+instance ResponseType RechercherServicesSouscritsMesuresResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:rechercherServicesSouscritsMesuresResponse" 
+                   , elementResponse = elementRechercherServicesSouscritsMesuresResponse
+                   }
 
 
-initType :: Bool -> String -> IO RechercherServicesSouscritsMesuresType
-initType prod myPointId = do
+initType_ :: Bool -> String -> IO RechercherServicesSouscritsMesuresType
+initType_ prod myPointId = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = RechercherServicesSouscritsMesuresType{ 
@@ -47,22 +59,17 @@ initType prod myPointId = do
             }
     return requestType
 
+initType :: String -> IO RechercherServicesSouscritsMesuresType
+initType = initType_ True
 
-wsRequest :: Bool -> RechercherServicesSouscritsMesuresType ->  
-              IO ( Either (String, String) RechercherServicesSouscritsMesuresResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                          urlSge = "/RechercheServicesSouscritsMesures/v1.0"
-                        , soapAction = "nimportequoimaispasvide"
-                        , elementToXMLRequest = elementToXMLRechercherServicesSouscritsMesures
-                        , xmlTag = "ns4:rechercherServicesSouscritsMesuresResponse" 
-                        , elementResponse = elementRechercherServicesSouscritsMesuresResponse
-    }
+initTypeTest :: String -> IO RechercherServicesSouscritsMesuresType
+initTypeTest = initType_ False
+
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv)
-    rep <- wsRequest True myType
+    myType <- initType (T.unpack $ pointId testEnv)
+    rep <- wsRequest myType :: IO ( Either (String, String) RechercherServicesSouscritsMesuresResponseType )
     pPrint rep

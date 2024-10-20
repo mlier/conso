@@ -8,46 +8,57 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Type
-    ( Demande(Demande, demande_cadreAcces, demande_format,
-              demande_pointIds, demande_dateDebut, demande_dateFin,
-              demande_sens),
-      PointIds(PointIds, pointIds_pointId),
-      CadreAcces(CadreAcces_ACCORD_CLIENT),
-      Sens(Sens_SOUTIRAGE),
-      DateFin(DateFin),
-      DateDebut(DateDebut),
+    ( DemandePublicationMesuresFacturantes(..),
+      elementToXMLDemandePublicationMesuresFacturantes,
+      AffaireId,
       PointId(PointId),
       Format(Format_JSON),
+      elementAffaireId,
+      CadreAcces(CadreAcces_ACCORD_CLIENT),
+      ContratId(ContratId),
+      DateDebut(DateDebut),
+      DateFin(DateFin),
+      Demande(Demande, demande_cadreAcces, demande_format,
+              demande_pointIds, demande_dateDebut, demande_dateFin,
+              demande_sens),
       DonneesGenerales(DonneesGenerales,
                        donneesGenerales_referenceRegroupement,
                        donneesGenerales_initiateurLogin, donneesGenerales_contratId,
                        donneesGenerales_referenceDemandeur,
                        donneesGenerales_affaireReference),
-      ContratId(ContratId),
       InitiateurLogin(InitiateurLogin),
-      DemandePublicationMesuresFacturantes(..),
-      AffaireId,
-      elementAffaireId,
-      elementToXMLDemandePublicationMesuresFacturantes )
+      PointIds(PointIds, pointIds_pointId),
+      Sens(Sens_SOUTIRAGE) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(pointId) )
+   
 
+instance RequestType DemandePublicationMesuresFacturantes where
+  configReq = ConfigRequest{
+                     urlSge = "/CommandeHistoriqueDonneesMesuresFacturantes/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLDemandePublicationMesuresFacturantes
+                   }
 
-instance RequestType DemandePublicationMesuresFacturantes
-instance ResponseType AffaireId
-               
+instance ResponseType AffaireId where
+  configResp = ConfigResponse{
+                     xmlTag = "v1:affaireId"
+                   , elementResponse = elementAffaireId
+                   }
+              
 
-initType :: Bool -> String -> String -> String -> IO DemandePublicationMesuresFacturantes
-initType prod myPointId dateDebut dateFin = do
+initType_ :: Bool -> String -> String -> String -> IO DemandePublicationMesuresFacturantes
+initType_ prod myPointId dateDebut dateFin = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationMesuresFacturantes{
@@ -71,22 +82,17 @@ initType prod myPointId dateDebut dateFin = do
         }
     return requestType
 
+initType :: String -> String -> String -> IO DemandePublicationMesuresFacturantes
+initType = initType_ True
 
-wsRequest :: Bool -> DemandePublicationMesuresFacturantes -> IO ( Either (String, String) AffaireId )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommandeHistoriqueDonneesMesuresFacturantes/v1.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLDemandePublicationMesuresFacturantes
-                , xmlTag = "v1:affaireId"
-                , elementResponse = elementAffaireId
-}  
+initTypeTest :: String -> String -> String -> IO DemandePublicationMesuresFacturantes
+initTypeTest = initType_ False 
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
-    rep <- wsRequest True myType
+    myType <- initType (T.unpack $ pointId testEnv) "2024-08-01" "2024-09-01"
+    rep <- wsRequest myType :: IO ( Either (String, String) AffaireId )
     pPrint rep

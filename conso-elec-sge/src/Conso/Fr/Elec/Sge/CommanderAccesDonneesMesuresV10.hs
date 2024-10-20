@@ -13,55 +13,65 @@ import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
     ( CommanderAccesDonneesMesuresType(..),
+      elementToXMLCommanderAccesDonneesMesures,
       CommanderAccesDonneesMesuresResponseType,
-      DemandeType(DemandeType, demandeType_accesDonnees,
-                  demandeType_donneesGenerales),
+      DemandeObjetCodeType(DemandeObjetCodeType),
+      PointIdType(PointIdType),
+      AdresseEmailType(AdresseEmailType),
+      ContratIdType(ContratIdType),
+      BooleenType(BooleenType),
       Chaine255Type(Chaine255Type),
-      DonneesGeneralesType(DonneesGeneralesType,
-                           donneesGeneralesType_contrat, donneesGeneralesType_refExterne,
-                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
-                           donneesGeneralesType_initiateurLogin),
+      TypeDonneesType(TypeDonneesType),
+      DateType(DateType),
+      PersonnePhysiqueType(PersonnePhysiqueType,
+                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
+                           personnePhysiqueType_nom),
+      elementCommanderAccesDonneesMesuresResponse,
       AccesDonneesType(AccesDonneesType, accesDonneesType_injection,
                        accesDonneesType_dateDebut, accesDonneesType_dateFin,
                        accesDonneesType_declarationAccordClient,
                        accesDonneesType_typeDonnees, accesDonneesType_soutirage),
-      DemandeObjetCodeType(DemandeObjetCodeType),
-      PointIdType(PointIdType),
       ContratType(ContratType, contratType_contratType,
                   contratType_contratId, contratType_acteurMarcheCode),
       DeclarationAccordClientType(DeclarationAccordClientType,
                                   declarationAccordClientType_choice1,
                                   declarationAccordClientType_accord),
-      BooleenType(BooleenType),
-      PersonnePhysiqueType(PersonnePhysiqueType,
-                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
-                           personnePhysiqueType_nom),
-      DateType(DateType),
-      TypeDonneesType(TypeDonneesType),
-      ContratIdType(ContratIdType),
-      AdresseEmailType(AdresseEmailType),
-      elementToXMLCommanderAccesDonneesMesures,
-      elementCommanderAccesDonneesMesuresResponse )
+      DemandeType(DemandeType, demandeType_accesDonnees,
+                  demandeType_donneesGenerales),
+      DonneesGeneralesType(DonneesGeneralesType,
+                           donneesGeneralesType_contrat, donneesGeneralesType_refExterne,
+                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
+                           donneesGeneralesType_initiateurLogin) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(nomClientFinalOuDenominationSociale, pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(nomClientFinalOuDenominationSociale, pointId) )
  
 
+instance RequestType CommanderAccesDonneesMesuresType where
+  configReq = ConfigRequest{
+                     urlSge = "/CommanderAccesDonneesMesures/v1.0"
+                   , soapAction = " "
+                   , elementToXMLRequest = elementToXMLCommanderAccesDonneesMesures
+                   }
 
-instance RequestType CommanderAccesDonneesMesuresType
-instance ResponseType CommanderAccesDonneesMesuresResponseType
-               
+instance ResponseType CommanderAccesDonneesMesuresResponseType where
+  configResp = ConfigResponse{
+                    xmlTag = "ns4:commanderAccesDonneesMesuresResponse"
+                   , elementResponse = elementCommanderAccesDonneesMesuresResponse
+                   }
+              
 
-initType :: Bool -> String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
-initType prod myPointId autorisationClient nom typeDonnees = do
+initType_ :: Bool -> String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
+initType_ prod myPointId autorisationClient nom typeDonnees = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     currentTime <- getCurrentTime
@@ -102,24 +112,18 @@ initType prod myPointId autorisationClient nom typeDonnees = do
         }
     return requestType
 
+initType :: String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
+initType = initType_ True
 
-wsRequest :: Bool -> CommanderAccesDonneesMesuresType -> 
-              IO ( Either (String, String) CommanderAccesDonneesMesuresResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommanderAccesDonneesMesures/v1.0"
-                , soapAction = " "
-                , elementToXMLRequest = elementToXMLCommanderAccesDonneesMesures
-                , xmlTag = "ns4:commanderAccesDonneesMesuresResponse"
-                , elementResponse = elementCommanderAccesDonneesMesuresResponse
-}  
+initTypeTest :: String -> Bool -> String -> String -> IO CommanderAccesDonneesMesuresType
+initTypeTest = initType_ False
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) True 
+    myType <- initType (T.unpack $ pointId testEnv) True 
                         (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC" 
-    rep <- wsRequest True myType
+    rep <- wsRequest myType :: IO ( Either (String, String) CommanderAccesDonneesMesuresResponseType )
     pPrint rep

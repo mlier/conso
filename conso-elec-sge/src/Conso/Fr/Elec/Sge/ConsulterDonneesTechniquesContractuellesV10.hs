@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
 
@@ -9,32 +10,45 @@ import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString), )
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( PointIdType(PointIdType),
-      BooleenType(BooleenType),
+    ( BooleenType(BooleenType),
+      PointIdType(PointIdType),
       AdresseEmailType(AdresseEmailType) )
+
 import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
-    ( elementConsulterDonneesTechniquesContractuellesResponse,
-      elementToXMLConsulterDonneesTechniquesContractuelles,
+    ( ConsulterDonneesTechniquesContractuellesType(..),
       ConsulterDonneesTechniquesContractuellesResponseType,
-      ConsulterDonneesTechniquesContractuellesType(..) )
+      elementToXMLConsulterDonneesTechniquesContractuelles,
+      elementConsulterDonneesTechniquesContractuellesResponse )
+
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(pointId) )
 
 
-instance RequestType ConsulterDonneesTechniquesContractuellesType
-instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType
+instance RequestType ConsulterDonneesTechniquesContractuellesType where
+  configReq = ConfigRequest{
+                     urlSge = "/ConsultationDonneesTechniquesContractuelles/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLConsulterDonneesTechniquesContractuelles
+                   }
+
+instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns7:consulterDonneesTechniquesContractuellesResponse"
+                   , elementResponse = elementConsulterDonneesTechniquesContractuellesResponse
+                   }
 
 
-initType :: Bool -> String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
-initType prod myPointId autorisationClient = do
+initType_ :: Bool -> String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
+initType_ prod myPointId autorisationClient = do
     (loginUtilisateur, _) <- getLoginContrat prod
 
     let requestType = ConsulterDonneesTechniquesContractuellesType{
@@ -44,17 +58,11 @@ initType prod myPointId autorisationClient = do
         }
     return requestType
 
+initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
+initType = initType_ True
 
-wsRequest :: Bool -> ConsulterDonneesTechniquesContractuellesType -> 
-              IO ( Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/ConsultationDonneesTechniquesContractuelles/v1.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLConsulterDonneesTechniquesContractuelles
-                , xmlTag = "ns7:consulterDonneesTechniquesContractuellesResponse"
-                , elementResponse = elementConsulterDonneesTechniquesContractuellesResponse
-}
+initTypeTest :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
+initTypeTest = initType_ False
 
 
 myrequest :: Maybe String -> IO()
@@ -62,6 +70,6 @@ myrequest mPointId = do
     env <- getEnv
     let testEnv = test env
     let myPointId = fromMaybe (T.unpack $ pointId testEnv) mPointId
-    myType <- initType True myPointId False
-    rep <- wsRequest True myType
+    myType <- initType myPointId False
+    rep  <- wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
     pPrint rep

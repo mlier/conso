@@ -9,57 +9,68 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10Type
-    ( PersonnePhysiqueType(PersonnePhysiqueType,
+    ( CommanderTransmissionDonneesInfraJType(..),
+      elementToXMLCommanderTransmissionDonneesInfraJ,
+      CommanderTransmissionDonneesInfraJResponseType,
+      DeclarationAccordClientType(DeclarationAccordClientType,
+                                  declarationAccordClientType_choice3,
+                                  declarationAccordClientType_accordClient,
+                                  declarationAccordClientType_injection,
+                                  declarationAccordClientType_soutirage),
+      PersonnePhysiqueType(PersonnePhysiqueType,
                            personnePhysiqueType_prenom, personnePhysiqueType_civilite,
                            personnePhysiqueType_nom),
-      DonneesGeneralesType(DonneesGeneralesType,
-                           donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
-                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
-                           donneesGeneralesType_initiateurLogin),
-      DemandeType(DemandeType, demandeType_accesDonnees,
-                  demandeType_donneesGenerales),
+      elementCommanderTransmissionDonneesInfraJResponse,
       DemandeAccesDonneesType(DemandeAccesDonneesType,
                               demandeAccesDonneesType_ptd,
                               demandeAccesDonneesType_declarationAccordClient,
                               demandeAccesDonneesType_injection,
                               demandeAccesDonneesType_soutirage, demandeAccesDonneesType_cdc,
                               demandeAccesDonneesType_idx),
-      DeclarationAccordClientType(DeclarationAccordClientType,
-                                  declarationAccordClientType_choice3,
-                                  declarationAccordClientType_accordClient,
-                                  declarationAccordClientType_injection,
-                                  declarationAccordClientType_soutirage),
-      CommanderTransmissionDonneesInfraJType(..),
-      CommanderTransmissionDonneesInfraJResponseType,
-      elementToXMLCommanderTransmissionDonneesInfraJ,
-      elementCommanderTransmissionDonneesInfraJResponse )
+      DemandeType(DemandeType, demandeType_accesDonnees,
+                  demandeType_donneesGenerales),
+      DonneesGeneralesType(DonneesGeneralesType,
+                           donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
+                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
+                           donneesGeneralesType_initiateurLogin) )
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( PointIdType(PointIdType),
-      DemandeObjetCodeType(DemandeObjetCodeType),
-      ContratIdType(ContratIdType),
+    ( BooleenType(BooleenType),
       Chaine255Type(Chaine255Type),
-      BooleenType(BooleenType),
+      PointIdType(PointIdType),
+      ContratIdType(ContratIdType),
+      DemandeObjetCodeType(DemandeObjetCodeType),
       AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(nomClientFinalOuDenominationSociale, pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(nomClientFinalOuDenominationSociale, pointId) )
 
 
-instance RequestType CommanderTransmissionDonneesInfraJType
-instance ResponseType CommanderTransmissionDonneesInfraJResponseType
-               
+instance RequestType CommanderTransmissionDonneesInfraJType where
+  configReq = ConfigRequest{
+                     urlSge = "/CommandeTransmissionDonneesInfraJ/v1.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLCommanderTransmissionDonneesInfraJ
+                   }
 
-initType :: Bool -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
-initType prod myPointId autorisationClient nom = do
+instance ResponseType CommanderTransmissionDonneesInfraJResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:commanderTransmissionDonneesInfraJResponse"
+                   , elementResponse = elementCommanderTransmissionDonneesInfraJResponse
+                   }
+              
+
+initType_ :: Bool -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initType_ prod myPointId autorisationClient nom = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = CommanderTransmissionDonneesInfraJType{
@@ -92,25 +103,18 @@ initType prod myPointId autorisationClient nom = do
         }
     return requestType
 
+initType :: String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initType = initType_ True
 
-wsRequest :: Bool -> CommanderTransmissionDonneesInfraJType -> 
-              IO ( Either (String, String) CommanderTransmissionDonneesInfraJResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommandeTransmissionDonneesInfraJ/v1.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLCommanderTransmissionDonneesInfraJ
-                , xmlTag = "ns4:commanderTransmissionDonneesInfraJResponse"
-                , elementResponse = elementCommanderTransmissionDonneesInfraJResponse
-}  
-
+initTypeTest :: String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initTypeTest = initType_ False
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) True 
+    myType <- initType (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv)
-    rep <- wsRequest True myType
+    rep <- wsRequest myType :: IO (Either (String, String) CommanderTransmissionDonneesInfraJResponseType)
     pPrint rep 

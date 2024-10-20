@@ -12,15 +12,16 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
-    ( PersonnePhysiqueType(PersonnePhysiqueType,
+    ( CommanderCollectePublicationMesuresType(..),
+      elementToXMLCommanderCollectePublicationMesures,
+      CommanderCollectePublicationMesuresResponseType,
+      PersonnePhysiqueType(PersonnePhysiqueType,
                            personnePhysiqueType_prenom, personnePhysiqueType_civilite,
                            personnePhysiqueType_nom),
-      DonneesGeneralesType(DonneesGeneralesType,
-                           donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
-                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
-                           donneesGeneralesType_initiateurLogin),
-      DemandeType(DemandeType, demandeType_accesMesures,
-                  demandeType_donneesGenerales),
+      elementCommanderCollectePublicationMesuresResponse,
+      DeclarationAccordClientType(DeclarationAccordClientType,
+                                  declarationAccordClientType_choice1,
+                                  declarationAccordClientType_accord),
       DemandeAccesMesures(DemandeAccesMesures,
                           demandeAccesMesures_periodiciteTransmission,
                           demandeAccesMesures_dateDebut, demandeAccesMesures_dateFin,
@@ -29,43 +30,53 @@ import Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
                           demandeAccesMesures_injection, demandeAccesMesures_mesuresPas,
                           demandeAccesMesures_mesuresCorrigees,
                           demandeAccesMesures_transmissionRecurrente),
-      DeclarationAccordClientType(DeclarationAccordClientType,
-                                  declarationAccordClientType_choice1,
-                                  declarationAccordClientType_accord),
-      CommanderCollectePublicationMesuresType(..),
-      CommanderCollectePublicationMesuresResponseType,
-      elementToXMLCommanderCollectePublicationMesures,
-      elementCommanderCollectePublicationMesuresResponse )
+      DemandeType(DemandeType, demandeType_accesMesures,
+                  demandeType_donneesGenerales),
+      DonneesGeneralesType(DonneesGeneralesType,
+                           donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
+                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
+                           donneesGeneralesType_initiateurLogin) )
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
-    ( PointIdType(PointIdType),
-      BooleenType(BooleenType),
-      AdresseEmailType(AdresseEmailType),
-      PeriodiciteCodeType(PeriodiciteCodeType),
-      MesureTypeCodeType(MesureTypeCodeType),
-      DemandeObjetCodeType(DemandeObjetCodeType),
+    ( BooleenType(BooleenType),
+      Chaine255Type(Chaine255Type),
+      PointIdType(PointIdType),
       DateType(DateType),
       ContratIdType(ContratIdType),
-      Chaine255Type(Chaine255Type) )
+      DemandeObjetCodeType(DemandeObjetCodeType),
+      MesureTypeCodeType(MesureTypeCodeType),
+      PeriodiciteCodeType(PeriodiciteCodeType),
+      AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( ResponseType,
-      RequestType,
-      ConfigWS(ConfigWS, elementResponse, urlSge, soapAction,
-               elementToXMLRequest, xmlTag),
-      Test(nomClientFinalOuDenominationSociale, pointId),
-      Env(test),
+    ( RequestType(..),
+      ResponseType(..),
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
-      sgeRequest,
-      getLoginContrat )
+      getLoginContrat,
+      wsRequest,
+      Env(test),
+      Test(nomClientFinalOuDenominationSociale, pointId) )
 
 
-instance RequestType CommanderCollectePublicationMesuresType
-instance ResponseType CommanderCollectePublicationMesuresResponseType
-               
+instance RequestType CommanderCollectePublicationMesuresType where
+  configReq = ConfigRequest{
+                     urlSge = "/CommandeCollectePublicationMesures/v3.0"
+                   , soapAction = "nimportequoimaispasvide"
+                   , elementToXMLRequest = elementToXMLCommanderCollectePublicationMesures
+                   }
 
-initType :: Bool -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
-initType prod myPointId autorisationClient nom mesuresTypeCode = do
+instance ResponseType CommanderCollectePublicationMesuresResponseType where
+  configResp = ConfigResponse{
+                     xmlTag = "ns4:commanderCollectePublicationMesuresResponse"
+                   , elementResponse = elementCommanderCollectePublicationMesuresResponse
+                   }
+              
+
+initType_ :: Bool -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+initType_ prod myPointId autorisationClient nom mesuresTypeCode = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     currentTime <- getCurrentTime
@@ -107,25 +118,18 @@ initType prod myPointId autorisationClient nom mesuresTypeCode = do
 
     return requestType
 
+initType :: String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+initType = initType_ True
 
-wsRequest :: Bool -> CommanderCollectePublicationMesuresType -> 
-              IO ( Either (String, String) CommanderCollectePublicationMesuresResponseType )
-wsRequest prod r = sgeRequest prod r configWS
-    where configWS = ConfigWS{
-                  urlSge = "/CommandeCollectePublicationMesures/v3.0"
-                , soapAction = "nimportequoimaispasvide"
-                , elementToXMLRequest = elementToXMLCommanderCollectePublicationMesures
-                , xmlTag = "ns4:commanderCollectePublicationMesuresResponse"
-                , elementResponse = elementCommanderCollectePublicationMesuresResponse
-}  
-
+initTypeTest :: String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+initTypeTest = initType_ False
 
 
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType True (T.unpack $ pointId testEnv) True 
+    myType <- initType (T.unpack $ pointId testEnv) True 
                        (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC"
-    rep <- wsRequest True myType
+    rep <- wsRequest myType :: IO ( Either (String, String) CommanderCollectePublicationMesuresResponseType )
     pPrint rep
