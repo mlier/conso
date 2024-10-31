@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10 where
+module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
@@ -29,15 +31,18 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
       AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(pointId) )
  
 
@@ -75,7 +80,10 @@ initType_ prod myPointId serviceSouscritId = do
         }
     return requestType
 
-initType :: String -> String -> IO CommanderArretServiceSouscritMesuresType
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: String  -- ^ myPointId : point de référence sur lequel on souhaite obtenir des informations.
+         -> String  -- ^ serviceSouscritId : Identifiant du service souscrit de mesures à arrêter.
+         -> IO CommanderArretServiceSouscritMesuresType
 initType = initType_ True
 
 initTypeTest :: String -> String -> IO CommanderArretServiceSouscritMesuresType

@@ -1,24 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30 where
+module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType, Sens
+) where
 
 import           Data.Time.Clock (getCurrentTime, utctDay)
 import           Data.Time.Calendar (addDays)
 import           Data.Time.Format (formatTime, defaultTimeLocale)
 import qualified Data.Text as T
-import           Text.XML.HaXml.OneOfN ( OneOf2(OneOf2) )
+import Text.XML.HaXml.OneOfN ( OneOf2(TwoOf2, OneOf2) ) 
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
-    ( CommanderCollectePublicationMesuresType(..),
+    ( elementCommanderCollectePublicationMesuresResponse,
       elementToXMLCommanderCollectePublicationMesures,
       CommanderCollectePublicationMesuresResponseType,
-      PersonnePhysiqueType(PersonnePhysiqueType,
-                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
-                           personnePhysiqueType_nom),
-      elementCommanderCollectePublicationMesuresResponse,
+      CommanderCollectePublicationMesuresType(..),
       DeclarationAccordClientType(DeclarationAccordClientType,
                                   declarationAccordClientType_choice1,
                                   declarationAccordClientType_accord),
@@ -35,7 +34,13 @@ import Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
       DonneesGeneralesType(DonneesGeneralesType,
                            donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
                            donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
-                           donneesGeneralesType_initiateurLogin) )
+                           donneesGeneralesType_initiateurLogin),
+      PersonneMoraleType(PersonneMoraleType,
+                         personneMoraleType_denominationSociale),
+      PersonnePhysiqueType(PersonnePhysiqueType,
+                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
+                           personnePhysiqueType_nom) )
+   
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( BooleenType(BooleenType),
@@ -49,15 +54,18 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
       AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(nomClientFinalOuDenominationSociale, pointId) )
 
 
@@ -75,15 +83,33 @@ instance ResponseType CommanderCollectePublicationMesuresResponseType where
                    }
               
 
-initType_ :: Bool -> String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
-initType_ prod myPointId autorisationClient nom mesuresTypeCode = do
+initType_ :: Bool -> String -> Maybe Integer -> AccordPersonneType -> String
+          -> Sens -> Bool -> Maybe Bool -> Maybe String 
+          -> IO CommanderCollectePublicationMesuresType
+initType_ prod myPointId duree  accordPersonneType mesuresTypeCode 
+            sens transmissionRecurrente mesuresCorrigees periodiciteTransmission = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     currentTime <- getCurrentTime
-    let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
+    let dateDebut = Ds.DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" currentTime
 
-    let troisans = addDays (3*365) (utctDay currentTime)
-    let dateFin = formatTime defaultTimeLocale "%Y-%m-%d" troisans
+    let dateFin = case duree of
+            Just d -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" $ addDays d (utctDay currentTime) 
+            Nothing -> Nothing
+
+    let soutirage = case sens of 
+            SensSOUTIRAGE -> True
+            SensINJECTION -> False
+
+    let personTypeChoice = case accordPersonneType of 
+            AccordPersonnePhysiqueNom nom -> OneOf2 $ PersonnePhysiqueType
+                  { personnePhysiqueType_civilite = Nothing
+                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nom
+                  , personnePhysiqueType_prenom = Nothing
+                  } 
+            AccordPersonneMoraleDenominationSociale nom -> TwoOf2 $ PersonneMoraleType
+                  { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString nom
+                  } 
 
     let requestType = CommanderCollectePublicationMesuresType{
           commanderCollectePublicationMesuresType_demande = DemandeType
@@ -95,33 +121,108 @@ initType_ prod myPointId autorisationClient nom mesuresTypeCode = do
             , donneesGeneralesType_contratId = Ds.ContratIdType $ Xsd.XsdString contratId
             }
           , demandeType_accesMesures = DemandeAccesMesures
-            { demandeAccesMesures_dateDebut = Ds.DateType $ Xsd.Date dateDebut
-            , demandeAccesMesures_dateFin = Just $ Ds.DateType $ Xsd.Date dateFin
+            { demandeAccesMesures_dateDebut = dateDebut
+            , demandeAccesMesures_dateFin = dateFin
             , demandeAccesMesures_declarationAccordClient = DeclarationAccordClientType
-              { declarationAccordClientType_accord = Ds.BooleenType autorisationClient
-              , declarationAccordClientType_choice1 = OneOf2 $ PersonnePhysiqueType
-                  { personnePhysiqueType_civilite = Nothing
-                  , personnePhysiqueType_nom = Ds.Chaine255Type $ Xsd.XsdString nom
-                  , personnePhysiqueType_prenom = Nothing
-                  } 
+              { declarationAccordClientType_accord = Ds.BooleenType True
+              , declarationAccordClientType_choice1 = personTypeChoice
               }
             , demandeAccesMesures_mesuresTypeCode = Ds.MesureTypeCodeType $ Xsd.XsdString mesuresTypeCode
-            , demandeAccesMesures_soutirage = Ds.BooleenType True
-            , demandeAccesMesures_injection = Ds.BooleenType False
+            , demandeAccesMesures_soutirage = Ds.BooleenType soutirage
+            , demandeAccesMesures_injection = Ds.BooleenType $ not soutirage
             , demandeAccesMesures_mesuresPas = Nothing
-            , demandeAccesMesures_mesuresCorrigees = Just $ Ds.BooleenType False
-            , demandeAccesMesures_transmissionRecurrente = Ds.BooleenType True
-            , demandeAccesMesures_periodiciteTransmission = Just $ Ds.PeriodiciteCodeType $ Xsd.XsdString "P1D"
+            , demandeAccesMesures_mesuresCorrigees = Ds.BooleenType <$> mesuresCorrigees --Just $ Ds.BooleenType False
+            , demandeAccesMesures_transmissionRecurrente = Ds.BooleenType transmissionRecurrente -- True
+            , demandeAccesMesures_periodiciteTransmission = Ds.PeriodiciteCodeType . Xsd.XsdString <$> periodiciteTransmission --Just $ Ds.PeriodiciteCodeType $ Xsd.XsdString "P1D"
             }
           }
         }
 
     return requestType
 
-initType :: String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
-initType = initType_ True
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: String              -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
+         -> Maybe Integer       -- ^ duree : durée de la demande transmission récurrente de données de mesure ou de collecte 
+                                --   de la courbe de charge :
+                                -- - Pour un point C5 et P4, la durée ne peut excéder 3 ans et doit être supérieure 
+                                --   à la date de fin du service actif dans le cas d’un renouvellement,
+                                -- - Pour un point C1-C4 et P1-P3, si une durée est fournie, elle ne peut 
+                                --   excéder 3 ans.
+         -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client et son type : 
+                                --
+                                -- - PersonnePhysique donne le nom de la personne physique qui a donné accord,
+                                -- - PersonneMorale donne la dénomination morale qui a donné son accord.   
 
-initTypeTest :: String -> Bool -> String -> String -> IO CommanderCollectePublicationMesuresType
+         -> String              -- ^ mesuresTypeCode : type de mesure demandé : courbe de charge, 
+                                --   index quotidiens et puissances maximales quotidiennes ou index et 
+                                --   autres données du compteur : 
+                                --
+                                -- - CDC pour une demande de transmission récurrente de la courbe de charge ou 
+                                --   de collecte de la courbe de charge,
+                                -- - IDX pour une demande de transmission récurrente d’index quotidiens et de 
+                                --   puissances maximales quotidiennes-(C5) ou de transmission quotidienne des 
+                                --   index et autres données du compteur (C1-C4 et P1-P3).
+                                --
+                                --   Pour le segment P4, seule la demande de collecte de la courbe de charge étant 
+                                --   possible, seule la valeur CDC est autorisée.
+         -> Sens                -- ^ sens : indique le Sens de l’énergie circulant vers le réseau d’Enedis : 
+                                -- 
+                                -- - INJECTION,
+                                -- - SOUTIRAGE.
+         -> Bool                -- ^ transmissionRecurrente : indique si la demande consiste en une transmission 
+                                --   récurrente de données de mesure ou une collecte de la courbe de charge : 
+                                --
+                                -- - Pour la courbe de charge (mesuresTypeCode = CDC) :
+                                --
+                                --     - True en cas de demande de transmission récurrente,
+                                --     - False en cas de demande de collecte de la courbe de charge.
+                                --
+                                -- - Pour les index et Pmax quotidiens ou index et autres données du compteur 
+                                --   (mesuresTypeCode = IDX) :
+                                --     - True pour le P4, la transmission des données n’étant pas encore disponible, 
+                                --       seule la valeur False est autorisée.
+         -> Maybe Bool          -- ^ mesuresCorrigees : dans le cas de demandes de transmission de la courbe de 
+                                --   charge C1-C4, booléen permettant d’indiquer si la courbe demandée est brute ou corrigée. 
+                                --   Obligatoire si la transmission de courbe de charge est demandée (balises mesuresTypeCode 
+                                --   = CDC et transmissionRecurrente = true) :
+                                --
+                                -- - Pour le C1-C4 et P1-P3 :
+                                --
+                                --     - True pour une courbe de charge corrigée
+                                --     - False pour une courbe de charge brute.
+                                --
+                                -- - Pour le C5 et P4 : la courbe de charge corrigée n’est pas disponible. Cette balise 
+                                --   doit être renseignée à False. Ignorée pour une demande de collecte de la courbe 
+                                --   de charge, de transmission récurrente des index quotidiens et des puissances 
+                                --   maximales quotidiennes ou des index et autres données du compteur.
+                                --   
+                                --   A noter que pour une fréquence de publication quotidienne de courbe de charge, 
+                                --   seules les données brutes sont disponibles. La publication des données corrigées de 
+                                --   la courbe de charge se fait uniquement pour les publications hebdomadaires et mensuelles.
+         -> Maybe String        -- ^ periodiciteTransmission : fréquence de la transmission des données de mesure. 
+                                --   Obligatoire dans le cas d’une demande de transmission récurrente de données de mesure.
+                                --
+                                -- - Valeurs autorisées pour le C1-C4 et P1-P3 :
+                                --
+                                --      - P1D (quotidienne),
+                                --      - P7D (hebdomadaire)
+                                --      - P1M (mensuelle)
+                                --
+                                -- - Valeurs autorisées pour le C5 :
+                                --
+                                --       - P1D (quotidienne),
+                                --       - P1M (mensuelle)
+                                --
+                                --   En cas de transmission des index et autres données du compteur pour le C1-C4 et P1-P3, 
+                                --   la seule valeur autorisée est P1D (quotidienne).
+                                --   Ignorée dans le cas d’une demande de collecte de la courbe de charge.
+                                --   Pour le P4, la transmission des données n’étant pas encore disponible, 
+                                --   cette donnée ne doit pas être transmise.
+         -> IO CommanderCollectePublicationMesuresType
+initType = initType_ True  
+
+initTypeTest :: String -> Maybe Integer -> AccordPersonneType -> String
+          -> Sens -> Bool -> Maybe Bool -> Maybe String -> IO CommanderCollectePublicationMesuresType
 initTypeTest = initType_ False
 
 
@@ -129,7 +230,18 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) True 
-                       (T.unpack $ nomClientFinalOuDenominationSociale testEnv) "CDC"
+    myType <- initType (T.unpack $ pointId testEnv) (Just (3*365)) 
+                       ( AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
+                       "CDC" SensSOUTIRAGE True (Just False) (Just "P1D")
     rep <- wsRequest myType :: IO ( Either (String, String) CommanderCollectePublicationMesuresResponseType )
     pPrint rep
+
+data Sens
+    = SensSOUTIRAGE
+    | SensINJECTION
+    deriving (Eq,Show,Enum)
+
+data AccordPersonneType
+    = AccordPersonnePhysiqueNom String
+    | AccordPersonneMoraleDenominationSociale String
+    deriving (Eq,Show)

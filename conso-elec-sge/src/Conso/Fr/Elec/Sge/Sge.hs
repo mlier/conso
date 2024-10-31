@@ -48,8 +48,8 @@ import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                       elementResultat )
 
 
-data Env =
-    Env { production :: Sge
+data SgeEnv =
+    SgeEnv { production :: Sge
         , homologation :: Sge
         , test :: Test
     } deriving (Show,Generic)
@@ -71,8 +71,8 @@ data Test =
         , codeInseeCommune :: Text
     } deriving (Show,Generic)
 
-instance FromJSON Env
-instance ToJSON Env
+instance FromJSON SgeEnv
+instance ToJSON SgeEnv
 
 instance FromJSON Sge
 instance ToJSON Sge
@@ -99,21 +99,30 @@ class ResponseType b where
     configResp :: ConfigResponse b
 
 
-
-wsRequest :: (RequestType a, Show a, ResponseType b, Show b) => a -> IO ( Either (String, String) b )
+-- | wsRequest permet de réaliser des requêtes vers tous les webservices sur le serveur de production 
+--   de SGE. Il est nécessaire de fournir un paramètre de type RequestType dépendant du webservice. 
+wsRequest :: (RequestType a, Show a, ResponseType b, Show b) 
+          => a  -- ^  request : doit contenir tous les éléments de la requête dépendant du type RequestType
+          -> IO ( Either (String, String) b )   -- ^  La réponse ou le code et l'intitulé de l'erreur
 wsRequest = sgeRequest True
 
-xmlRequest :: (RequestType a, Show a) => a -> IO String
+-- | xmlRequest permet de réaliser des requêtes vers l'ensemble des webservices sur le serveur de 
+--   production de SGE et d'obtenir la réponse XML renvoyée par SGE.
+xmlRequest :: (RequestType a, Show a) 
+           => a -- ^  request : doit contenir tous les éléments de la requête dépendant du type RequestType
+           -> IO String -- ^ Renvoit la réponse en XML
 xmlRequest = sgeXmlRequest True
 
+-- | wsRequestTest est utilisé pour faire des tests sur le serveur d'homologation
 wsRequestTest :: (RequestType a, Show a, ResponseType b, Show b) => a -> IO ( Either (String, String) b )
 wsRequestTest = sgeRequest False
 
+-- | xmlRequestTest est utilisé pour faire des tests sur le serveur d'homologation
 xmlRequestTest :: (RequestType a, Show a) => a -> IO String
 xmlRequestTest = sgeXmlRequest False
 
 
-getEnv :: IO Env
+getEnv :: IO SgeEnv
 getEnv = readEnv
 
 getEnvSge :: Bool -> IO Sge
@@ -131,7 +140,7 @@ myHomeDirectory = do
     entry <- getUserEntryForName name
     return $ homeDirectory entry
 
-readEnv :: IO Env
+readEnv :: IO SgeEnv
 readEnv = do
     myHD <- myHomeDirectory
     either (error . show) id <$>

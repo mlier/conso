@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.ConsulterMesuresV11 where
+module Conso.Fr.Elec.Sge.ConsulterMesuresV11 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import           Text.XML.HaXml.OneOfN ( OneOf2(TwoOf2) )
@@ -9,10 +11,31 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
+    ( BooleenType(BooleenType),
+      PointIdType(PointIdType),
+      ContratIdType(ContratIdType),
+      AdresseEmailType(AdresseEmailType) )
 
 import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
+    ( ConsulterMesuresType(..),
+      elementToXMLConsulterMesures,
+      ConsulterMesuresResponseType,
+      elementConsulterMesuresResponse )
 
 import Conso.Fr.Elec.Sge.Sge
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
+      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+                    soapAction),
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
+      Test(pointId) )
   
 
 instance RequestType ConsulterMesuresType where
@@ -41,7 +64,10 @@ initType_ prod myPointId autorisationClient = do
             }
     return requestType
 
-initType :: String -> Bool -> IO ConsulterMesuresType
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: String  -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
+         -> Bool    -- ^ autorisationClient : existence d’une autorisation du client actuel.
+         -> IO ConsulterMesuresType
 initType = initType_ True
 
 initTypeTest :: String -> Bool -> IO ConsulterMesuresType

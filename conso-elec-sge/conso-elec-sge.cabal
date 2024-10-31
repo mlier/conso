@@ -161,6 +161,8 @@ test-suite conso-elec-sge-test
     other-modules:  
             Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Spec
             Conso.Fr.Elec.Sge.ConsulterMesuresV11Spec 
+            Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Spec
+            Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10Spec
             SpecHelper
 
     -- LANGUAGE extensions used by modules in this package.
@@ -183,6 +185,7 @@ test-suite conso-elec-sge-test
         , hspec-discover
         , hspec-expectations
         , pretty-simple
+        , text
         
     build-tool-depends: 
         hspec-discover:hspec-discover == 2.*

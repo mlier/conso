@@ -1,19 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10 where
+module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
-    ( DemandePublicationMesuresFines(..),
+    ( elementAffaireId,
       elementToXMLDemandePublicationMesuresFines,
       AffaireId,
-      PointId(PointId),
-      Format(FormatJSON),
-      elementAffaireId,
       CadreAcces(CadreAccesACCORDCLIENT),
       ContratId(ContratId),
       DateDebut(DateDebut),
@@ -22,28 +21,36 @@ import Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
               demande_pointIds, demande_mesuresTypeCode,
               demande_mesuresCorrigees, demande_dateDebut, demande_dateFin,
               demande_sens),
+      DemandePublicationMesuresFines(..),
       DonneesGenerales(DonneesGenerales,
                        donneesGenerales_referenceRegroupement,
                        donneesGenerales_initiateurLogin, donneesGenerales_contratId,
                        donneesGenerales_referenceDemandeur,
                        donneesGenerales_affaireReference),
+      Format(FormatJSON),
       InitiateurLogin(InitiateurLogin),
+      MesuresCorrigees,
       MesuresTypeCode(MesuresTypeCodeINDEX),
+      PointId(PointId),
       PointIds(PointIds, pointIds_pointId),
       Sens(SensSOUTIRAGE) )
 
+
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(pointId) )
-  
+
 
 instance RequestType DemandePublicationMesuresFines where
   configReq = ConfigRequest{
@@ -59,8 +66,9 @@ instance ResponseType AffaireId where
                    }
             
 
-initType_ :: Bool -> String -> IO DemandePublicationMesuresFines
-initType_ prod myPointId = do
+initType_ :: Bool -> [String] -> MesuresTypeCode -> Maybe MesuresCorrigees -> String -> String 
+          -> Sens -> CadreAcces -> IO DemandePublicationMesuresFines
+initType_ prod myPointsId mesuresTypeCode mesuresCorrigees dateDebut dateFin sens cadreAcces = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationMesuresFines{
@@ -74,22 +82,51 @@ initType_ prod myPointId = do
         , demandePublicationMesuresFines_demande = Demande
           { demande_format = Just FormatJSON
           , demande_pointIds = PointIds
-            { pointIds_pointId = [PointId $ Xsd.XsdString myPointId]
+            { pointIds_pointId = map (PointId . Xsd.XsdString) myPointsId
             }
-          , demande_mesuresTypeCode = MesuresTypeCodeINDEX
-          , demande_mesuresCorrigees = Nothing
-          , demande_dateDebut = DateDebut $ Xsd.Date "2024-08-01"
-          , demande_dateFin = DateFin $ Xsd.Date "2024-09-01"
-          , demande_sens = SensSOUTIRAGE
-          , demande_cadreAcces = CadreAccesACCORDCLIENT
+          , demande_mesuresTypeCode = mesuresTypeCode
+          , demande_mesuresCorrigees = mesuresCorrigees
+          , demande_dateDebut = DateDebut $ Xsd.Date dateDebut
+          , demande_dateFin = DateFin $ Xsd.Date dateFin
+          , demande_sens = sens
+          , demande_cadreAcces = cadreAcces
           }
         }
     return requestType
 
-initType :: String -> IO DemandePublicationMesuresFines
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: [String]                -- ^ myPointsId : liste des identifiants PRM des points sur lesquels porte la demande.
+         -> MesuresTypeCode         -- ^ mesuresTypeCode : type de mesures demandé :
+                                    --
+                                    -- - COURBES pour une courbe (de puissance ou de tension) (flux R63),
+                                    -- - INDEX pour les index (flux R64).
+                                    -- - ENERGIE pour les énergies globales quotidiennes (flux R65),
+                                    -- - PMAX pour les puissances maximales quotidiennes (flux R66),
+         -> Maybe MesuresCorrigees  -- ^ mesuresCorrigees : donnée attendue uniquement dans le cas d’une demande liée à des 
+                                    --   données de mesures ‘Courbe de charge’. 
+                                    --
+                                    -- - Pour les C5/P4, la balise doit être renseignée à « false »
+                                    -- - Pour les C1-C4/P1-P3, la balise doit être renseignée à :
+                                    --
+                                    --     - « true » si l’on souhaite recevoir les données corrigées,
+                                    --     - « false » si l’on souhaite recevoir les données brutes.
+         -> String                  -- ^ dateDebut : date de début souhaitée pour la consultation des mesures (date incluse).
+         -> String                  -- ^ dateFin : date de fin souhaitée pour la consultation des mesures (date exclue).
+         -> Sens                    -- ^ sens : indique le Sens de l’énergie circulant vers le réseau d’Enedis : 
+                                    -- 
+                                    -- - INJECTION,
+                                    -- - SOUTIRAGE.
+         -> CadreAcces              -- ^ cadreAcces : indique à quel titre l’acteur consulte les données de mesures :
+                                    --
+                                    -- - ACCORD_CLIENT si le demandeur accède aux données de mesures au titre d’un accord du client,
+                                    -- - SERVICE_ACCES si le demandeur a souscrit au préalable à un service d’accès aux données 
+                                    --   de mesures.
+                                    
+         -> IO DemandePublicationMesuresFines
 initType = initType_ True
 
-initTypeTest :: String -> IO DemandePublicationMesuresFines
+initTypeTest :: [String] -> MesuresTypeCode -> Maybe MesuresCorrigees -> String -> String 
+          -> Sens -> CadreAcces -> IO DemandePublicationMesuresFines
 initTypeTest = initType_ False
 
 
@@ -97,6 +134,7 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv)
+    myType <- initType [T.unpack $ pointId testEnv] MesuresTypeCodeINDEX Nothing "2024-08-01" 
+                        "2024-09-01" SensSOUTIRAGE CadreAccesACCORDCLIENT
     rep <- wsRequest myType :: IO ( Either (String, String) AffaireId )
     pPrint rep

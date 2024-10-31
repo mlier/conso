@@ -1,38 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10 where
+module Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
+) where
 
 import qualified Data.Text as T
-import           Text.XML.HaXml.OneOfN ( OneOf2(OneOf2) )
+import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) ) 
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10Type
-    ( CommanderTransmissionDonneesInfraJType(..),
-      elementToXMLCommanderTransmissionDonneesInfraJ,
-      CommanderTransmissionDonneesInfraJResponseType,
-      DeclarationAccordClientType(DeclarationAccordClientType,
-                                  declarationAccordClientType_choice3,
-                                  declarationAccordClientType_accordClient,
-                                  declarationAccordClientType_injection,
-                                  declarationAccordClientType_soutirage),
-      PersonnePhysiqueType(PersonnePhysiqueType,
-                           personnePhysiqueType_prenom, personnePhysiqueType_civilite,
-                           personnePhysiqueType_nom),
-      elementCommanderTransmissionDonneesInfraJResponse,
-      DemandeAccesDonneesType(DemandeAccesDonneesType,
-                              demandeAccesDonneesType_ptd,
-                              demandeAccesDonneesType_declarationAccordClient,
-                              demandeAccesDonneesType_injection,
-                              demandeAccesDonneesType_soutirage, demandeAccesDonneesType_cdc,
-                              demandeAccesDonneesType_idx),
-      DemandeType(DemandeType, demandeType_accesDonnees,
-                  demandeType_donneesGenerales),
-      DonneesGeneralesType(DonneesGeneralesType,
-                           donneesGeneralesType_contratId, donneesGeneralesType_refExterne,
-                           donneesGeneralesType_objetCode, donneesGeneralesType_pointId,
-                           donneesGeneralesType_initiateurLogin) )
+
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
     ( BooleenType(BooleenType),
@@ -43,15 +22,18 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
       AdresseEmailType(AdresseEmailType) )
     
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(nomClientFinalOuDenominationSociale, pointId) )
 
 
@@ -69,9 +51,23 @@ instance ResponseType CommanderTransmissionDonneesInfraJResponseType where
                    }
               
 
-initType_ :: Bool -> String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
-initType_ prod myPointId autorisationClient nom = do
+initType_ :: Bool -> String -> AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
+initType_ prod myPointId accordPersonneType sens getCDC getIDX getPTD = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
+
+    let soutirage = case sens of 
+            SensSOUTIRAGE -> True
+            SensINJECTION -> False
+    
+    let personTypeChoice = case accordPersonneType of 
+            AccordPersonnePhysiqueNom nomPhy -> OneOf2 $ PersonnePhysiqueType
+                  { personnePhysiqueType_civilite = Nothing
+                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nomPhy
+                  , personnePhysiqueType_prenom = Nothing
+                  } 
+            AccordPersonneMoraleDenominationSociale denomi -> TwoOf2 $ PersonneMoraleType
+                  { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString denomi
+                  } 
 
     let requestType = CommanderTransmissionDonneesInfraJType{
           commanderTransmissionDonneesInfraJType_demande = DemandeType
@@ -84,29 +80,38 @@ initType_ prod myPointId autorisationClient nom = do
             }
           , demandeType_accesDonnees = DemandeAccesDonneesType
             { demandeAccesDonneesType_declarationAccordClient = [DeclarationAccordClientType
-              { declarationAccordClientType_accordClient = Ds.BooleenType autorisationClient
-              , declarationAccordClientType_injection = Ds.BooleenType False
-              , declarationAccordClientType_soutirage = Ds.BooleenType True
-              , declarationAccordClientType_choice3 = OneOf2 $ PersonnePhysiqueType
-                  { personnePhysiqueType_civilite = Nothing
-                  , personnePhysiqueType_nom = Ds.Chaine255Type $ Xsd.XsdString nom
-                  , personnePhysiqueType_prenom = Nothing
-                  } 
+              { declarationAccordClientType_accordClient = Ds.BooleenType True
+              , declarationAccordClientType_injection = Ds.BooleenType $ not soutirage
+              , declarationAccordClientType_soutirage = Ds.BooleenType soutirage
+              , declarationAccordClientType_choice3 = personTypeChoice
               }]
-            , demandeAccesDonneesType_injection = Ds.BooleenType False
-            , demandeAccesDonneesType_soutirage = Ds.BooleenType True
-            , demandeAccesDonneesType_cdc  = Ds.BooleenType True
-            , demandeAccesDonneesType_idx = Ds.BooleenType False
-            , demandeAccesDonneesType_ptd = Ds.BooleenType False
+            , demandeAccesDonneesType_injection = Ds.BooleenType $ not soutirage
+            , demandeAccesDonneesType_soutirage = Ds.BooleenType soutirage
+            , demandeAccesDonneesType_cdc  = Ds.BooleenType getCDC
+            , demandeAccesDonneesType_idx = Ds.BooleenType getIDX
+            , demandeAccesDonneesType_ptd = Ds.BooleenType getPTD
             }
           }
         }
     return requestType
 
-initType :: String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE. 
+initType :: String              -- ^ myPointId : point de référence sur lequel on souhaite obtenir des informations.
+         -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client et son type : 
+                                --
+                                -- - PersonnePhysique donne le nom de la personne physique qui a donné accord,
+                                -- - PersonneMorale donne la dénomination morale qui a donné son accord.
+         -> Sens                -- ^ sens : indique le sens de l’énergie circulant vers le réseau d’Enedis : 
+                                -- 
+                                -- - INJECTION,
+                                -- - SOUTIRAGE. 
+         -> Bool                -- ^ getCDC : précise si les données des courbes de charge et de la courbe de tension sont demandées.
+         -> Bool                -- ^ getIDX : précise si les données d’index sont demandées.
+         -> Bool                -- ^ getPTD : précise si les données de gestion de la tarification dynamique sont demandées.
+         -> IO CommanderTransmissionDonneesInfraJType
 initType = initType_ True
 
-initTypeTest :: String -> Bool -> String  -> IO CommanderTransmissionDonneesInfraJType
+initTypeTest :: String -> AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
 initTypeTest = initType_ False
 
 
@@ -114,7 +119,18 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) True 
-                       (T.unpack $ nomClientFinalOuDenominationSociale testEnv)
+    myType <- initType (T.unpack $ pointId testEnv)  
+                       (AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
+                       SensSOUTIRAGE False True False
     rep <- wsRequest myType :: IO (Either (String, String) CommanderTransmissionDonneesInfraJResponseType)
     pPrint rep 
+
+data Sens
+    = SensSOUTIRAGE
+    | SensINJECTION
+    deriving (Eq,Show,Enum)
+
+data AccordPersonneType
+    = AccordPersonnePhysiqueNom String
+    | AccordPersonneMoraleDenominationSociale String
+    deriving (Eq,Show)

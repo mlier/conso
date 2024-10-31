@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10 where
+module Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( XsdString(XsdString) )
@@ -19,15 +21,18 @@ import Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type
       RechercherServicesSouscritsMesuresResponseType,
       RechercherServicesSouscritsMesuresType(..) )
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(pointId) )
  
     
@@ -59,7 +64,9 @@ initType_ prod myPointId = do
             }
     return requestType
 
-initType :: String -> IO RechercherServicesSouscritsMesuresType
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: String    -- ^ myPointId : point de référence sur lequel on souhaite obtenir des informations.
+        -> IO RechercherServicesSouscritsMesuresType
 initType = initType_ True
 
 initTypeTest :: String -> IO RechercherServicesSouscritsMesuresType

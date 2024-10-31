@@ -2,7 +2,9 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE BlockArguments #-}
 
-module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 where
+module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 (
+   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import           Data.Maybe ( fromMaybe )
@@ -28,8 +30,8 @@ import Conso.Fr.Elec.Sge.Sge
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       getEnv,
       getLoginContrat,
-      wsRequest,
-      Env(test),
+      wsRequest, xmlRequest, wsRequestTest, xmlRequestTest,
+      SgeEnv(test),
       Test(pointId) )
 
 
@@ -58,7 +60,10 @@ initType_ prod myPointId autorisationClient = do
         }
     return requestType
 
-initType :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
+initType :: String    -- ^ myPointId : point de référence sur lequel on souhaite obtenir des informations.
+         -> Bool      -- ^ autorisationClient : autorisation donnée par le gestionnaire du contrat d'électricité.
+         -> IO ConsulterDonneesTechniquesContractuellesType
 initType = initType_ True
 
 initTypeTest :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType

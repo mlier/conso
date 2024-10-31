@@ -1,43 +1,51 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10 where
+module Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10 (
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
+) where
 
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
-    ( DemandePublicationITC(..),
+    ( elementAffaireId,
       elementToXMLDemandePublicationITC,
       AffaireId,
-      PointId(PointId),
-      Format(Format_JSON),
-      elementAffaireId,
       CadreAcces(CadreAcces_ACCORD_CLIENT),
       ContratId(ContratId),
       Demande(Demande, demande_cadreAcces, demande_format,
               demande_pointIds, demande_sens),
+      DemandePublicationITC(..),
       DonneesGenerales(DonneesGenerales,
                        donneesGenerales_referenceRegroupement,
                        donneesGenerales_initiateurLogin, donneesGenerales_contratId,
                        donneesGenerales_referenceDemandeur,
                        donneesGenerales_affaireReference),
+      Format(Format_JSON),
       InitiateurLogin(InitiateurLogin),
+      PointId(PointId),
       PointIds(PointIds, pointIds_pointId),
       Sens(Sens_SOUTIRAGE) )
+
+
   
 import Conso.Fr.Elec.Sge.Sge
-    ( RequestType(..),
-      ResponseType(..),
+    ( getEnv,
+      getLoginContrat,
+      wsRequest,
+      wsRequestTest,
+      xmlRequest,
+      xmlRequestTest,
       ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
       ConfigResponse(ConfigResponse, elementResponse, xmlTag),
-      getEnv,
-      getLoginContrat,
-      wsRequest,
-      Env(test),
+      RequestType(..),
+      ResponseType(..),
+      SgeEnv(test),
       Test(pointId) )
+
 
 
 instance RequestType DemandePublicationITC where
@@ -54,8 +62,8 @@ instance ResponseType AffaireId where
                    }
                
 
-initType_ :: Bool -> String -> IO DemandePublicationITC
-initType_ prod myPointId = do
+initType_ :: Bool -> [String] -> Sens -> CadreAcces -> IO DemandePublicationITC
+initType_ prod myPointsId sens cadreAcces = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     let requestType = DemandePublicationITC{
@@ -69,18 +77,30 @@ initType_ prod myPointId = do
         , demandePublicationITC_demande = Demande
           { demande_format = Just Format_JSON
           , demande_pointIds = PointIds
-            { pointIds_pointId = [PointId $ Xsd.XsdString myPointId]
+            { pointIds_pointId = map (PointId . Xsd.XsdString) myPointsId
             }
-          , demande_sens = Sens_SOUTIRAGE
-          , demande_cadreAcces = CadreAcces_ACCORD_CLIENT
+          , demande_sens = sens
+          , demande_cadreAcces = cadreAcces
           }
         }
     return requestType
 
-initType :: String -> IO DemandePublicationITC
+-- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE (flux C68).
+initType :: [String]    -- ^ myPointsId : liste des identifiants PRM des points sur lesquels porte la demande.
+         -> Sens        -- ^ sens : indique le Sens de l’énergie circulant vers le réseau d’Enedis : 
+                        -- 
+                        -- - INJECTION,
+                        -- - SOUTIRAGE.
+         -> CadreAcces  -- ^ cadreAcces : indique à quel titre l’acteur consulte les données de mesures :
+                        --
+                        -- - ACCORD_CLIENT si le demandeur accède aux données de mesures au titre d’un accord du client,
+                        -- - SERVICE_ACCES si le demandeur a souscrit au préalable à un service d’accès aux données de mesures,
+                        -- - EST_TITULAIRE si le demandeur est le fournisseur titulaire du contrat unique sur l’ensemble 
+                        --   des PRM de la demande et sur la période.
+         -> IO DemandePublicationITC
 initType = initType_ True
 
-initTypeTest :: String -> IO DemandePublicationITC
+initTypeTest :: [String] -> Sens -> CadreAcces -> IO DemandePublicationITC
 initTypeTest = initType_ False
 
 
@@ -88,6 +108,6 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv)
+    myType <- initType [T.unpack $ pointId testEnv] Sens_SOUTIRAGE CadreAcces_ACCORD_CLIENT
     rep <- wsRequest myType :: IO ( Either (String, String) AffaireId )
     pPrint rep
