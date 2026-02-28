@@ -33,7 +33,7 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 -- Some hs-boot imports are required, for fwd-declaring types.
 
 elementCommanderAccesDonneesMesures :: XMLParser CommanderAccesDonneesMesuresType
-elementCommanderAccesDonneesMesures = parseSchemaType "sc:commanderAccesDonneesMesures"
+elementCommanderAccesDonneesMesures = parseSchemaType "commanderAccesDonneesMesures"
 elementToXMLCommanderAccesDonneesMesures :: CommanderAccesDonneesMesuresType -> [Content ()]
 elementToXMLCommanderAccesDonneesMesures = schemaTypeToXML "sc:commanderAccesDonneesMesures"
 

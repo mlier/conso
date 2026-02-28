@@ -42,12 +42,12 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementCommanderCollectePublicationMesures :: XMLParser CommanderCollectePublicationMesuresType
-elementCommanderCollectePublicationMesures = parseSchemaType "sc:commanderCollectePublicationMesures"
+elementCommanderCollectePublicationMesures = parseSchemaType "commanderCollectePublicationMesures"
 elementToXMLCommanderCollectePublicationMesures :: CommanderCollectePublicationMesuresType -> [Content ()]
 elementToXMLCommanderCollectePublicationMesures = schemaTypeToXML "sc:commanderCollectePublicationMesures"
  
 elementCommanderCollectePublicationMesuresResponse :: XMLParser CommanderCollectePublicationMesuresResponseType
-elementCommanderCollectePublicationMesuresResponse = parseSchemaType "ns4:commanderCollectePublicationMesuresResponse"
+elementCommanderCollectePublicationMesuresResponse = parseSchemaType "commanderCollectePublicationMesuresResponse"
 elementToXMLCommanderCollectePublicationMesuresResponse :: CommanderCollectePublicationMesuresResponseType -> [Content ()]
 elementToXMLCommanderCollectePublicationMesuresResponse = schemaTypeToXML "ns4:commanderCollectePublicationMesuresResponse"
  

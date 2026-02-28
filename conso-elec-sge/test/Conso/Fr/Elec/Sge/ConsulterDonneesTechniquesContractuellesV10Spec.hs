@@ -40,7 +40,7 @@ shouldConsulterHomo myPointId auth = do
 spec :: Spec
 spec = do
     let pointIdC5 =     "25946599093143" :: String
-    --let pointIdC1C4 =   "98800007059999"
+    --let pointIdC1C4 =   "98800007059999" -- ne fonctionne pas
     let pointIdUnkown = "99999999999999"
 
 

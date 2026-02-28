@@ -173,12 +173,12 @@ instance Extension CompteurType EquipementElectriqueType where
                EquipementElectriqueType e0
 
 elementConsulterDonneesTechniquesContractuelles :: XMLParser ConsulterDonneesTechniquesContractuellesType
-elementConsulterDonneesTechniquesContractuelles = parseSchemaType "sc:consulterDonneesTechniquesContractuelles"
+elementConsulterDonneesTechniquesContractuelles = parseSchemaType "consulterDonneesTechniquesContractuelles"
 elementToXMLConsulterDonneesTechniquesContractuelles :: ConsulterDonneesTechniquesContractuellesType -> [Content ()]
 elementToXMLConsulterDonneesTechniquesContractuelles = schemaTypeToXML "sc:consulterDonneesTechniquesContractuelles"
 
 elementConsulterDonneesTechniquesContractuellesResponse :: XMLParser ConsulterDonneesTechniquesContractuellesResponseType
-elementConsulterDonneesTechniquesContractuellesResponse = parseSchemaType "ns7:consulterDonneesTechniquesContractuellesResponse"
+elementConsulterDonneesTechniquesContractuellesResponse = parseSchemaType "consulterDonneesTechniquesContractuellesResponse"
 elementToXMLConsulterDonneesTechniquesContractuellesResponse :: ConsulterDonneesTechniquesContractuellesResponseType -> [Content ()]
 elementToXMLConsulterDonneesTechniquesContractuellesResponse = schemaTypeToXML "ns7:consulterDonneesTechniquesContractuellesResponse"
 

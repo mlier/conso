@@ -32,12 +32,12 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementAffaireId :: XMLParser AffaireId
-elementAffaireId = parseSchemaType "v1:affaireId"
+elementAffaireId = parseSchemaType "affaireId"
 elementToXMLAffaireId :: AffaireId -> [Content ()]
 elementToXMLAffaireId = schemaTypeToXML "v1:affaireId"
  
 elementDemandePublicationMesuresFacturantes :: XMLParser DemandePublicationMesuresFacturantes
-elementDemandePublicationMesuresFacturantes = parseSchemaType "sc:demandePublicationMesuresFacturantes"
+elementDemandePublicationMesuresFacturantes = parseSchemaType "demandePublicationMesuresFacturantes"
 elementToXMLDemandePublicationMesuresFacturantes :: DemandePublicationMesuresFacturantes -> [Content ()]
 elementToXMLDemandePublicationMesuresFacturantes = schemaTypeToXML "sc:demandePublicationMesuresFacturantes"
  

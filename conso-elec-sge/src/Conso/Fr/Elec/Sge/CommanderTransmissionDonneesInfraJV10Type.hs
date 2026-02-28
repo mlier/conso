@@ -39,7 +39,7 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementCommanderTransmissionDonneesInfraJ :: XMLParser CommanderTransmissionDonneesInfraJType
-elementCommanderTransmissionDonneesInfraJ = parseSchemaType "sc:commanderTransmissionDonneesInfraJ"
+elementCommanderTransmissionDonneesInfraJ = parseSchemaType "commanderTransmissionDonneesInfraJ"
 elementToXMLCommanderTransmissionDonneesInfraJ :: CommanderTransmissionDonneesInfraJType -> [Content ()]
 elementToXMLCommanderTransmissionDonneesInfraJ = schemaTypeToXML "sc:commanderTransmissionDonneesInfraJ"
  

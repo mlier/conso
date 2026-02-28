@@ -81,4 +81,5 @@ myrequest = do
     myType <- initType (T.unpack $ pointId testEnv) True
     rep <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
     --rep <- xmlRequest myType
+    -- toDo
     pPrint rep

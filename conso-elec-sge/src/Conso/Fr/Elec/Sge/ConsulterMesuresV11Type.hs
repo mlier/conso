@@ -40,7 +40,7 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementConsulterMesures :: XMLParser ConsulterMesuresType
-elementConsulterMesures = parseSchemaType "sc:consulterMesures"
+elementConsulterMesures = parseSchemaType "consulterMesures"
 elementToXMLConsulterMesures :: ConsulterMesuresType -> [Content ()]
 elementToXMLConsulterMesures = schemaTypeToXML "sc:consulterMesures"
  
@@ -78,7 +78,7 @@ instance SchemaType ConsulterMesuresType where
             ]
  
 elementConsulterMesuresResponse :: XMLParser ConsulterMesuresResponseType
-elementConsulterMesuresResponse = parseSchemaType "ns4:consulterMesuresResponse"
+elementConsulterMesuresResponse = parseSchemaType "consulterMesuresResponse"
 elementToXMLConsulterMesuresResponse :: ConsulterMesuresResponseType -> [Content ()]
 elementToXMLConsulterMesuresResponse = schemaTypeToXML "ns4:consulterMesuresResponse"
  

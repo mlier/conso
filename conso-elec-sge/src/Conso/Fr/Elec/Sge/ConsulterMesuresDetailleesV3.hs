@@ -6,6 +6,7 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 (
 ) where
 
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import qualified Data.Text as T
 import           Text.Pretty.Simple (pPrint)
 
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
@@ -26,16 +27,20 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
       SensMesureType(SensMesureTypeSOUTIRAGE) )
 
 import Conso.Fr.Elec.Sge.Sge
-    ( getLoginContrat,
-      wsRequest,
-      wsRequestTest,
-      xmlRequest,
-      xmlRequestTest,
-      ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
+    ( ConfigRequest(ConfigRequest, elementToXMLRequest, urlSge,
                     soapAction),
-      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
       RequestType(..),
-      ResponseType(..) )
+      ConfigResponse(ConfigResponse, elementResponse, xmlTag),
+      ResponseType(..),
+      SgeEnv(test),
+      Test(pointId),
+      wsRequest,
+      xmlRequest,
+      wsRequestTest,
+      xmlRequestTest,
+      getEnv,
+      getLoginContrat )
+
    
 
 
@@ -158,8 +163,11 @@ initTypeTest = initType_ False
 
 myrequest :: IO()
 myrequest = do 
-    myType <- initType "21429667044956" MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-09-01" 
+    env <- getEnv
+    let testEnv = test env
+    myType <- initType (T.unpack $ pointId testEnv) MesuresTypeCodeTypeINDEX "EA" "2024-08-01" "2024-08-02" 
                        Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
     rep <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
     --rep <- xmlRequest myType
+
     pPrint rep

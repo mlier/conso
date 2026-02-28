@@ -50,12 +50,12 @@ instance SchemaType CriteresType where
             ]
  
 elementRechercherServicesSouscritsMesures :: XMLParser RechercherServicesSouscritsMesuresType
-elementRechercherServicesSouscritsMesures = parseSchemaType "sc:rechercherServicesSouscritsMesures"
+elementRechercherServicesSouscritsMesures = parseSchemaType "rechercherServicesSouscritsMesures"
 elementToXMLRechercherServicesSouscritsMesures :: RechercherServicesSouscritsMesuresType -> [Content ()]
 elementToXMLRechercherServicesSouscritsMesures = schemaTypeToXML "sc:rechercherServicesSouscritsMesures"
  
 elementRechercherServicesSouscritsMesuresResponse :: XMLParser RechercherServicesSouscritsMesuresResponseType
-elementRechercherServicesSouscritsMesuresResponse = parseSchemaType "ns4:rechercherServicesSouscritsMesuresResponse"
+elementRechercherServicesSouscritsMesuresResponse = parseSchemaType "rechercherServicesSouscritsMesuresResponse"
 elementToXMLRechercherServicesSouscritsMesuresResponse :: RechercherServicesSouscritsMesuresResponseType -> [Content ()]
 elementToXMLRechercherServicesSouscritsMesuresResponse = schemaTypeToXML "ns4:rechercherServicesSouscritsMesuresResponse"
  

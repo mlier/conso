@@ -99,7 +99,7 @@ library
 
     -- Other library packages from which modules are imported.
     build-depends:    
-          base ^>=4.17.2.1
+          base >=4.17.2.1
         , time
         , soap
         , soap-tls
@@ -135,7 +135,7 @@ executable conso-elec-sge
 
     -- Other library packages from which modules are imported.
     build-depends:
-          base ^>=4.17.2.1
+          base >=4.17.2.1
         , conso-elec-sge
         , text
         , bytestring
@@ -179,7 +179,7 @@ test-suite conso-elec-sge-test
 
     -- Test dependencies.
     build-depends:
-          base ^>=4.17.2.1
+          base >=4.17.2.1
         , conso-elec-sge
         , hspec
         , hspec-discover

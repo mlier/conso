@@ -8,7 +8,9 @@ import           System.Posix.User ()
 import           GHC.Generics ()
 
 import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 as CDTC
+import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type ( ConsulterDonneesTechniquesContractuellesResponseType )
 import           Conso.Fr.Elec.Sge.ConsulterMesuresV11 as CM
+import           Conso.Fr.Elec.Sge.ConsulterMesuresV11Type ( ConsulterMesuresResponseType )
 import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 as CMD
 
 data Options = Options
@@ -104,11 +106,13 @@ docommand :: Options -> IO ()
 docommand Options{ optVerbose=v, optCommand=c } = case c of
     Info i -> do
         myType <- CDTC.initType (pointIdInfo i) (autorisationClient i)
-        CDTC.wsRequest myType
+        rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
+        print rep
 
     Mesures m -> do
-        myType <- CM.initType (pointIdMesures m)
-        CM.wsRequest myType
+        myType <- CM.initType (pointIdMesures m) True
+        rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+        print rep
 
     MesuresDetail m -> do
         putStrLn "To be done : mesures detail"

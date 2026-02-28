@@ -35,7 +35,7 @@ import           Data.ByteString.Lazy.Char8 ( unpack )
 import           Data.Yaml (FromJSON, ToJSON, decodeFileEither)
 import           GHC.Generics ( Generic )
 import           System.Posix.User
-                    ( UserEntry(homeDirectory),
+                    ( homeDirectory,
                       getEffectiveUserName,
                       getUserEntryForName )
 
@@ -182,7 +182,9 @@ getHaskellType myXmlTag myElementResponse root = plans
         where
             cdtcresp = deep (tag myXmlTag) $ CElem root noPos
             toto = runParser myElementResponse cdtcresp
-            (Right plans) = fst toto
+            plans = case fst toto of
+                        Right p  -> p
+                        Left err -> error $ "getHaskellType: parsing failed for tag '" ++ myXmlTag ++ "': " ++ err
 
 
 soapRequest :: Sge -> String -> String -> XML -> IO String

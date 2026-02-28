@@ -35,12 +35,12 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementCommanderArretServiceSouscritMesures :: XMLParser CommanderArretServiceSouscritMesuresType
-elementCommanderArretServiceSouscritMesures = parseSchemaType "sc:commanderArretServiceSouscritMesures"
+elementCommanderArretServiceSouscritMesures = parseSchemaType "commanderArretServiceSouscritMesures"
 elementToXMLCommanderArretServiceSouscritMesures :: CommanderArretServiceSouscritMesuresType -> [Content ()]
 elementToXMLCommanderArretServiceSouscritMesures = schemaTypeToXML "sc:commanderArretServiceSouscritMesures"
  
 elementCommanderArretServiceSouscritMesuresResponse :: XMLParser CommanderArretServiceSouscritMesuresResponseType
-elementCommanderArretServiceSouscritMesuresResponse = parseSchemaType "ns4:commanderArretServiceSouscritMesuresResponse"
+elementCommanderArretServiceSouscritMesuresResponse = parseSchemaType "commanderArretServiceSouscritMesuresResponse"
 elementToXMLCommanderArretServiceSouscritMesuresResponse :: CommanderArretServiceSouscritMesuresResponseType -> [Content ()]
 elementToXMLCommanderArretServiceSouscritMesuresResponse = schemaTypeToXML "ns4:commanderArretServiceSouscritMesuresResponse"
  

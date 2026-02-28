@@ -38,12 +38,12 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 -- Some hs-boot imports are required, for fwd-declaring types.
  
 elementRechercherPoint :: XMLParser RechercherPointType
-elementRechercherPoint = parseSchemaType "sc:rechercherPoint"
+elementRechercherPoint = parseSchemaType "rechercherPoint"
 elementToXMLRechercherPoint :: RechercherPointType -> [Content ()]
 elementToXMLRechercherPoint = schemaTypeToXML "sc:rechercherPoint"
  
 elementRechercherPointResponse :: XMLParser RechercherPointResponseType
-elementRechercherPointResponse = parseSchemaType "ns1:rechercherPointResponse"
+elementRechercherPointResponse = parseSchemaType "rechercherPointResponse"
 elementToXMLRechercherPointResponse :: RechercherPointResponseType -> [Content ()]
 elementToXMLRechercherPointResponse = schemaTypeToXML "ns1:rechercherPointResponse"
  
