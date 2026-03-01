@@ -4,7 +4,6 @@ module Main where
 
 import           Options.Applicative
 import           Text.Pretty.Simple (pPrint)
-import           Data.Text ( Text )
 import           System.Posix.User ()
 import           GHC.Generics ()
 
@@ -14,11 +13,17 @@ import           Conso.Fr.Elec.Sge.ConsulterMesuresV11 as CM
 import           Conso.Fr.Elec.Sge.ConsulterMesuresV11Type ( ConsulterMesuresResponseType )
 import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 as CMD
 
+import           Display (renderApp)
+import           Display.InfoDisplay    ()   -- instances Renderable
+import           Display.MesuresDisplay ()   -- instances Renderable
+
+
 data Options = Options
     {
     -- global options
       optVerbose     :: Bool
     , optXml         :: Bool
+    , optRaw         :: Bool
     -- commands
     , optCommand     :: Command
     } deriving (Eq, Show)
@@ -54,6 +59,7 @@ opts =
     Options
         <$> switch ( long "verbose" <> short 'v' <> help "Enable verbosity (default: disabled)" )
         <*> switch ( long "xml" <> help "Affiche la réponse XML brute du webservice" )
+        <*> switch ( long "raw" <> help "Affiche la réponse brute non mise en forme (pPrint)" )
         <*> comm
 
 
@@ -107,14 +113,14 @@ mesuresDetailParser = MesuresDetailOptions
          <> help "Point" )
 
 docommand :: Options -> IO ()
-docommand Options{ optXml=xml, optCommand=c } = case c of
+docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
     Info i -> do
         myType <- CDTC.initType (pointIdInfo i) (autorisationClient i)
         if xml
           then CDTC.xmlRequest myType >>= putStrLn
           else do
             rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
-            pPrint rep
+            if raw then pPrint rep else renderApp rep
 
     Mesures m -> do
         myType <- CM.initType (pointIdMesures m) True
@@ -122,7 +128,7 @@ docommand Options{ optXml=xml, optCommand=c } = case c of
           then CM.xmlRequest myType >>= putStrLn
           else do
             rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-            pPrint rep
+            if raw then pPrint rep else renderApp rep
 
     MesuresDetail m -> do
         putStrLn "To be done : mesures detail"
@@ -138,5 +144,5 @@ main = docommand =<< execParser optsHeader
   where
     optsHeader = info (opts <**> helper)
       ( fullDesc
-     <> progDesc "Print a greeting for TARGET"
-     <> header "hello - a test for optparse-applicative" )
+     <> progDesc "Consultation des webservices SGE Enedis"
+     <> header "conso-elec-sge" )
