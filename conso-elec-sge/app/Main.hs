@@ -17,6 +17,7 @@ data Options = Options
     {
     -- global options
       optVerbose     :: Bool
+    , optXml         :: Bool
     -- commands
     , optCommand     :: Command
     } deriving (Eq, Show)
@@ -51,7 +52,9 @@ opts :: Parser Options
 opts =
     Options
         <$> switch ( long "verbose" <> short 'v' <> help "Enable verbosity (default: disabled)" )
+        <*> switch ( long "xml" <> help "Affiche la réponse XML brute du webservice" )
         <*> comm
+
 
 comm :: Parser Command
 comm =
@@ -103,22 +106,28 @@ mesuresDetailParser = MesuresDetailOptions
          <> help "Point" )
 
 docommand :: Options -> IO ()
-docommand Options{ optVerbose=v, optCommand=c } = case c of
+docommand Options{ optXml=xml, optCommand=c } = case c of
     Info i -> do
         myType <- CDTC.initType (pointIdInfo i) (autorisationClient i)
-        rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
-        print rep
+        if xml
+          then CDTC.xmlRequest myType >>= putStrLn
+          else do
+            rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
+            print rep
 
     Mesures m -> do
         myType <- CM.initType (pointIdMesures m) True
-        rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-        print rep
+        if xml
+          then CM.xmlRequest myType >>= putStrLn
+          else do
+            rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+            print rep
 
     MesuresDetail m -> do
         putStrLn "To be done : mesures detail"
         putStrLn $ pointIdMesuresDetail m
         --myType <- CMD.initType (pointIdMesuresDetail m)
-        --     mesuresTypeCode grandeurPhysique dateDebut dateFin 
+        --     mesuresTypeCode grandeurPhysique dateDebut dateFin
         -- mesuresPas mesuresCorrigees sens cadreAcces
         --CMD.wsRequest myType
 
