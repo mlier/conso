@@ -143,6 +143,7 @@ executable conso-elec-sge
         , aeson
         , yaml
         , unix
+        , pretty-simple
 
     -- Directories containing source files.
     hs-source-dirs:   app

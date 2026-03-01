@@ -3,6 +3,7 @@
 module Main where
 
 import           Options.Applicative
+import           Text.Pretty.Simple (pPrint)
 import           Data.Text ( Text )
 import           System.Posix.User ()
 import           GHC.Generics ()
@@ -113,7 +114,7 @@ docommand Options{ optXml=xml, optCommand=c } = case c of
           then CDTC.xmlRequest myType >>= putStrLn
           else do
             rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
-            print rep
+            pPrint rep
 
     Mesures m -> do
         myType <- CM.initType (pointIdMesures m) True
@@ -121,7 +122,7 @@ docommand Options{ optXml=xml, optCommand=c } = case c of
           then CM.xmlRequest myType >>= putStrLn
           else do
             rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-            print rep
+            pPrint rep
 
     MesuresDetail m -> do
         putStrLn "To be done : mesures detail"
