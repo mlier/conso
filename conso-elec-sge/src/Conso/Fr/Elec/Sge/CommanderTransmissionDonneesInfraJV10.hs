@@ -46,7 +46,7 @@ instance RequestType CommanderTransmissionDonneesInfraJType where
 
 instance ResponseType CommanderTransmissionDonneesInfraJResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns4:commanderTransmissionDonneesInfraJResponse"
+                     xmlTag = "commanderTransmissionDonneesInfraJResponse"
                    , elementResponse = elementCommanderTransmissionDonneesInfraJResponse
                    }
               

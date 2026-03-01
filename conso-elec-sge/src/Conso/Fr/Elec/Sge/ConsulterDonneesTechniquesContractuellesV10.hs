@@ -44,7 +44,7 @@ instance RequestType ConsulterDonneesTechniquesContractuellesType where
 
 instance ResponseType ConsulterDonneesTechniquesContractuellesResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns7:consulterDonneesTechniquesContractuellesResponse"
+                     xmlTag = "consulterDonneesTechniquesContractuellesResponse"
                    , elementResponse = elementConsulterDonneesTechniquesContractuellesResponse
                    }
 

@@ -53,7 +53,7 @@ instance RequestType ConsulterMesuresDetailleesV3Type where
 
 instance ResponseType ConsulterMesuresDetailleesV3ResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns4:consulterMesuresDetailleesResponseV3"
+                     xmlTag = "consulterMesuresDetailleesResponseV3"
                    , elementResponse = elementConsulterMesuresDetailleesResponseV3
                    }
              

@@ -78,7 +78,7 @@ instance SchemaType ConsulterMesuresType where
             ]
  
 elementConsulterMesuresResponse :: XMLParser ConsulterMesuresResponseType
-elementConsulterMesuresResponse = parseSchemaType "ns4:consulterMesuresResponse"
+elementConsulterMesuresResponse = parseSchemaType "consulterMesuresResponse"
 elementToXMLConsulterMesuresResponse :: ConsulterMesuresResponseType -> [Content ()]
 elementToXMLConsulterMesuresResponse = schemaTypeToXML "ns4:consulterMesuresResponse"
  

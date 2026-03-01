@@ -55,7 +55,7 @@ instance RequestType CommanderArretServiceSouscritMesuresType where
 
 instance ResponseType CommanderArretServiceSouscritMesuresResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns4:commanderArretServiceSouscritMesuresResponse"
+                     xmlTag = "commanderArretServiceSouscritMesuresResponse"
                    , elementResponse = elementCommanderArretServiceSouscritMesuresResponse
                    }
              

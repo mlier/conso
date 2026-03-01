@@ -71,7 +71,7 @@ instance RequestType RechercherPointType where
 
 instance ResponseType RechercherPointResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns1:rechercherPointResponse"
+                     xmlTag = "rechercherPointResponse"
                    , elementResponse = elementRechercherPointResponse
                    }
 

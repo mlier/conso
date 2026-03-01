@@ -57,7 +57,7 @@ instance RequestType DemandePublicationITC where
 
 instance ResponseType AffaireId where
   configResp = ConfigResponse{
-                     xmlTag = "v1:affaireId"
+                     xmlTag = "affaireId"
                    , elementResponse = elementAffaireId
                    }
                

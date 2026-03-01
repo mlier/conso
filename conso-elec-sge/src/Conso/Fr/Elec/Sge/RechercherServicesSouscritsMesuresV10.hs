@@ -46,7 +46,7 @@ instance RequestType RechercherServicesSouscritsMesuresType where
 
 instance ResponseType RechercherServicesSouscritsMesuresResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns4:rechercherServicesSouscritsMesuresResponse" 
+                     xmlTag = "rechercherServicesSouscritsMesuresResponse" 
                    , elementResponse = elementRechercherServicesSouscritsMesuresResponse
                    }
 

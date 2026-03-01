@@ -73,7 +73,7 @@ instance RequestType CommanderAccesDonneesMesuresType where
 
 instance ResponseType CommanderAccesDonneesMesuresResponseType where
   configResp = ConfigResponse{
-                    xmlTag = "ns4:commanderAccesDonneesMesuresResponse"
+                    xmlTag = "commanderAccesDonneesMesuresResponse"
                    , elementResponse = elementCommanderAccesDonneesMesuresResponse
                    }
               

@@ -78,7 +78,7 @@ instance RequestType CommanderCollectePublicationMesuresType where
 
 instance ResponseType CommanderCollectePublicationMesuresResponseType where
   configResp = ConfigResponse{
-                     xmlTag = "ns4:commanderCollectePublicationMesuresResponse"
+                     xmlTag = "commanderCollectePublicationMesuresResponse"
                    , elementResponse = elementCommanderCollectePublicationMesuresResponse
                    }
               

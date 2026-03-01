@@ -24,7 +24,7 @@ import           Text.XML.HaXml
                       Content(CElem),
                       Document(Document),
                       deep,
-                      tag,
+                      tagWith,
                       xmlParse )
 import           Text.XML.HaXml.Posn ( noPos, Posn )
 import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(XsdString) )
@@ -177,10 +177,20 @@ sgeXmlRequest prod req = do
     soapRequest envSge (urlSge creq) (soapAction creq) xmlConduit
 
 
+-- | Like 'tag' but matches by local name, ignoring any namespace prefix.
+--   e.g. tagLocal "foo" matches <ns4:foo>, <foo>, <tns:foo>, etc.
+tagLocal :: String -> Content i -> [Content i]
+tagLocal n = tagWith (\pn -> localPart pn == n)
+  where
+    localPart s = case dropWhile (/= ':') s of
+                    ':':l -> l
+                    _     -> s
+
+
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
 getHaskellType myXmlTag myElementResponse root = plans
         where
-            cdtcresp = deep (tag myXmlTag) $ CElem root noPos
+            cdtcresp = deep (tagLocal myXmlTag) $ CElem root noPos
             toto = runParser myElementResponse cdtcresp
             plans = case fst toto of
                         Right p  -> p
@@ -224,7 +234,7 @@ xml2hsType myXmlTag myElementResponse xml = do
 checkXMLerror :: String -> Either (String, String) (Element Posn)
 checkXMLerror xmlResp =  do
     let (Document _ _ root _) = xmlParse "(No Document)" xmlResp
-    let resultatXml = deep (tag "resultat") $ CElem root noPos
+    let resultatXml = deep (tagLocal "resultat") $ CElem root noPos
     let resultat = runParser elementResultat resultatXml
 
     case resultat of
