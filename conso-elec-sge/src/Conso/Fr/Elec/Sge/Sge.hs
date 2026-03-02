@@ -187,6 +187,11 @@ tagLocal n = tagWith (\pn -> localPart pn == n)
                     _     -> s
 
 
+-- | Met en forme (indente) une réponse XML brute.
+prettyXml :: String -> String
+prettyXml = PP.render . P.document . xmlParse "(response)"
+
+
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
 getHaskellType myXmlTag myElementResponse root = plans
         where

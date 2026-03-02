@@ -19,6 +19,7 @@ import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
     , CadreAccesType(..)
     , ConsulterMesuresDetailleesV3ResponseType )
 
+import           Conso.Fr.Elec.Sge.Sge (prettyXml)
 import           Display (renderApp)
 import           Display.InfoDisplay          ()   -- instances Renderable
 import           Display.MesuresDisplay       ()   -- instances Renderable
@@ -172,7 +173,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
     Info i -> do
         myType <- CDTC.initType (pointIdInfo i) (autorisationClient i)
         if xml
-          then CDTC.xmlRequest myType >>= putStrLn
+          then CDTC.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
             rep <- CDTC.wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
             if raw then pPrint rep else renderApp rep
@@ -180,7 +181,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
     Mesures m -> do
         myType <- CM.initType (pointIdMesures m) True
         if xml
-          then CM.xmlRequest myType >>= putStrLn
+          then CM.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
             rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
             if raw then pPrint rep else renderApp rep
@@ -197,7 +198,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
                     (toSens (mdSens m))
                     (toAutorisation (mdAutorisation m))
         if xml
-          then CMD.xmlRequest myType >>= putStrLn
+          then CMD.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
             rep <- CMD.wsRequest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
             if raw then pPrint rep else renderApp rep
