@@ -39,7 +39,7 @@ data Options = Options
 data Command
     = Info InfoOptions
     | Mesures MesuresOptions
-    | MesuresDetail MesuresDetailOptions
+    | MesuresDetail MesuresDetailCommand
 {-    | Recherche RechercheCommand
     | HistoriqueM23 HistoriqueM23Command
     | FluxCommand FluxCommand
@@ -57,17 +57,24 @@ newtype MesuresOptions = MesuresOptions
   { pointIdMesures     :: String
   } deriving (Eq, Show)
 
-data MesuresDetailOptions = MesuresDetailOptions
-  { mdPoint        :: String
-  , mdType         :: String
-  , mdGrandeur     :: String
-  , mdDebut        :: String
-  , mdFin          :: String
-  , mdPas          :: Maybe String
-  , mdCorrigees    :: Bool
-  , mdSens         :: String
-  , mdAutorisation :: String
+-- | Options communes aux 4 sous-commandes de mesuresdetail.
+data MdCommonOpts = MdCommonOpts
+  { mdcPoint        :: String
+  , mdcGrandeur     :: String
+  , mdcDebut        :: String
+  , mdcFin          :: String
+  , mdcCorrigees    :: Bool
+  , mdcSens         :: String
+  , mdcAutorisation :: String
   } deriving (Eq, Show)
+
+-- | Sous-commande choisie par l'utilisateur ; le constructeur détermine le type de mesure.
+data MesuresDetailCommand
+    = MdCourbe  MdCommonOpts
+    | MdPmax    MdCommonOpts String   -- ^ 2e champ = pas (P1D|P1M), obligatoire pour PMAX
+    | MdEnergie MdCommonOpts
+    | MdIndex   MdCommonOpts
+  deriving (Eq, Show)
 
 
 opts :: Parser Options
@@ -94,9 +101,9 @@ comm =
                 ( progDesc "Avoir des mesures mensuelles" )
             )
         <> command "mesuresdetail"
-            (info
-                ( MesuresDetail <$> mesuresDetailParser <**> helper )
-                ( progDesc "Avoir des mesures détaillées" )
+            ( info
+                ( MesuresDetail <$> mesuresDetailComm )
+                ( progDesc "Avoir des mesures détaillées (courbe|pmax|energie|index)" )
             )
         )
 
@@ -120,36 +127,47 @@ mesuresParser = MesuresOptions
          <> metavar "POINT"
          <> help "Point" )
 
-mesuresDetailParser :: Parser MesuresDetailOptions
-mesuresDetailParser = MesuresDetailOptions
-      <$> strOption   ( long "point"    <> short 'p' <> metavar "PRM"
-                     <> help "Identifiant PRM du point" )
-      <*> strOption   ( long "type"     <> short 't' <> metavar "COURBE|PMAX|ENERGIE|INDEX"
-                     <> help "Type de mesure" )
-      <*> strOption   ( long "grandeur" <> short 'g' <> metavar "PA|EA|TOUT|..."
-                     <> help "Grandeur physique demandée" )
-      <*> strOption   ( long "debut"    <> metavar "YYYY-MM-DD"
-                     <> help "Date de début (incluse)" )
-      <*> strOption   ( long "fin"      <> metavar "YYYY-MM-DD"
-                     <> help "Date de fin (exclue)" )
-      <*> optional (strOption ( long "pas" <> metavar "P1D|P1M"
-                             <> help "Pas temporel (PMAX seulement)" ))
-      <*> switch      ( long "corrigees"
-                     <> help "Mesures corrigées BEST" )
-      <*> strOption   ( long "sens"     <> metavar "INJECTION|SOUTIRAGE"
-                     <> value "SOUTIRAGE" <> showDefault
-                     <> help "Sens de la mesure" )
-      <*> strOption   ( long "autorisation"
-                     <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
-                     <> value "ACCORD_CLIENT" <> showDefault
-                     <> help "Cadre d'accès aux données" )
+-- | Options communes aux 4 sous-commandes ; le metavar de --grandeur est spécifique à chaque type.
+mdCommonParser :: String -> Parser MdCommonOpts
+mdCommonParser grandeurMeta = MdCommonOpts
+      <$> strOption ( long "point"    <> short 'p' <> metavar "PRM"
+                   <> help "Identifiant PRM du point" )
+      <*> strOption ( long "grandeur" <> short 'g' <> metavar grandeurMeta
+                   <> help "Grandeur physique" )
+      <*> strOption ( long "debut"    <> metavar "YYYY-MM-DD"
+                   <> help "Date de début (incluse)" )
+      <*> strOption ( long "fin"      <> metavar "YYYY-MM-DD"
+                   <> help "Date de fin (exclue)" )
+      <*> switch    ( long "corrigees"
+                   <> help "Mesures corrigées BEST" )
+      <*> strOption ( long "sens"     <> metavar "INJECTION|SOUTIRAGE"
+                   <> value "SOUTIRAGE" <> showDefault
+                   <> help "Sens de la mesure" )
+      <*> strOption ( long "autorisation"
+                   <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
+                   <> value "ACCORD_CLIENT" <> showDefault
+                   <> help "Cadre d'accès aux données" )
 
-toTypeCode :: String -> MesuresTypeCodeType
-toTypeCode "COURBE"  = MesuresTypeCodeTypeCOURBE
-toTypeCode "PMAX"    = MesuresTypeCodeTypePMAX
-toTypeCode "ENERGIE" = MesuresTypeCodeTypeENERGIE
-toTypeCode "INDEX"   = MesuresTypeCodeTypeINDEX
-toTypeCode s         = errorWithoutStackTrace $ "Type de mesure inconnu: " ++ s ++ " (COURBE|PMAX|ENERGIE|INDEX)"
+mesuresDetailComm :: Parser MesuresDetailCommand
+mesuresDetailComm = subparser
+    (  command "courbe"
+        ( info ( MdCourbe <$> mdCommonParser "PA|PRI|PRC|E|TOUT" <**> helper )
+               ( progDesc "Courbe de puissance ou tension" ) )
+    <> command "pmax"
+        ( info ( MdPmax
+                   <$> mdCommonParser "PMA|TOUT"
+                   <*> strOption ( long "pas" <> metavar "P1D|P1M"
+                                <> help "Pas temporel (quotidien ou mensuel)" )
+                   <**> helper )
+               ( progDesc "Puissance maximale quotidienne ou mensuelle" ) )
+    <> command "energie"
+        ( info ( MdEnergie <$> mdCommonParser "EA|ERC|ERI" <**> helper )
+               ( progDesc "Énergie globale quotidienne" ) )
+    <> command "index"
+        ( info ( MdIndex <$> mdCommonParser "EA|ER|ERC|ERI|DD|DE|DQ|PMA|TF|TOUT" <**> helper )
+               ( progDesc "Index" ) )
+    )
+
 
 toPas :: String -> MesuresPasType
 toPas "P1D" = MesuresPasType_P1D
@@ -186,17 +204,22 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
             rep <- CM.wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
             if raw then pPrint rep else renderApp rep
 
-    MesuresDetail m -> do
+    MesuresDetail cmd -> do
+        let (common, typeCode, maybePas) = case cmd of
+                MdCourbe  o     -> (o, MesuresTypeCodeTypeCOURBE,  Nothing)
+                MdPmax    o pas -> (o, MesuresTypeCodeTypePMAX,    Just (toPas pas))
+                MdEnergie o     -> (o, MesuresTypeCodeTypeENERGIE, Nothing)
+                MdIndex   o     -> (o, MesuresTypeCodeTypeINDEX,   Nothing)
         myType <- CMD.initType
-                    (mdPoint m)
-                    (toTypeCode (mdType m))
-                    (mdGrandeur m)
-                    (mdDebut m)
-                    (mdFin m)
-                    (toPas <$> mdPas m)
-                    (mdCorrigees m)
-                    (toSens (mdSens m))
-                    (toAutorisation (mdAutorisation m))
+                    (mdcPoint common)
+                    typeCode
+                    (mdcGrandeur common)
+                    (mdcDebut common)
+                    (mdcFin common)
+                    maybePas
+                    (mdcCorrigees common)
+                    (toSens (mdcSens common))
+                    (toAutorisation (mdcAutorisation common))
         if xml
           then CMD.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
