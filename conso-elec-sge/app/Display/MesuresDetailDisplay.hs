@@ -38,19 +38,19 @@ renderGrandeur g =
              ++ " (" ++ simpleTypeText (grandeurInstantanees_grandeurPhysique g) ++ ")"
              ++ " [" ++ simpleTypeText (grandeurInstantanees_unite             g) ++ "]"
         rows  = case grandeurInstantanees_points g of
-                  [] -> [str "(aucune donnée)"]
+                  [] -> [ustr "(aucune donnée)"]
                   pts -> pointsHeader : map renderPoint pts
     in section titre rows
 
 
 pointsHeader :: Widget ()
 pointsHeader =
-    withAttr labelAttr $ str $
+    withAttr labelAttr $ ustr $
     padTo 25 "Horodatage" ++ " | " ++ padTo 12 "Valeur" ++ " | Validité"
 
 
 renderPoint :: Points -> Widget ()
-renderPoint p = str $
+renderPoint p = ustr $
     padTo 25 (simpleTypeText $ points_d p) ++ " | " ++
     padTo 12 (simpleTypeText $ points_v p) ++ " | " ++
     maybe "" simpleTypeText (points_iv p)
@@ -82,11 +82,11 @@ renderClasseTemporelle :: ClasseTemporelle -> [Widget ()]
 renderClasseTemporelle ct =
     let titre = maybe "(sans libellé)" simpleTypeText (classeTemporelle_libelleClasseTemporelle ct)
         rows  = map renderValeur (classeTemporelle_valeur ct)
-    in [section titre (if null rows then [str "(vide)"] else rows)]
+    in [section titre (if null rows then [ustr "(vide)"] else rows)]
 
 
 renderValeur :: Valeur -> Widget ()
-renderValeur v = str $
+renderValeur v = ustr $
     padTo 25 (simpleTypeText $ valeur_d  v) ++ " | " ++
     padTo 12 (simpleTypeText $ valeur_v  v) ++ " | iv=" ++
     simpleTypeText (valeur_iv v)

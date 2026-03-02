@@ -49,7 +49,7 @@ renderAlimentation :: SituationAlimentationType -> Widget ()
 renderAlimentation sa =
     section "Alimentation" $
     case situationAlimentationType_alimentationPrincipale sa of
-        Nothing -> [str "(aucune)"]
+        Nothing -> [ustr "(aucune)"]
         Just ap ->
             [ field      "Domaine de tension"    (show $ alimentationPrincipaleType_domaineTension ap)
             , maybeField "Tension de livraison"  (show <$> alimentationPrincipaleType_tensionLivraison ap)
@@ -66,7 +66,7 @@ renderComptage sc =
     , maybeField "Média de relève" (show <$> situationComptageType_mediaReleve sc)
     ]
     ++ case situationComptageType_dispositifComptage sc of
-        Nothing  -> [str "(pas de dispositif)"]
+        Nothing  -> [ustr "(pas de dispositif)"]
         Just dc' ->
             field "Type de comptage" (show $ dispositifComptageType_typeComptage dc')
             : renderCompteurs (maybe [] compteursType_compteur $ dispositifComptageType_compteurs dc')
@@ -91,7 +91,7 @@ renderContractuel :: SituationContractuelleType -> Widget ()
 renderContractuel sc =
     section "Situation contractuelle" $
     case situationContractuelleType_structureTarifaire sc of
-        Nothing -> [str "(aucune structure tarifaire)"]
+        Nothing -> [ustr "(aucune structure tarifaire)"]
         Just st ->
             [ maybeField "Formule tarifaire acheminement"
                          (show <$> structureTarifaireType_formuleTarifaireAcheminement st)

@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import           Data.Text.Encoding as T ( encodeUtf8 )
 import           Data.Text ( Text )
 import qualified Data.Text.Lazy as L
+import qualified Data.Text.Lazy.Encoding as LE
 
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
@@ -31,7 +32,6 @@ import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(Xsd
 import           Text.XML.HaXml.Schema.Schema ( XMLParser )
 import qualified Text.XML.HaXml.Pretty as P
 import qualified Text.PrettyPrint.HughesPJ as PP
-import           Data.ByteString.Lazy.Char8 ( unpack )
 import           Data.Yaml (FromJSON, ToJSON, decodeFileEither)
 import           GHC.Generics ( Generic )
 import           System.Posix.User
@@ -223,7 +223,7 @@ soapRequest envSge myUrlSge mySoapAction body = do
         pure -- or printBody
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
-    return $ unpack xml
+    return $ L.unpack (LE.decodeUtf8 xml)
     where
         withBasicAuth :: ByteString -> ByteString -> RequestProc
         withBasicAuth username passw req = pure (applyBasicAuth username passw req)

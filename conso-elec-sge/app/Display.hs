@@ -1,6 +1,7 @@
 module Display
   ( Renderable(..)
   , renderApp
+  , ustr
   , field
   , maybeField
   , section
@@ -14,6 +15,7 @@ module Display
 import           Brick
 import           Brick.Widgets.Border (borderWithLabel, border)
 import qualified Graphics.Vty         as V
+import qualified Data.Text            as T
 
 
 -- | Typeclass associant chaque type de réponse à un widget brick.
@@ -23,6 +25,11 @@ class Renderable a where
 
 
 -- | Lance l'affichage TUI. Quitter avec 'q' ou Escape. Défiler avec ↑/↓.
+-- | Comme 'str' mais utilise 'txt' (text-width) qui calcule la largeur
+--   d'affichage Unicode via ses propres tables, indépendamment de la locale C.
+ustr :: String -> Widget n
+ustr = txt . T.pack
+
 renderApp :: Renderable a => Either (String, String) a -> IO ()
 renderApp x = do
     let theApp = App
@@ -65,7 +72,7 @@ theMap = attrMap V.defAttr
 -- | Ligne "label : valeur"
 field :: String -> String -> Widget ()
 field lbl val =
-    withAttr labelAttr (str lbl) <+> str (" : " ++ val)
+    withAttr labelAttr (ustr lbl) <+> ustr (" : " ++ val)
 
 -- | Ligne optionnelle — absente si Nothing
 maybeField :: String -> Maybe String -> Widget ()
@@ -74,13 +81,13 @@ maybeField lbl = maybe emptyWidget (field lbl)
 -- | Bloc avec titre encadré
 section :: String -> [Widget ()] -> Widget ()
 section title rows =
-    borderWithLabel (withAttr sectionAttr $ str (" " ++ title ++ " ")) $
+    borderWithLabel (withAttr sectionAttr $ ustr (" " ++ title ++ " ")) $
     vBox rows
 
 -- | Affichage d'erreur SGT
 renderError :: String -> String -> Widget ()
 renderError code msg =
     border $ withAttr errorAttr $ vBox
-        [ str ("Erreur " ++ code)
-        , str msg
+        [ ustr ("Erreur " ++ code)
+        , ustr msg
         ]
