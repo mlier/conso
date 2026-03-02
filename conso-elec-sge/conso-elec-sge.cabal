@@ -132,6 +132,7 @@ executable conso-elec-sge
         Display
         Display.InfoDisplay
         Display.MesuresDisplay
+        Display.MesuresDetailDisplay
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

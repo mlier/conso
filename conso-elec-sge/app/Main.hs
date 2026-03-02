@@ -12,10 +12,17 @@ import           Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Ty
 import           Conso.Fr.Elec.Sge.ConsulterMesuresV11 as CM
 import           Conso.Fr.Elec.Sge.ConsulterMesuresV11Type ( ConsulterMesuresResponseType )
 import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 as CMD
+import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
+    ( MesuresTypeCodeType(..)
+    , MesuresPasType(..)
+    , SensMesureType(..)
+    , CadreAccesType(..)
+    , ConsulterMesuresDetailleesV3ResponseType )
 
 import           Display (renderApp)
-import           Display.InfoDisplay    ()   -- instances Renderable
-import           Display.MesuresDisplay ()   -- instances Renderable
+import           Display.InfoDisplay          ()   -- instances Renderable
+import           Display.MesuresDisplay       ()   -- instances Renderable
+import           Display.MesuresDetailDisplay ()   -- instances Renderable
 
 
 data Options = Options
@@ -49,8 +56,16 @@ newtype MesuresOptions = MesuresOptions
   { pointIdMesures     :: String
   } deriving (Eq, Show)
 
-newtype MesuresDetailOptions = MesuresDetailOptions
-  { pointIdMesuresDetail     :: String
+data MesuresDetailOptions = MesuresDetailOptions
+  { mdPoint        :: String
+  , mdType         :: String
+  , mdGrandeur     :: String
+  , mdDebut        :: String
+  , mdFin          :: String
+  , mdPas          :: Maybe String
+  , mdCorrigees    :: Bool
+  , mdSens         :: String
+  , mdAutorisation :: String
   } deriving (Eq, Show)
 
 
@@ -106,11 +121,51 @@ mesuresParser = MesuresOptions
 
 mesuresDetailParser :: Parser MesuresDetailOptions
 mesuresDetailParser = MesuresDetailOptions
-      <$> strOption
-          ( long "point"
-         <> short 'p'
-         <> metavar "POINT"
-         <> help "Point" )
+      <$> strOption   ( long "point"    <> short 'p' <> metavar "PRM"
+                     <> help "Identifiant PRM du point" )
+      <*> strOption   ( long "type"     <> short 't' <> metavar "COURBE|PMAX|ENERGIE|INDEX"
+                     <> help "Type de mesure" )
+      <*> strOption   ( long "grandeur" <> short 'g' <> metavar "PA|EA|TOUT|..."
+                     <> help "Grandeur physique demandée" )
+      <*> strOption   ( long "debut"    <> metavar "YYYY-MM-DD"
+                     <> help "Date de début (incluse)" )
+      <*> strOption   ( long "fin"      <> metavar "YYYY-MM-DD"
+                     <> help "Date de fin (exclue)" )
+      <*> optional (strOption ( long "pas" <> metavar "P1D|P1M"
+                             <> help "Pas temporel (PMAX seulement)" ))
+      <*> switch      ( long "corrigees"
+                     <> help "Mesures corrigées BEST" )
+      <*> strOption   ( long "sens"     <> metavar "INJECTION|SOUTIRAGE"
+                     <> value "SOUTIRAGE" <> showDefault
+                     <> help "Sens de la mesure" )
+      <*> strOption   ( long "autorisation"
+                     <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
+                     <> value "ACCORD_CLIENT" <> showDefault
+                     <> help "Cadre d'accès aux données" )
+
+toTypeCode :: String -> MesuresTypeCodeType
+toTypeCode "COURBE"  = MesuresTypeCodeTypeCOURBE
+toTypeCode "PMAX"    = MesuresTypeCodeTypePMAX
+toTypeCode "ENERGIE" = MesuresTypeCodeTypeENERGIE
+toTypeCode "INDEX"   = MesuresTypeCodeTypeINDEX
+toTypeCode s         = errorWithoutStackTrace $ "Type de mesure inconnu: " ++ s ++ " (COURBE|PMAX|ENERGIE|INDEX)"
+
+toPas :: String -> MesuresPasType
+toPas "P1D" = MesuresPasType_P1D
+toPas "P1M" = MesuresPasType_P1M
+toPas s     = errorWithoutStackTrace $ "Pas inconnu: " ++ s ++ " (P1D|P1M)"
+
+toSens :: String -> SensMesureType
+toSens "INJECTION" = SensMesureTypeINJECTION
+toSens "SOUTIRAGE" = SensMesureTypeSOUTIRAGE
+toSens s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (INJECTION|SOUTIRAGE)"
+
+toAutorisation :: String -> CadreAccesType
+toAutorisation "ACCORD_CLIENT" = CadreAccesTypeACCORDCLIENT
+toAutorisation "SERVICE_ACCES" = CadreAccesTypeSERVICEACCES
+toAutorisation "EST_TITULAIRE" = CadreAccesTypeESTTITULAIRE
+toAutorisation s               = errorWithoutStackTrace $ "Autorisation inconnue: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
+
 
 docommand :: Options -> IO ()
 docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
@@ -131,12 +186,21 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
             if raw then pPrint rep else renderApp rep
 
     MesuresDetail m -> do
-        putStrLn "To be done : mesures detail"
-        putStrLn $ pointIdMesuresDetail m
-        --myType <- CMD.initType (pointIdMesuresDetail m)
-        --     mesuresTypeCode grandeurPhysique dateDebut dateFin
-        -- mesuresPas mesuresCorrigees sens cadreAcces
-        --CMD.wsRequest myType
+        myType <- CMD.initType
+                    (mdPoint m)
+                    (toTypeCode (mdType m))
+                    (mdGrandeur m)
+                    (mdDebut m)
+                    (mdFin m)
+                    (toPas <$> mdPas m)
+                    (mdCorrigees m)
+                    (toSens (mdSens m))
+                    (toAutorisation (mdAutorisation m))
+        if xml
+          then CMD.xmlRequest myType >>= putStrLn
+          else do
+            rep <- CMD.wsRequest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
+            if raw then pPrint rep else renderApp rep
 
 
 main :: IO ()
