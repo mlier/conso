@@ -30,6 +30,15 @@ import           Display.InfoDisplay          ()   -- instances Renderable
 import           Display.MesuresDisplay       ()   -- instances Renderable
 import           Display.MesuresDetailDisplay ()   -- instances Renderable
 import           Display.RechercheDisplay     ()   -- instances Renderable
+import           Display.M023Display          (AffaireIdResult(..))  -- instance Renderable
+
+import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10              as MFI
+import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10        as MFA
+import qualified Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10 as ITC
+import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type              as MFI_T
+import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Type       as MFA_T
+import qualified Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type as ITC_T
+import           Text.XML.HaXml.Schema.Schema (SimpleType(simpleTypeText))
 
 
 data Options = Options
@@ -47,6 +56,7 @@ data Command
     | Mesures MesuresOptions
     | MesuresDetail MesuresDetailCommand
     | Recherche RechercheOptions
+    | M023 M023Command
     deriving (Eq, Show)
 
 data RechercheOptions = RechercheOptions
@@ -92,6 +102,36 @@ data MesuresDetailCommand
     | MdIndex   MdCommonOpts
   deriving (Eq, Show)
 
+data M023Command
+    = M023Fines       MFIOptions
+    | M023Facturantes MFAOptions
+    | M023ITC         ITCOptions
+    deriving (Eq, Show)
+
+data MFIOptions = MFIOptions
+  { mfiPoints    :: [String]
+  , mfiType      :: String
+  , mfiDebut     :: String
+  , mfiFin       :: String
+  , mfiCorrigees :: Maybe Bool
+  , mfiSens      :: String
+  , mfiCadre     :: String
+  } deriving (Eq, Show)
+
+data MFAOptions = MFAOptions
+  { mfaPoints :: [String]
+  , mfaDebut  :: String
+  , mfaFin    :: String
+  , mfaSens   :: String
+  , mfaCadre  :: String
+  } deriving (Eq, Show)
+
+data ITCOptions = ITCOptions
+  { itcPoints :: [String]
+  , itcSens   :: String
+  , itcCadre  :: String
+  } deriving (Eq, Show)
+
 
 opts :: Parser Options
 opts =
@@ -125,6 +165,11 @@ comm =
             ( info
                 ( Recherche <$> rechercheParser <**> helper )
                 ( progDesc "Rechercher des points par critères (adresse, nom, domaine…)" )
+            )
+        <> command "m023"
+            ( info
+                ( M023 <$> m023Parser )
+                ( progDesc "Demander publication de données M023 (fines|facturantes|itc)" )
             )
         )
 
@@ -206,6 +251,55 @@ rechercheParser = RechercheOptions
     <*> flag Nothing (Just True) (long "hors-perimetre" <> short 'r' <> help "Rechercher hors périmètre")
 
 
+m023Parser :: Parser M023Command
+m023Parser = subparser
+    (  command "fines"
+        ( info ( M023Fines <$> mfiParser <**> helper )
+               ( progDesc "Mesures fines R63–R66 (courbes, index, énergie, Pmax)" ) )
+    <> command "facturantes"
+        ( info ( M023Facturantes <$> mfaParser <**> helper )
+               ( progDesc "Mesures facturantes R67" ) )
+    <> command "itc"
+        ( info ( M023ITC <$> itcParser <**> helper )
+               ( progDesc "Infos techniques et contractuelles C68" ) )
+    )
+
+mfiParser :: Parser MFIOptions
+mfiParser = MFIOptions
+    <$> some      (strOption (long "point" <> short 'p' <> metavar "PRM"
+                             <> help "Identifiant PRM (répétable)"))
+    <*> strOption  (long "type"  <> short 't' <> metavar "COURBES|ENERGIE|PMAX|INDEX"
+                   <> help "Type de mesures demandé")
+    <*> strOption  (long "debut" <> metavar "YYYY-MM-DD" <> help "Date de début (incluse)")
+    <*> strOption  (long "fin"   <> metavar "YYYY-MM-DD" <> help "Date de fin (exclue)")
+    <*> optional   (   flag' True  (long "corrigees" <> help "Mesures corrigées (COURBES C1-C4/P1-P3)")
+                   <|> flag' False (long "brutes"    <> help "Mesures brutes (COURBES)"))
+    <*> strOption  (long "sens"  <> metavar "SOUTIRAGE|INJECTION"
+                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> strOption  (long "cadre" <> metavar "ACCORD_CLIENT|SERVICE_ACCES"
+                   <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
+
+mfaParser :: Parser MFAOptions
+mfaParser = MFAOptions
+    <$> some      (strOption (long "point" <> short 'p' <> metavar "PRM"
+                             <> help "Identifiant PRM (répétable)"))
+    <*> strOption  (long "debut" <> metavar "YYYY-MM-DD" <> help "Date de début (incluse)")
+    <*> strOption  (long "fin"   <> metavar "YYYY-MM-DD" <> help "Date de fin (exclue)")
+    <*> strOption  (long "sens"  <> metavar "SOUTIRAGE|INJECTION"
+                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> strOption  (long "cadre" <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
+                   <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
+
+itcParser :: Parser ITCOptions
+itcParser = ITCOptions
+    <$> some      (strOption (long "point" <> short 'p' <> metavar "PRM"
+                             <> help "Identifiant PRM (répétable)"))
+    <*> strOption  (long "sens"  <> metavar "SOUTIRAGE|INJECTION"
+                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> strOption  (long "cadre" <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
+                   <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
+
+
 toDomaineTension :: String -> DomaineTensionCodeType
 toDomaineTension "BTINF" = DomaineTensionCodeTypeBTINF
 toDomaineTension "BTSUP" = DomaineTensionCodeTypeBTSUP
@@ -235,6 +329,49 @@ toAutorisation "ACCORD_CLIENT" = CadreAccesTypeACCORDCLIENT
 toAutorisation "SERVICE_ACCES" = CadreAccesTypeSERVICEACCES
 toAutorisation "EST_TITULAIRE" = CadreAccesTypeESTTITULAIRE
 toAutorisation s               = errorWithoutStackTrace $ "Autorisation inconnue: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
+
+
+toMesuresTypeCode :: String -> MFI_T.MesuresTypeCode
+toMesuresTypeCode "COURBES" = MFI_T.MesuresTypeCodeCOURBES
+toMesuresTypeCode "ENERGIE" = MFI_T.MesuresTypeCodeENERGIE
+toMesuresTypeCode "PMAX"    = MFI_T.MesuresTypeCodePMAX
+toMesuresTypeCode "INDEX"   = MFI_T.MesuresTypeCodeINDEX
+toMesuresTypeCode s         = errorWithoutStackTrace $ "Type inconnu: " ++ s ++ " (COURBES|ENERGIE|PMAX|INDEX)"
+
+toMesuresCorrigees :: Bool -> MFI_T.MesuresCorrigees
+toMesuresCorrigees b = MFI_T.MesuresCorrigees b
+
+toSensMFI :: String -> MFI_T.Sens
+toSensMFI "SOUTIRAGE" = MFI_T.SensSOUTIRAGE
+toSensMFI "INJECTION" = MFI_T.SensINJECTION
+toSensMFI s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toCadreMFI :: String -> MFI_T.CadreAcces
+toCadreMFI "ACCORD_CLIENT" = MFI_T.CadreAccesACCORDCLIENT
+toCadreMFI "SERVICE_ACCES" = MFI_T.CadreAccesSERVICEACCES
+toCadreMFI s               = errorWithoutStackTrace $ "CadreAcces inconnu: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES)"
+
+toSensMFA :: String -> MFA_T.Sens
+toSensMFA "SOUTIRAGE" = MFA_T.Sens_SOUTIRAGE
+toSensMFA "INJECTION" = MFA_T.Sens_INJECTION
+toSensMFA s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toCadreMFA :: String -> MFA_T.CadreAcces
+toCadreMFA "ACCORD_CLIENT" = MFA_T.CadreAcces_ACCORD_CLIENT
+toCadreMFA "SERVICE_ACCES" = MFA_T.CadreAcces_SERVICE_ACCES
+toCadreMFA "EST_TITULAIRE" = MFA_T.CadreAcces_EST_TITULAIRE
+toCadreMFA s               = errorWithoutStackTrace $ "CadreAcces inconnu: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
+
+toSensITC :: String -> ITC_T.Sens
+toSensITC "SOUTIRAGE" = ITC_T.Sens_SOUTIRAGE
+toSensITC "INJECTION" = ITC_T.Sens_INJECTION
+toSensITC s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toCadreITC :: String -> ITC_T.CadreAcces
+toCadreITC "ACCORD_CLIENT" = ITC_T.CadreAcces_ACCORD_CLIENT
+toCadreITC "SERVICE_ACCES" = ITC_T.CadreAcces_SERVICE_ACCES
+toCadreITC "EST_TITULAIRE" = ITC_T.CadreAcces_EST_TITULAIRE
+toCadreITC s               = errorWithoutStackTrace $ "CadreAcces inconnu: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
 
 
 docommand :: Options -> IO ()
@@ -296,6 +433,48 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
           else do
             rep <- RP.wsRequest myType :: IO (Either (String, String) RechercherPointResponseType)
             if raw then pPrint rep else renderApp rep
+
+    M023 sub -> case sub of
+
+        M023Fines o -> do
+            myType <- MFI.initType
+                        (mfiPoints o)
+                        (toMesuresTypeCode (mfiType o))
+                        (toMesuresCorrigees <$> mfiCorrigees o)
+                        (mfiDebut o) (mfiFin o)
+                        (toSensMFI (mfiSens o))
+                        (toCadreMFI (mfiCadre o))
+            if xml
+              then MFI.xmlRequest myType >>= (putStrLn . prettyXml)
+              else do
+                rep <- MFI.wsRequest myType :: IO (Either (String, String) MFI_T.AffaireId)
+                if raw then pPrint rep
+                       else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
+
+        M023Facturantes o -> do
+            myType <- MFA.initType
+                        (mfaPoints o)
+                        (mfaDebut o) (mfaFin o)
+                        (toSensMFA (mfaSens o))
+                        (toCadreMFA (mfaCadre o))
+            if xml
+              then MFA.xmlRequest myType >>= (putStrLn . prettyXml)
+              else do
+                rep <- MFA.wsRequest myType :: IO (Either (String, String) MFA_T.AffaireId)
+                if raw then pPrint rep
+                       else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
+
+        M023ITC o -> do
+            myType <- ITC.initType
+                        (itcPoints o)
+                        (toSensITC (itcSens o))
+                        (toCadreITC (itcCadre o))
+            if xml
+              then ITC.xmlRequest myType >>= (putStrLn . prettyXml)
+              else do
+                rep <- ITC.wsRequest myType :: IO (Either (String, String) ITC_T.AffaireId)
+                if raw then pPrint rep
+                       else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
 
 
 main :: IO ()
