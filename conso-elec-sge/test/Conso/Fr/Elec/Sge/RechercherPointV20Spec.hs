@@ -13,31 +13,32 @@ import Conso.Fr.Elec.Sge.RechercherPointV20Type
 import           Data.Either (isRight, isLeft)
 
 
--- | Recherche par code postal + code INSEE de commune.
 shouldRechercherHomo
     :: Maybe String -> Maybe String -> Maybe String -> Maybe String
     -> Maybe String -> Maybe String -> Maybe Bool
     -> Expectation
-shouldRechercherHomo voie lieuDit codePostal insee numSiret nom horsPerimetre = do
-    myType <- initTypeTest
-                Nothing Nothing voie lieuDit codePostal insee
-                numSiret Nothing Nothing nom Nothing horsPerimetre
-    rep <- wsRequestTest myType :: IO (Either (String, String) RechercherPointResponseType)
-    rep `shouldSatisfy` isRight
+shouldRechercherHomo voie lieuDit codePostal insee numSiret nom horsPerimetre =
+    pendingOnNetworkError $ do
+        myType <- initTypeTest
+                    Nothing Nothing voie lieuDit codePostal insee
+                    numSiret Nothing Nothing nom Nothing horsPerimetre
+        rep <- wsRequestTest myType :: IO (Either (String, String) RechercherPointResponseType)
+        rep `shouldSatisfy` isRight
 
 shouldRefuserHomo
     :: Maybe String -> Maybe String -> Maybe String -> Maybe String
     -> Maybe String -> Maybe String -> Maybe Bool
     -> String -> Expectation
-shouldRefuserHomo voie lieuDit codePostal insee numSiret nom horsPerimetre expectedCode = do
-    myType <- initTypeTest
-                Nothing Nothing voie lieuDit codePostal insee
-                numSiret Nothing Nothing nom Nothing horsPerimetre
-    rep <- wsRequestTest myType :: IO (Either (String, String) RechercherPointResponseType)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+shouldRefuserHomo voie lieuDit codePostal insee numSiret nom horsPerimetre expectedCode =
+    pendingOnNetworkError $ do
+        myType <- initTypeTest
+                    Nothing Nothing voie lieuDit codePostal insee
+                    numSiret Nothing Nothing nom Nothing horsPerimetre
+        rep <- wsRequestTest myType :: IO (Either (String, String) RechercherPointResponseType)
+        rep `shouldSatisfy` isLeft
+        case rep of
+            Left (code, _) -> code `shouldBe` expectedCode
+            Right _        -> expectationFailure "Réponse inattendue : Right"
 
 
 spec :: Spec

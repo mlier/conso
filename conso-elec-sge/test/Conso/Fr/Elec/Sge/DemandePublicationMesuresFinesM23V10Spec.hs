@@ -22,13 +22,13 @@ isRightOrSgt570 (Right _)          = True
 isRightOrSgt570 (Left (code, _))   = code == "SGT570"
 
 shouldDemanderHomo :: [String] -> MesuresTypeCode -> String -> String -> Expectation
-shouldDemanderHomo prms typeCode debut fin = do
+shouldDemanderHomo prms typeCode debut fin = pendingOnNetworkError $ do
     myType <- initTypeTest prms typeCode Nothing debut fin SensSOUTIRAGE CadreAccesACCORDCLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
     rep `shouldSatisfy` isRightOrSgt570
 
 shouldRefuserHomo :: [String] -> MesuresTypeCode -> String -> String -> String -> Expectation
-shouldRefuserHomo prms typeCode debut fin expectedCode = do
+shouldRefuserHomo prms typeCode debut fin expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prms typeCode Nothing debut fin SensSOUTIRAGE CadreAccesACCORDCLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
     rep `shouldSatisfy` isLeft

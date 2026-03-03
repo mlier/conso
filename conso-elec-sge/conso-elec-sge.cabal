@@ -203,6 +203,7 @@ test-suite conso-elec-sge-test
         , hspec-expectations
         , pretty-simple
         , text
+        , http-client
         
     build-tool-depends: 
         hspec-discover:hspec-discover == 2.*

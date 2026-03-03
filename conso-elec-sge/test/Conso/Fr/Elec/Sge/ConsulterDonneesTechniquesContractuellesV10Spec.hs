@@ -14,7 +14,8 @@ import SpecHelper
       productionC,
       homologationC,
       recevablesC,
-      nonRecevablesC )
+      nonRecevablesC,
+      pendingOnNetworkError )
 
 
 import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
@@ -31,7 +32,7 @@ shouldConsulterProd myPointId auth = do
     rep `shouldSatisfy` isRight
 
 shouldConsulterHomo :: String -> Bool -> Expectation
-shouldConsulterHomo myPointId auth = do
+shouldConsulterHomo myPointId auth = pendingOnNetworkError $ do
     myType <- initTypeTest myPointId auth
     rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
     rep `shouldSatisfy` isRight

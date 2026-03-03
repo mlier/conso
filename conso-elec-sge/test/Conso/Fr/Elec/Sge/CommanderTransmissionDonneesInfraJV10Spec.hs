@@ -13,7 +13,7 @@ import           Data.Either (isRight)
 
 
 shouldDemanderTransHomo :: String -> Expectation
-shouldDemanderTransHomo myPointId = do
+shouldDemanderTransHomo myPointId = pendingOnNetworkError $ do
     myType <- initTypeTest myPointId (AccordPersonnePhysiqueNom "Toto") SensSOUTIRAGE False True False
     rep <- wsRequestTest myType :: IO (Either (String, String) CommanderTransmissionDonneesInfraJResponseType)
     rep `shouldSatisfy` isRight

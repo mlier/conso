@@ -1,18 +1,23 @@
+{-# LANGUAGE TypeApplications #-}
 
 module SpecHelper (
-  module Test.Hspec, wsRequest, wsRequestTest, 
-  testPointId, testNomClient, 
-  productionC, homologationC, recevablesC, nonRecevablesC
+  module Test.Hspec, wsRequest, wsRequestTest,
+  testPointId, testNomClient,
+  productionC, homologationC, recevablesC, nonRecevablesC,
+  pendingOnNetworkError
 ) where
 
 import Test.Hspec
+import Control.Exception (try, throwIO)
+import Network.HTTP.Client (HttpException)
+
 import Conso.Fr.Elec.Sge.Sge
     ( getEnv,
       wsRequest,
       wsRequestTest,
       SgeEnv(test),
       Test(nomClientFinalOuDenominationSociale, pointId) )
-    
+
 import qualified Data.Text as T
 
 
@@ -23,6 +28,17 @@ testPointId = do
 testNomClient:: IO String
 testNomClient = do
     T.unpack . nomClientFinalOuDenominationSociale . test <$> getEnv
+
+
+-- | Exécute un test d'homologation et le marque « pending » si le serveur
+--   est inaccessible (erreur réseau / TLS). Les échecs d'assertions (shouldBe,
+--   shouldSatisfy, etc.) restent des vraies erreurs et ne sont pas masqués.
+pendingOnNetworkError :: Expectation -> Expectation
+pendingOnNetworkError action = do
+    res <- try @HttpException action
+    case res of
+        Left _   -> pendingWith "Serveur d'homologation inaccessible (réseau/TLS)"
+        Right () -> return ()
 
 
 productionC :: String

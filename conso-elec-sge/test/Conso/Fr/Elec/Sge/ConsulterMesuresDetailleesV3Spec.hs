@@ -17,28 +17,28 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
 import           Data.Either (isRight, isLeft)
 
 
--- | Helper recevable : la réponse doit être Right.
 shouldConsulterHomo
     :: String -> MesuresTypeCodeType -> String -> String -> String
     -> Maybe MesuresPasType -> Bool -> SensMesureType -> CadreAccesType
     -> Expectation
-shouldConsulterHomo prm typeCode grandeur debut fin maybePas corrigees sens cadre = do
-    myType <- initTypeTest prm typeCode grandeur debut fin maybePas corrigees sens cadre
-    rep    <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
-    rep `shouldSatisfy` isRight
+shouldConsulterHomo prm typeCode grandeur debut fin maybePas corrigees sens cadre =
+    pendingOnNetworkError $ do
+        myType <- initTypeTest prm typeCode grandeur debut fin maybePas corrigees sens cadre
+        rep    <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
+        rep `shouldSatisfy` isRight
 
--- | Helper non-recevable : la réponse doit être Left avec le code attendu.
 shouldRefuserHomo
     :: String -> MesuresTypeCodeType -> String -> String -> String
     -> Maybe MesuresPasType -> Bool -> SensMesureType -> CadreAccesType
     -> String -> Expectation
-shouldRefuserHomo prm typeCode grandeur debut fin maybePas corrigees sens cadre expectedCode = do
-    myType <- initTypeTest prm typeCode grandeur debut fin maybePas corrigees sens cadre
-    rep    <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+shouldRefuserHomo prm typeCode grandeur debut fin maybePas corrigees sens cadre expectedCode =
+    pendingOnNetworkError $ do
+        myType <- initTypeTest prm typeCode grandeur debut fin maybePas corrigees sens cadre
+        rep    <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
+        rep `shouldSatisfy` isLeft
+        case rep of
+            Left (code, _) -> code `shouldBe` expectedCode
+            Right _        -> expectationFailure "Réponse inattendue : Right"
 
 
 spec :: Spec

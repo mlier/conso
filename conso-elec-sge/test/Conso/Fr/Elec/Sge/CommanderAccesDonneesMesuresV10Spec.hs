@@ -19,13 +19,13 @@ isRightOrSgt570 (Right _)          = True
 isRightOrSgt570 (Left (code, _))   = code == "SGT570"
 
 shouldCommanderHomo :: String -> Maybe Integer -> String -> Expectation
-shouldCommanderHomo prm duree typeDonnees = do
+shouldCommanderHomo prm duree typeDonnees = pendingOnNetworkError $ do
     myType <- initTypeTest prm duree (AccordPersonnePhysiqueNom "Toto") typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldSatisfy` isRightOrSgt570
 
 shouldRefuserHomo :: String -> Maybe Integer -> String -> String -> Expectation
-shouldRefuserHomo prm duree typeDonnees expectedCode = do
+shouldRefuserHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prm duree (AccordPersonnePhysiqueNom "Toto") typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldSatisfy` isLeft

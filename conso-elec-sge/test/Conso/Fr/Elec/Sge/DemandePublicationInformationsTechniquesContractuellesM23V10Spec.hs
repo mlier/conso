@@ -19,13 +19,13 @@ isRightOrSgt570 (Right _)          = True
 isRightOrSgt570 (Left (code, _))   = code == "SGT570"
 
 shouldDemanderHomo :: [String] -> Expectation
-shouldDemanderHomo prms = do
+shouldDemanderHomo prms = pendingOnNetworkError $ do
     myType <- initTypeTest prms Sens_SOUTIRAGE CadreAcces_ACCORD_CLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
     rep `shouldSatisfy` isRightOrSgt570
 
 shouldRefuserHomo :: [String] -> String -> Expectation
-shouldRefuserHomo prms expectedCode = do
+shouldRefuserHomo prms expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prms Sens_SOUTIRAGE CadreAcces_ACCORD_CLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
     rep `shouldSatisfy` isLeft

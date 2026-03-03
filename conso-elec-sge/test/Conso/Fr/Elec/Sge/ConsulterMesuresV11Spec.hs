@@ -17,13 +17,13 @@ shouldConsulterProd myPointId auth = do
     rep `shouldSatisfy` isRight
 
 shouldConsulterHomo :: String -> Bool -> Expectation
-shouldConsulterHomo myPointId auth = do
+shouldConsulterHomo myPointId auth = pendingOnNetworkError $ do
     myType <- initTypeTest myPointId auth
     rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
     rep `shouldSatisfy` isRight
 
 shouldRefuserHomo :: String -> Bool -> String -> Expectation
-shouldRefuserHomo myPointId auth expectedCode = do
+shouldRefuserHomo myPointId auth expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest myPointId auth
     rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
     rep `shouldSatisfy` isLeft
