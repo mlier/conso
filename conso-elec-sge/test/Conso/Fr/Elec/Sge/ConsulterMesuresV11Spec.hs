@@ -1,59 +1,56 @@
 module Conso.Fr.Elec.Sge.ConsulterMesuresV11Spec where
 
 import SpecHelper
-    ( hspec,
-      describe,
-      it,
-      shouldBe,
-      Spec,
-      Expectation,
-      homologationC,
-      recevablesC,
-      nonRecevablesC )
-   
-import Conso.Fr.Elec.Sge.ConsulterMesuresV11 ( initTypeTest )
-import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type ()
+import TestData (ahcPrmC5, ahcPrmC1C4)
 
-import Conso.Fr.Elec.Sge.Sge ( xmlRequestTest )
-import           Text.Pretty.Simple (pPrint)
+import Conso.Fr.Elec.Sge.ConsulterMesuresV11
+    ( initType, initTypeTest )
+import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
+    ( ConsulterMesuresResponseType )
+import           Data.Either (isRight, isLeft)
 
 
-shouldConsulter :: String -> Bool -> Expectation
-shouldConsulter myPpointId auth = do
-    myType <- initTypeTest myPpointId auth
-    --rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-    rep <- xmlRequestTest myType
+shouldConsulterProd :: String -> Bool -> Expectation
+shouldConsulterProd myPointId auth = do
+    myType <- initType myPointId auth
+    rep <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+    rep `shouldSatisfy` isRight
 
-    print $ "-----" ++ myPpointId
-    pPrint myType
-    pPrint rep
-    --rep `shouldSatisfy` isRight
+shouldConsulterHomo :: String -> Bool -> Expectation
+shouldConsulterHomo myPointId auth = do
+    myType <- initTypeTest myPointId auth
+    rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+    rep `shouldSatisfy` isRight
+
+shouldRefuserHomo :: String -> Bool -> String -> Expectation
+shouldRefuserHomo myPointId auth expectedCode = do
+    myType <- initTypeTest myPointId auth
+    rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+    rep `shouldSatisfy` isLeft
+    case rep of
+        Left (code, _) -> code `shouldBe` expectedCode
+        Right _        -> expectationFailure "Réponse inattendue : Right"
 
 
 spec :: Spec
 spec = do
-    --let pointIdC5 = "25957452924301"
-    --let pointIdC1C4 = "30001610071843"
+    describe productionC $ do
+        describe recevablesC $ do
+            it "AHC-R1 - Accès à l'historique de consommation (point de production)" $ do
+                myPointId <- testPointId
+                shouldConsulterProd myPointId True
 
     describe homologationC $ do
         describe recevablesC $ do
-            it "AHC-R1 C5 - Accès à l’historique de consommations pour un acteur tiers avec une autorisation client" $ do
-                --shouldConsulter pointIdC5 True 
-                "toto" `shouldBe` "toto"
+            it "AHC-R1 C5 - Accès à l'historique de consommations avec autorisation client" $ do
+                shouldConsulterHomo ahcPrmC5 True
 
-            it "AHC-R1 C1C4 - Accès à l’historique de consommations pour un acteur tiers avec une autorisation client" $ do
-                --shouldConsulter pointIdC1C4 True 
-                "toto" `shouldBe` "toto"
+            it "AHC-R1 C1C4 - Accès à l'historique de consommations avec autorisation client" $ do
+                shouldConsulterHomo ahcPrmC1C4 True
 
         describe nonRecevablesC $ do
-            it "AHC-NR1 Accès à l’historique de consommations pour un acteur tiers sans autorisation client" $ do
-                --myType <- initTypeTest pointIdC5 False
-                --rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-                --let (e, _) = case rep of
-                --                Left r -> r
-                --                Right _ -> ("to", "ti") 
-                --e `shouldBe` "SGT4G2" -- Le demandeur n'est pas éligible à la consultation des données de mesures sur le point
-                "toto" `shouldBe` "toto"
+            it "AHC-NR1 C5 - Accès sans autorisation client (SGT4G2)" $ do
+                shouldRefuserHomo ahcPrmC5 False "SGT4G2"
 
 
 main :: IO ()

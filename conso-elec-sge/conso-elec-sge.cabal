@@ -168,12 +168,19 @@ test-suite conso-elec-sge-test
     default-language: Haskell2010
 
     -- Modules included in this executable, other than Main.
-    other-modules:  
+    other-modules:
             Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Spec
-            Conso.Fr.Elec.Sge.ConsulterMesuresV11Spec 
+            Conso.Fr.Elec.Sge.ConsulterMesuresV11Spec
+            Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3Spec
             Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Spec
+            Conso.Fr.Elec.Sge.RechercherPointV20Spec
             Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10Spec
+            Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Spec
+            Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Spec
+            Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Spec
+            Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Spec
             SpecHelper
+            TestData
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
