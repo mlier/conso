@@ -46,14 +46,17 @@ renderGrandeur g =
 pointsHeader :: Widget ()
 pointsHeader =
     withAttr labelAttr $ ustr $
-    padTo 25 "Horodatage" ++ " | " ++ padTo 12 "Valeur" ++ " | Validité"
+    padTo 25 "Horodatage" ++ " | " ++ padTo 12 "Valeur" ++ " | " ++
+    padTo 5 "Pas" ++ " | N | iv"
 
 
 renderPoint :: Points -> Widget ()
 renderPoint p = ustr $
     padTo 25 (simpleTypeText $ points_d p) ++ " | " ++
     padTo 12 (simpleTypeText $ points_v p) ++ " | " ++
-    maybe "" simpleTypeText (points_iv p)
+    padTo 5  (maybe ""  simpleTypeText (points_p p)) ++ " | " ++
+    maybe " " simpleTypeText (points_n  p)           ++ " | " ++
+    maybe ""  simpleTypeText (points_iv p)
 
 
 renderContexte :: Contexte -> Widget ()
