@@ -19,11 +19,17 @@ import           Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
     , CadreAccesType(..)
     , ConsulterMesuresDetailleesV3ResponseType )
 
+import           Conso.Fr.Elec.Sge.RechercherPointV20 as RP
+import           Conso.Fr.Elec.Sge.RechercherPointV20Type (RechercherPointResponseType)
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+    ( DomaineTensionCodeType(..), ClientFinalCategorieCodeType(..) )
+
 import           Conso.Fr.Elec.Sge.Sge (prettyXml)
 import           Display (renderApp)
 import           Display.InfoDisplay          ()   -- instances Renderable
 import           Display.MesuresDisplay       ()   -- instances Renderable
 import           Display.MesuresDetailDisplay ()   -- instances Renderable
+import           Display.RechercheDisplay     ()   -- instances Renderable
 
 
 data Options = Options
@@ -40,13 +46,23 @@ data Command
     = Info InfoOptions
     | Mesures MesuresOptions
     | MesuresDetail MesuresDetailCommand
-{-    | Recherche RechercheCommand
-    | HistoriqueM23 HistoriqueM23Command
-    | FluxCommand FluxCommand
-    | FluxRecherche FluxRechercheCommand
-    | FluxArret FluxArretCommand
-    | FluxInfra FluxInfraCommand
--}  deriving (Eq, Show)
+    | Recherche RechercheOptions
+    deriving (Eq, Show)
+
+data RechercheOptions = RechercheOptions
+  { rEscalier   :: Maybe String
+  , rBatiment   :: Maybe String
+  , rVoie       :: Maybe String
+  , rLieuDit    :: Maybe String
+  , rCodePostal :: Maybe String
+  , rCommune    :: Maybe String
+  , rSiret      :: Maybe String
+  , rMatricule  :: Maybe String
+  , rDomaine    :: Maybe String
+  , rNom        :: Maybe String
+  , rCategorie  :: Maybe String
+  , rHorsPerim  :: Maybe Bool
+  } deriving (Eq, Show)
 
 data InfoOptions = InfoOptions
   { pointIdInfo :: String
@@ -104,6 +120,11 @@ comm =
             ( info
                 ( MesuresDetail <$> mesuresDetailComm )
                 ( progDesc "Avoir des mesures détaillées (courbe|pmax|energie|index)" )
+            )
+        <> command "recherche"
+            ( info
+                ( Recherche <$> rechercheParser <**> helper )
+                ( progDesc "Rechercher des points par critères (adresse, nom, domaine…)" )
             )
         )
 
@@ -169,6 +190,36 @@ mesuresDetailComm = subparser
     )
 
 
+rechercheParser :: Parser RechercheOptions
+rechercheParser = RechercheOptions
+    <$> optional (strOption (long "escalier"    <> metavar "TEXTE"          <> help "Escalier/étage/appartement"))
+    <*> optional (strOption (long "batiment"    <> metavar "TEXTE"          <> help "Bâtiment"))
+    <*> optional (strOption (long "voie"        <> metavar "TEXTE"          <> help "Numéro et nom de voie"))
+    <*> optional (strOption (long "lieu-dit"    <> metavar "TEXTE"          <> help "Lieu-dit"))
+    <*> optional (strOption (long "code-postal" <> short 'c' <> metavar "CPPPP"  <> help "Code postal"))
+    <*> optional (strOption (long "commune"     <> short 'i' <> metavar "XXXXX"  <> help "Code INSEE commune"))
+    <*> optional (strOption (long "siret"       <> metavar "SIRET"          <> help "Numéro SIRET"))
+    <*> optional (strOption (long "matricule"   <> metavar "TEXTE"          <> help "Matricule ou numéro de série"))
+    <*> optional (strOption (long "domaine"     <> metavar "BTINF|BTSUP|HTA|HTB" <> help "Domaine de tension"))
+    <*> optional (strOption (long "nom"         <> metavar "TEXTE"          <> help "Nom du client final"))
+    <*> optional (strOption (long "categorie"   <> metavar "PRO|RES"        <> help "Catégorie client final"))
+    <*> flag Nothing (Just True) (long "hors-perimetre" <> short 'r' <> help "Rechercher hors périmètre")
+
+
+toDomaineTension :: String -> DomaineTensionCodeType
+toDomaineTension "BTINF" = DomaineTensionCodeTypeBTINF
+toDomaineTension "BTSUP" = DomaineTensionCodeTypeBTSUP
+toDomaineTension "HTA"   = DomaineTensionCodeTypeHTA
+toDomaineTension "HTB"   = DomaineTensionCodeTypeHTB
+toDomaineTension s       = errorWithoutStackTrace $ "Domaine inconnu: " ++ s ++ " (BTINF|BTSUP|HTA|HTB)"
+
+
+toCategorieClient :: String -> ClientFinalCategorieCodeType
+toCategorieClient "PRO" = ClientFinalCategorieCodeTypePRO
+toCategorieClient "RES" = ClientFinalCategorieCodeTypeRES
+toCategorieClient s     = errorWithoutStackTrace $ "Catégorie inconnue: " ++ s ++ " (PRO|RES)"
+
+
 toPas :: String -> MesuresPasType
 toPas "P1D" = MesuresPasType_P1D
 toPas "P1M" = MesuresPasType_P1M
@@ -224,6 +275,26 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
           then CMD.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
             rep <- CMD.wsRequest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
+            if raw then pPrint rep else renderApp rep
+
+    Recherche r -> do
+        myType <- RP.initType
+                    (rEscalier r)
+                    (rBatiment r)
+                    (rVoie r)
+                    (rLieuDit r)
+                    (rCodePostal r)
+                    (rCommune r)
+                    (rSiret r)
+                    (rMatricule r)
+                    (toDomaineTension <$> rDomaine r)
+                    (rNom r)
+                    (toCategorieClient <$> rCategorie r)
+                    (rHorsPerim r)
+        if xml
+          then RP.xmlRequest myType >>= (putStrLn . prettyXml)
+          else do
+            rep <- RP.wsRequest myType :: IO (Either (String, String) RechercherPointResponseType)
             if raw then pPrint rep else renderApp rep
 
 
