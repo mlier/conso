@@ -52,6 +52,10 @@ import qualified Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10     a
 import           Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type (CommanderArretServiceSouscritMesuresResponseType)
 import           Display.ArretDisplay                                           ()   -- instance Renderable
 
+import qualified Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30      as CCPM
+import           Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type  (CommanderCollectePublicationMesuresResponseType)
+import           Display.CollecteDisplay                                         ()   -- instance Renderable
+
 
 data Options = Options
     {
@@ -72,6 +76,7 @@ data Command
     | Acces AccesOptions
     | Services ServicesOptions
     | Arret ArretOptions
+    | Collecte CollecteOptions
     deriving (Eq, Show)
 
 data RechercheOptions = RechercheOptions
@@ -169,6 +174,17 @@ data AccesOptions = AccesOptions
   , accesAccord :: AccesAccordOpts
   } deriving (Eq, Show)
 
+data CollecteOptions = CollecteOptions
+  { collectePoint      :: String
+  , collecteDuree      :: Maybe Integer
+  , collecteType       :: String
+  , collecteSens       :: String
+  , collecteRecurrente :: Bool
+  , collecteCorrigees  :: Maybe Bool
+  , collectePeriode    :: Maybe String
+  , collecteAccord     :: AccesAccordOpts
+  } deriving (Eq, Show)
+
 
 opts :: Parser Options
 opts =
@@ -222,6 +238,11 @@ comm =
             ( info
                 ( Arret <$> arretParser <**> helper )
                 ( progDesc "Commander l'arrêt d'un service souscrit de mesures (ASS)" )
+            )
+        <> command "collecte"
+            ( info
+                ( Collecte <$> collecteParser <**> helper )
+                ( progDesc "Commander collecte/publication de mesures (AME/CDC/IDX)" )
             )
         )
 
@@ -378,6 +399,24 @@ accesParser = AccesOptions
                    <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> accesAccordParser
 
+collecteParser :: Parser CollecteOptions
+collecteParser = CollecteOptions
+    <$> strOption  (long "point"      <> short 'p' <> metavar "PRM"
+                    <> help "Identifiant PRM du point")
+    <*> optional   (option auto (long "duree" <> metavar "JOURS"
+                    <> help "Durée en jours (max 3×365)"))
+    <*> strOption  (long "type"       <> short 't' <> metavar "CDC|IDX"
+                    <> help "Type de données : CDC (courbe de charge) ou IDX (index/Pmax)")
+    <*> strOption  (long "sens"       <> metavar "SOUTIRAGE|INJECTION"
+                    <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> switch     (long "recurrente" <> help "Transmission récurrente (sinon : collecte unique)")
+    <*> optional   (   flag' True  (long "corrigees" <> help "Courbe corrigée (C1-C4/P1-P3, CDC récurrent)")
+                   <|> flag' False (long "brutes"    <> help "Courbe brute"))
+    <*> optional   (strOption (long "periodicite" <> metavar "P1D|P7D|P1M"
+                    <> help "Périodicité de transmission (CDC récurrent ou IDX)"))
+    <*> accesAccordParser
+
+
 accesAccordParser :: Parser AccesAccordOpts
 accesAccordParser =
     (AccesPhysique <$> strOption (long "nom"          <> metavar "NOM"
@@ -459,6 +498,12 @@ toCadreITC "ACCORD_CLIENT" = ITC_T.CadreAcces_ACCORD_CLIENT
 toCadreITC "SERVICE_ACCES" = ITC_T.CadreAcces_SERVICE_ACCES
 toCadreITC "EST_TITULAIRE" = ITC_T.CadreAcces_EST_TITULAIRE
 toCadreITC s               = errorWithoutStackTrace $ "CadreAcces inconnu: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
+
+toSensCCPM :: String -> CCPM.Sens
+toSensCCPM "SOUTIRAGE" = CCPM.SensSOUTIRAGE
+toSensCCPM "INJECTION" = CCPM.SensINJECTION
+toSensCCPM s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
 
 toSensAcces :: String -> ACCES.Sens
 toSensAcces "SOUTIRAGE" = ACCES.SensSOUTIRAGE
@@ -583,6 +628,25 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
           then RSSM.xmlRequest myType >>= (putStrLn . prettyXml)
           else do
             rep <- RSSM.wsRequest myType :: IO (Either (String, String) RechercherServicesSouscritsMesuresResponseType)
+            if raw then pPrint rep else renderApp rep
+
+    Collecte o -> do
+        let accordType = case collecteAccord o of
+                AccesPhysique nom -> CCPM.AccordPersonnePhysiqueNom nom
+                AccesMorale   den -> CCPM.AccordPersonneMoraleDenominationSociale den
+        myType <- CCPM.initType
+                    (collectePoint o)
+                    (collecteDuree o)
+                    accordType
+                    (collecteType o)
+                    (toSensCCPM (collecteSens o))
+                    (collecteRecurrente o)
+                    (collecteCorrigees o)
+                    (collectePeriode o)
+        if xml
+          then CCPM.xmlRequest myType >>= (putStrLn . prettyXml)
+          else do
+            rep <- CCPM.wsRequest myType :: IO (Either (String, String) CommanderCollectePublicationMesuresResponseType)
             if raw then pPrint rep else renderApp rep
 
     Acces o -> do

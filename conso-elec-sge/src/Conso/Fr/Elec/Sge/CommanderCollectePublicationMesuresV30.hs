@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30 (
-  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType, Sens
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where
 
 import           Data.Time.Clock (getCurrentTime, utctDay)
