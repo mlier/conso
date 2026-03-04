@@ -40,6 +40,10 @@ import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10Typ
 import qualified Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type as ITC_T
 import           Text.XML.HaXml.Schema.Schema (SimpleType(simpleTypeText))
 
+import qualified Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10      as ACCES
+import           Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type  (CommanderAccesDonneesMesuresResponseType)
+import           Display.AccesDisplay                                    ()   -- instance Renderable
+
 
 data Options = Options
     {
@@ -57,6 +61,7 @@ data Command
     | MesuresDetail MesuresDetailCommand
     | Recherche RechercheOptions
     | M023 M023Command
+    | Acces AccesOptions
     deriving (Eq, Show)
 
 data RechercheOptions = RechercheOptions
@@ -132,6 +137,19 @@ data ITCOptions = ITCOptions
   , itcCadre  :: String
   } deriving (Eq, Show)
 
+data AccesAccordOpts
+    = AccesPhysique String
+    | AccesMorale   String
+    deriving (Eq, Show)
+
+data AccesOptions = AccesOptions
+  { accesPoint  :: String
+  , acesDuree   :: Maybe Integer
+  , accesType   :: String
+  , accesSens   :: String
+  , accesAccord :: AccesAccordOpts
+  } deriving (Eq, Show)
+
 
 opts :: Parser Options
 opts =
@@ -170,6 +188,11 @@ comm =
             ( info
                 ( M023 <$> m023Parser )
                 ( progDesc "Demander publication de données M023 (fines|facturantes|itc)" )
+            )
+        <> command "acces"
+            ( info
+                ( Acces <$> accesParser <**> helper )
+                ( progDesc "Commander accès aux données de mesures (AME)" )
             )
         )
 
@@ -300,6 +323,27 @@ itcParser = ITCOptions
                    <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
 
 
+accesParser :: Parser AccesOptions
+accesParser = AccesOptions
+    <$> strOption  (long "point"  <> short 'p' <> metavar "PRM"
+                   <> help "Identifiant PRM du point")
+    <*> optional   (option auto (long "duree"  <> metavar "JOURS"
+                   <> help "Durée de l'accès en jours (max 3×364 pour C5/P4)"))
+    <*> strOption  (long "type"   <> short 't' <> metavar "CDC|IDX|ENERGIE|PMAX"
+                   <> help "Type de données demandé")
+    <*> strOption  (long "sens"   <> metavar "SOUTIRAGE|INJECTION"
+                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> accesAccordParser
+
+accesAccordParser :: Parser AccesAccordOpts
+accesAccordParser =
+    (AccesPhysique <$> strOption (long "nom"          <> metavar "NOM"
+                   <> help "Nom de la personne physique ayant donné accord"))
+    <|>
+    (AccesMorale   <$> strOption (long "denomination" <> metavar "DENOMINATION"
+                   <> help "Dénomination sociale de la personne morale ayant donné accord"))
+
+
 toDomaineTension :: String -> DomaineTensionCodeType
 toDomaineTension "BTINF" = DomaineTensionCodeTypeBTINF
 toDomaineTension "BTSUP" = DomaineTensionCodeTypeBTSUP
@@ -372,6 +416,11 @@ toCadreITC "ACCORD_CLIENT" = ITC_T.CadreAcces_ACCORD_CLIENT
 toCadreITC "SERVICE_ACCES" = ITC_T.CadreAcces_SERVICE_ACCES
 toCadreITC "EST_TITULAIRE" = ITC_T.CadreAcces_EST_TITULAIRE
 toCadreITC s               = errorWithoutStackTrace $ "CadreAcces inconnu: " ++ s ++ " (ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE)"
+
+toSensAcces :: String -> ACCES.Sens
+toSensAcces "SOUTIRAGE" = ACCES.SensSOUTIRAGE
+toSensAcces "INJECTION" = ACCES.SensINJECTION
+toSensAcces s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
 
 
 docommand :: Options -> IO ()
@@ -475,6 +524,23 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
                 rep <- ITC.wsRequest myType :: IO (Either (String, String) ITC_T.AffaireId)
                 if raw then pPrint rep
                        else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
+
+
+    Acces o -> do
+        let accordType = case accesAccord o of
+                AccesPhysique nom -> ACCES.AccordPersonnePhysiqueNom nom
+                AccesMorale   den -> ACCES.AccordPersonneMoraleDenominationSociale den
+        myType <- ACCES.initType
+                    (accesPoint o)
+                    (acesDuree o)
+                    accordType
+                    (accesType o)
+                    (toSensAcces (accesSens o))
+        if xml
+          then ACCES.xmlRequest myType >>= (putStrLn . prettyXml)
+          else do
+            rep <- ACCES.wsRequest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
+            if raw then pPrint rep else renderApp rep
 
 
 main :: IO ()

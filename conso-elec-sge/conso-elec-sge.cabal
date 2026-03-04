@@ -135,6 +135,7 @@ executable conso-elec-sge
         Display.MesuresDetailDisplay
         Display.RechercheDisplay
         Display.M023Display
+        Display.AccesDisplay
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
