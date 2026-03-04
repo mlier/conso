@@ -44,6 +44,10 @@ import qualified Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10      as ACCES
 import           Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type  (CommanderAccesDonneesMesuresResponseType)
 import           Display.AccesDisplay                                    ()   -- instance Renderable
 
+import qualified Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10      as RSSM
+import           Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type  (RechercherServicesSouscritsMesuresResponseType)
+import           Display.ServicesSouscritsDisplay                              ()   -- instance Renderable
+
 
 data Options = Options
     {
@@ -62,6 +66,7 @@ data Command
     | Recherche RechercheOptions
     | M023 M023Command
     | Acces AccesOptions
+    | Services ServicesOptions
     deriving (Eq, Show)
 
 data RechercheOptions = RechercheOptions
@@ -137,6 +142,10 @@ data ITCOptions = ITCOptions
   , itcCadre  :: String
   } deriving (Eq, Show)
 
+newtype ServicesOptions = ServicesOptions
+  { servicesPoint :: String
+  } deriving (Eq, Show)
+
 data AccesAccordOpts
     = AccesPhysique String
     | AccesMorale   String
@@ -193,6 +202,11 @@ comm =
             ( info
                 ( Acces <$> accesParser <**> helper )
                 ( progDesc "Commander accès aux données de mesures (AME)" )
+            )
+        <> command "services"
+            ( info
+                ( Services <$> servicesParser <**> helper )
+                ( progDesc "Rechercher les services souscrits de mesures sur un point" )
             )
         )
 
@@ -321,6 +335,12 @@ itcParser = ITCOptions
                    <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> strOption  (long "cadre" <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
                    <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
+
+
+servicesParser :: Parser ServicesOptions
+servicesParser = ServicesOptions
+    <$> strOption (long "point" <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point")
 
 
 accesParser :: Parser AccesOptions
@@ -525,6 +545,14 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
                 if raw then pPrint rep
                        else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
 
+
+    Services s -> do
+        myType <- RSSM.initType (servicesPoint s)
+        if xml
+          then RSSM.xmlRequest myType >>= (putStrLn . prettyXml)
+          else do
+            rep <- RSSM.wsRequest myType :: IO (Either (String, String) RechercherServicesSouscritsMesuresResponseType)
+            if raw then pPrint rep else renderApp rep
 
     Acces o -> do
         let accordType = case accesAccord o of
