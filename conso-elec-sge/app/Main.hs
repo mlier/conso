@@ -48,6 +48,10 @@ import qualified Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10      as
 import           Conso.Fr.Elec.Sge.RechercherServicesSouscritsMesuresV10Type  (RechercherServicesSouscritsMesuresResponseType)
 import           Display.ServicesSouscritsDisplay                              ()   -- instance Renderable
 
+import qualified Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10     as ARRET
+import           Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type (CommanderArretServiceSouscritMesuresResponseType)
+import           Display.ArretDisplay                                           ()   -- instance Renderable
+
 
 data Options = Options
     {
@@ -67,6 +71,7 @@ data Command
     | M023 M023Command
     | Acces AccesOptions
     | Services ServicesOptions
+    | Arret ArretOptions
     deriving (Eq, Show)
 
 data RechercheOptions = RechercheOptions
@@ -142,6 +147,11 @@ data ITCOptions = ITCOptions
   , itcCadre  :: String
   } deriving (Eq, Show)
 
+data ArretOptions = ArretOptions
+  { arretPoint   :: String
+  , arretService :: String
+  } deriving (Eq, Show)
+
 newtype ServicesOptions = ServicesOptions
   { servicesPoint :: String
   } deriving (Eq, Show)
@@ -207,6 +217,11 @@ comm =
             ( info
                 ( Services <$> servicesParser <**> helper )
                 ( progDesc "Rechercher les services souscrits de mesures sur un point" )
+            )
+        <> command "arret"
+            ( info
+                ( Arret <$> arretParser <**> helper )
+                ( progDesc "Commander l'arrêt d'un service souscrit de mesures (ASS)" )
             )
         )
 
@@ -335,6 +350,14 @@ itcParser = ITCOptions
                    <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> strOption  (long "cadre" <> metavar "ACCORD_CLIENT|SERVICE_ACCES|EST_TITULAIRE"
                    <> value "ACCORD_CLIENT" <> showDefault <> help "Cadre d'accès")
+
+
+arretParser :: Parser ArretOptions
+arretParser = ArretOptions
+    <$> strOption (long "point"   <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point")
+    <*> strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
+                  <> help "Identifiant du service souscrit à arrêter")
 
 
 servicesParser :: Parser ServicesOptions
@@ -545,6 +568,14 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
                 if raw then pPrint rep
                        else renderApp (fmap (AffaireIdResult . simpleTypeText) rep)
 
+
+    Arret o -> do
+        myType <- ARRET.initType (arretPoint o) (arretService o)
+        if xml
+          then ARRET.xmlRequest myType >>= (putStrLn . prettyXml)
+          else do
+            rep <- ARRET.wsRequest myType :: IO (Either (String, String) CommanderArretServiceSouscritMesuresResponseType)
+            if raw then pPrint rep else renderApp rep
 
     Services s -> do
         myType <- RSSM.initType (servicesPoint s)

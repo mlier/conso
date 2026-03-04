@@ -137,6 +137,7 @@ executable conso-elec-sge
         Display.M023Display
         Display.AccesDisplay
         Display.ServicesSouscritsDisplay
+        Display.ArretDisplay
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
