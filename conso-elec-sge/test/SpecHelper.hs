@@ -8,7 +8,7 @@ module SpecHelper (
 ) where
 
 import Test.Hspec
-import Control.Exception (try, throwIO)
+import Control.Exception (try)
 import Network.HTTP.Client (HttpException)
 
 import Conso.Fr.Elec.Sge.Sge
@@ -37,7 +37,7 @@ pendingOnNetworkError :: Expectation -> Expectation
 pendingOnNetworkError action = do
     res <- try @HttpException action
     case res of
-        Left _   -> pendingWith "Serveur d'homologation inaccessible (réseau/TLS)"
+        Left e   -> pendingWith $ "Serveur d'homologation inaccessible (réseau/TLS) : " ++ show e
         Right () -> return ()
 
 
