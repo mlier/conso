@@ -103,6 +103,8 @@ library
         , time
         , soap
         , soap-tls
+        , crypton-x509-validation
+        , crypton-x509-system
         , http-client
         , xml-conduit-writer
         , xml-conduit < 1.10.0.0

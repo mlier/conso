@@ -15,6 +15,8 @@ import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc,
                  --printRequest, printBody 
                  )
 import           Network.SOAP.Transport.HTTP.TLS ( makeSettings )
+import           Data.X509.Validation ( validateDefault )
+import           System.X509 ( getSystemCertificateStore )
 import           Network.HTTP.Client ( applyBasicAuth )
 
 import           Text.XML.Writer ( XML, node )
@@ -210,8 +212,8 @@ soapRequest envSge myUrlSge mySoapAction body = do
     let keyPath = T.unpack $ T.append myHDT (key envSge) :: FilePath
     let fullUrlSge = T.unpack (url envSge) ++ myUrlSge
 
-    --settings <- makeSettings (Just "production.crt") (Just "production.key") validateDefault
-    settings <- makeSettings (Just certPath) (Just keyPath) (\_ _ _ _ -> return [])
+    systemStore <- getSystemCertificateStore
+    settings <- makeSettings (Just certPath) (Just keyPath) (\_ -> validateDefault systemStore)
 
     let loginUtilisateurBS =  T.encodeUtf8 $ userB2b envSge
     let passwordUtilisateurBS = T.encodeUtf8 $ password envSge

@@ -234,7 +234,7 @@ comm =
             ( info
                 ( M023 <$> m023Parser <**> helper )
                 (    fullDesc
-                  <> progDesc "M023 : Demander publication de données M023 (fines|facturantes|itc) toto"
+                  <> progDesc "M023 : Demander publication de données M023 (fines|facturantes|itc)"
                   <> footerDoc (Just aideM023GlobalDetaillee)
                 )
             )
@@ -363,7 +363,7 @@ aideMesuresDetailDetaillee = vsep
             ]
         ]
     ]
-    
+
 aideM023GlobalDetaillee :: Doc
 aideM023GlobalDetaillee = vsep
     [ para "Trois services sont mis à disposition pour les demandes M023 :"
