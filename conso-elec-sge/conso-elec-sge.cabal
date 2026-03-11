@@ -90,6 +90,8 @@ library
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
 
+        Conso.Fr.Elec.Rfiles.LoadRFiles
+
     -- Modules included in this library but not exported.
     --other-modules:
 
@@ -115,6 +117,10 @@ library
         , unix
         , pretty-simple
         , pretty
+        , libssh2 >= 0.2.0.9
+        , directory
+        , filepath
+        , time
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -213,5 +219,16 @@ test-suite conso-elec-sge-test
         , text
         , http-client
         
-    build-tool-depends: 
+    build-tool-depends:
         hspec-discover:hspec-discover == 2.*
+
+executable manage-rfiles
+    import:           warnings
+    main-is:          Main.hs
+    hs-source-dirs:   app-rfiles
+    default-language: Haskell2010
+    ghc-options:      -threaded
+    build-depends:
+          base >=4.17.2.1
+        , conso-elec-sge
+        , optparse-applicative
