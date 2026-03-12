@@ -4,7 +4,9 @@ module Main where
 
 import Options.Applicative
 import Control.Exception      (try, SomeException)
+import Data.Maybe (fromMaybe)
 import Conso.Fr.Elec.Rfiles.LoadRFiles
+import Conso.Fr.Elec.Rfiles.DecryptRFiles
 
 
 -- ---------------------------------------------------------------------------
@@ -15,6 +17,7 @@ data Command
     = Ls
     | List ListOpts
     | Load LoadOpts
+    | Decrypt DecryptOpts
 
 data ListOpts = ListOpts
     { listVerbose :: Bool
@@ -27,6 +30,9 @@ data LoadOpts = LoadOpts
     , loadRemove  :: Bool
     , loadJours   :: DayLimit
     }
+
+newtype DecryptOpts = DecryptOpts
+    { decryptDir' :: Maybe FilePath }
 
 
 -- ---------------------------------------------------------------------------
@@ -65,6 +71,11 @@ loadParser = LoadOpts
            <> showDefaultWith (\case Days n -> show n; AllDays -> "tous")
            <> help "Ne charger que les fichiers de moins de N jours (tous = tous les fichiers)" )
 
+decryptParser :: Parser DecryptOpts
+decryptParser = DecryptOpts
+    <$> optional (strOption (long "dir" <> short 'd' <> metavar "DIR"
+                             <> help "Répertoire à déchiffrer (défaut : localDir de la config)"))
+
 commandParser :: Parser Command
 commandParser = subparser
     (  command "ls"
@@ -76,6 +87,9 @@ commandParser = subparser
     <> command "load"
         ( info (Load <$> loadParser <**> helper)
                ( progDesc "Télécharger les fichiers .zip (--archive ou --remove pour post-traitement)" ))
+    <> command "decrypt"
+        ( info (Decrypt <$> decryptParser <**> helper)
+               ( progDesc "Déchiffrer les fichiers .zip locaux (AES-256-CBC)" ))
     )
 
 
@@ -109,6 +123,14 @@ main = do
                              _         -> Keep
             files <- loadRFiles cfg' postDl (loadJours o)
             putStrLn $ "\n" <> show (length files) <> " fichier(s) téléchargé(s)."
+
+        Decrypt o -> do
+            let dir = fromMaybe (localDir cfg) (decryptDir' o)
+            case zipAesKey cfg of
+                Nothing  -> putStrLn "Erreur : zipAesKey absent de la config."
+                Just key -> do
+                    decryptDir key dir
+                    putStrLn "Déchiffrement terminé."
 
     case (result :: Either SomeException ()) of
         Left e  -> putStrLn $ "Erreur SFTP : " <> show e

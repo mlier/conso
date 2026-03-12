@@ -91,6 +91,7 @@ library
         Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
 
         Conso.Fr.Elec.Rfiles.LoadRFiles
+        Conso.Fr.Elec.Rfiles.DecryptRFiles
 
     -- Modules included in this library but not exported.
     --other-modules:
@@ -121,6 +122,8 @@ library
         , directory
         , filepath
         , time
+        , crypton
+        , memory
 
     -- Directories containing source files.
     hs-source-dirs:   src

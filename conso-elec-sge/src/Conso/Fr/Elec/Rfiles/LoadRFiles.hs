@@ -16,6 +16,7 @@ import           Data.Yaml              (FromJSON, decodeFileEither)
 import qualified Data.ByteString.Char8  as BS
 import           Data.Bits              ((.&.))
 import           Data.List              (isSuffixOf)
+import           Data.Maybe             (fromMaybe)
 import           Control.Monad          (forM)
 import           System.FilePath        ((</>), takeFileName, makeRelative, takeDirectory, isAbsolute)
 import           System.Directory       (createDirectoryIfMissing, getFileSize)
@@ -47,6 +48,7 @@ data RFilesConfig = RFilesConfig
     , remoteDir  :: Maybe FilePath    -- répertoire source sur le serveur (Nothing = racine "/")
     , archiveDir :: FilePath         -- répertoire d'archive sur le serveur
     , localDir   :: FilePath         -- répertoire local de destination
+    , zipAesKey  :: Maybe String     -- clé/mot de passe AES-256
     } deriving (Show, Generic)
 
 instance FromJSON RFilesConfig
@@ -94,7 +96,7 @@ withRFilesSFTP cfg action =
         Just kf ->
             withSFTP kh (kf <> ".pub") kf (passphrase cfg) lo h p action
         Nothing ->
-            withSFTPUser kh lo (maybe "" id $ password cfg) h p action
+            withSFTPUser kh lo (fromMaybe "" $ password cfg) h p action
 
 
 -- ---------------------------------------------------------------------------
@@ -211,7 +213,7 @@ isRecentEnough AllDays   _   _    = True
 isRecentEnough (Days n) now info  = now - rfiMtime info <= fromIntegral n * 86400
 
 loadRFiles :: RFilesConfig -> PostDownload -> DayLimit -> IO [FilePath]
-loadRFiles cfg postDl dayLimit = 
+loadRFiles cfg postDl dayLimit =
     withRFilesSFTP cfg $ \sftp -> do
         putStrLn $ "Début chargement, option " <> show postDl
         let root = startDir cfg
