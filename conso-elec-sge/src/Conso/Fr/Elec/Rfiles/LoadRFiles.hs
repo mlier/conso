@@ -3,8 +3,10 @@
 module Conso.Fr.Elec.Rfiles.LoadRFiles
   ( RFilesConfig(..)
   , RFileInfo(..)
+  , PostDownload(..)
+  , DayLimit(..)
   , getConfig
-  , readRFiles
+  , listRFiles
   , loadRFiles
   , lsRFiles
   ) where
@@ -16,9 +18,9 @@ import           Data.Bits              ((.&.))
 import           Data.List              (isSuffixOf)
 import           Control.Monad          (forM)
 import           System.FilePath        ((</>), takeFileName, makeRelative, takeDirectory, isAbsolute)
-import           System.Directory       (createDirectoryIfMissing)
+import           System.Directory       (createDirectoryIfMissing, getFileSize)
 import           System.Posix.User      (homeDirectory, getEffectiveUserName, getUserEntryForName)
-import           Data.Time.Clock.POSIX  (posixSecondsToUTCTime)
+import           Data.Time.Clock.POSIX  (posixSecondsToUTCTime, getPOSIXTime)
 import           Data.Time.Format       (formatTime, defaultTimeLocale)
 import           Network.SSH.Client.LibSSH2
 import           Network.SSH.Client.LibSSH2.Foreign (saFileSize, saMtime, saPermissions)
@@ -174,13 +176,15 @@ lsRFiles cfg = withRFilesSFTP cfg $ \sftp -> do
 
 
 -- ---------------------------------------------------------------------------
--- Commande read : liste les fichiers sans y toucher
+-- Commande list : liste les fichiers sans y toucher
 -- ---------------------------------------------------------------------------
 
-readRFiles :: RFilesConfig -> Bool -> IO [RFileInfo]
-readRFiles cfg verbose = withRFilesSFTP cfg $ \sftp -> do
+listRFiles :: RFilesConfig -> Bool -> DayLimit -> IO [RFileInfo]
+listRFiles cfg verbose dayLimit = withRFilesSFTP cfg $ \sftp -> do
     let root = startDir cfg
-    infos <- filter isZipFile <$> listTree sftp root root
+    now   <- round <$> getPOSIXTime
+    infos <- filter (isRecentEnough dayLimit now) . filter isZipFile
+                <$> listTree sftp root root
     if null infos
         then putStrLn "Aucun fichier .zip disponible."
         else mapM_ (printInfo verbose) infos
@@ -194,23 +198,49 @@ readRFiles cfg verbose = withRFilesSFTP cfg $ \sftp -> do
 
 
 -- ---------------------------------------------------------------------------
--- Commande load : télécharge et archive
+-- Commande load : télécharge (et éventuellement archive ou supprime)
 -- ---------------------------------------------------------------------------
 
-loadRFiles :: RFilesConfig -> IO [FilePath]
-loadRFiles cfg =
+data PostDownload = Keep | Archive | Remove
+        deriving (Show)
+
+data DayLimit = Days Int | AllDays
+
+isRecentEnough :: DayLimit -> Integer -> RFileInfo -> Bool
+isRecentEnough AllDays   _   _    = True
+isRecentEnough (Days n) now info  = now - rfiMtime info <= fromIntegral n * 86400
+
+loadRFiles :: RFilesConfig -> PostDownload -> DayLimit -> IO [FilePath]
+loadRFiles cfg postDl dayLimit = 
     withRFilesSFTP cfg $ \sftp -> do
+        putStrLn $ "Début chargement, option " <> show postDl
         let root = startDir cfg
-        infos <- filter isZipFile <$> listTree sftp root root
-        mapM (downloadAndArchive sftp root) infos
+        now   <- round <$> getPOSIXTime
+        infos <- filter (isRecentEnough dayLimit now) . filter isZipFile
+                    <$> listTree sftp root root
+        putStrLn $ "Nombre de document à télécharger : " <> show ( length infos )
+        mapM (downloadFile sftp root) infos
   where
-    downloadAndArchive sftp root info = do
-        let rel      = rfiRelPath info
-            local'   = localDir   cfg </> rel
-            remote'  = root            </> rel
-            archive' = archiveDir cfg  </> rel
+    downloadFile sftp root info = do
+        let rel     = rfiRelPath info
+            local'  = localDir cfg </> rel
+            remote' = root </> rel
         createDirectoryIfMissing True (takeDirectory local')
         _ <- sftpReceiveFile sftp local' remote'
-        sftpRenameFile sftp remote' archive'
-        putStrLn $ "Téléchargé : " <> rel
+        case postDl of
+            Keep    -> putStrLn $ "Téléchargé : " <> rel
+            Archive -> do
+                let archive' = archiveDir cfg </> rel
+                sftpRenameFile sftp remote' archive'
+                putStrLn $ "Téléchargé et archivé : " <> rel
+            Remove  -> do
+                localSize <- getFileSize local'
+                if toInteger localSize == rfiSize info
+                    then do
+                        sftpDeleteFile sftp remote'
+                        putStrLn $ "Téléchargé et supprimé : " <> rel
+                    else
+                        putStrLn $ "ATTENTION : taille incorrecte (" <>
+                            show localSize <> " ≠ " <> show (rfiSize info) <>
+                            "), fichier conservé sur le serveur : " <> rel
         return local'
