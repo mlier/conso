@@ -124,6 +124,7 @@ library
         , time
         , crypton
         , memory
+        , process
 
     -- Directories containing source files.
     hs-source-dirs:   src

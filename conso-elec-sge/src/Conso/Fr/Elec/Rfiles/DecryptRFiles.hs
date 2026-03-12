@@ -13,8 +13,10 @@ import           Data.Char           (isDigit)
 import           Data.List           (isSuffixOf, isPrefixOf, tails)
 import           Data.Maybe          (fromMaybe)
 import           Control.Monad       (when)
-import           System.Directory    (listDirectory, doesDirectoryExist)
-import           System.FilePath     ((</>), takeFileName)
+import           System.Directory    (listDirectory, doesDirectoryExist, removeFile)
+import           System.Exit         (ExitCode(..))
+import           System.FilePath     ((</>), takeFileName, takeDirectory)
+import           System.Process      (readProcessWithExitCode)
 
 -- ---------------------------------------------------------------------------
 -- Types publics
@@ -142,4 +144,9 @@ processEntry cfg dir name = do
                          -> do res <- decryptZipFile mode path
                                case res of
                                  Left err -> putStrLn $ "ERREUR : " <> err
-                                 Right () -> putStrLn "OK"
+                                 Right () -> do
+                                     let outDir = takeDirectory path
+                                     (code, _, err) <- readProcessWithExitCode "unzip" ["-o", path, "-d", outDir] ""
+                                     case code of
+                                         ExitSuccess   -> removeFile path >> putStrLn "OK"
+                                         ExitFailure n -> putStrLn $ "ERREUR unzip (code " <> show n <> ") : " <> err
