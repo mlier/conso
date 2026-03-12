@@ -48,7 +48,10 @@ data RFilesConfig = RFilesConfig
     , remoteDir  :: Maybe FilePath    -- répertoire source sur le serveur (Nothing = racine "/")
     , archiveDir :: FilePath         -- répertoire d'archive sur le serveur
     , localDir   :: FilePath         -- répertoire local de destination
-    , zipAesKey  :: Maybe String     -- clé/mot de passe AES-256
+    , zipAes128Key     :: Maybe String   -- clé AES-128 (32 hex = 16 bytes)
+    , zipAes128IV      :: Maybe String   -- IV statique  (32 hex = 16 bytes)
+    , zipAes256Key     :: Maybe String   -- clé AES-256  (64 hex = 32 bytes)
+    , zipAesSwitchDate :: Maybe String   -- bascule YYYYMMDD (Nothing = tout AES-128)
     } deriving (Show, Generic)
 
 instance FromJSON RFilesConfig

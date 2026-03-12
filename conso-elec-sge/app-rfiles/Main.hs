@@ -5,6 +5,8 @@ module Main where
 import Options.Applicative
 import Control.Exception      (try, SomeException)
 import Data.Maybe (fromMaybe)
+import qualified Data.ByteString     as BS
+import           Data.ByteArray.Encoding (convertFromBase, Base(..))
 import Conso.Fr.Elec.Rfiles.LoadRFiles
 import Conso.Fr.Elec.Rfiles.DecryptRFiles
 
@@ -94,6 +96,18 @@ commandParser = subparser
 
 
 -- ---------------------------------------------------------------------------
+-- Helpers
+-- ---------------------------------------------------------------------------
+
+-- | Décode une clé hex depuis la config ; renvoie Left si invalide
+hexToBytes :: String -> String -> Either String BS.ByteString
+hexToBytes label hex =
+    case convertFromBase Base16 (BS.pack (map (fromIntegral . fromEnum) hex)) of
+        Left err -> Left $ label <> " invalide (hex attendu) : " <> err
+        Right bs -> Right bs
+
+
+-- ---------------------------------------------------------------------------
 -- Main
 -- ---------------------------------------------------------------------------
 
@@ -126,10 +140,16 @@ main = do
 
         Decrypt o -> do
             let dir = fromMaybe (localDir cfg) (decryptDir' o)
-            case zipAesKey cfg of
-                Nothing  -> putStrLn "Erreur : zipAesKey absent de la config."
-                Just key -> do
-                    decryptDir key dir
+            let e128k = maybe (Right Nothing) (fmap Just . hexToBytes "zipAes128Key") (zipAes128Key cfg)
+                e128v = maybe (Right Nothing) (fmap Just . hexToBytes "zipAes128IV")  (zipAes128IV  cfg)
+                e256k = maybe (Right Nothing) (fmap Just . hexToBytes "zipAes256Key") (zipAes256Key cfg)
+            case (e128k, e128v, e256k) of
+                (Left err, _, _) -> putStrLn $ "Erreur : " <> err
+                (_, Left err, _) -> putStrLn $ "Erreur : " <> err
+                (_, _, Left err) -> putStrLn $ "Erreur : " <> err
+                (Right k128, Right iv128, Right k256) -> do
+                    let dc = DecryptConfig k128 iv128 k256 (zipAesSwitchDate cfg)
+                    decryptDir dc dir
                     putStrLn "Déchiffrement terminé."
 
     case (result :: Either SomeException ()) of
