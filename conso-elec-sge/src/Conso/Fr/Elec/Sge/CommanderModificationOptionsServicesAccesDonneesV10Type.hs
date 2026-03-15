@@ -1,13 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type
   ( module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type
   ) where
  
-import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Extension(..),Restricts(..))
 import Text.XML.HaXml.Schema.Schema as Schema
-import Text.XML.HaXml.OneOfN
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
  
 -- Some hs-boot imports are required, for fwd-declaring types.
@@ -28,7 +27,7 @@ newtype CommanderModificationOptionsServicesAccesDonneesType = CommanderModifica
         deriving (Eq,Show)
 instance SchemaType CommanderModificationOptionsServicesAccesDonneesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return CommanderModificationOptionsServicesAccesDonneesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@CommanderModificationOptionsServicesAccesDonneesType{} =
@@ -42,7 +41,7 @@ newtype CommanderModificationOptionsServicesAccesDonneesResponseType = Commander
         deriving (Eq,Show)
 instance SchemaType CommanderModificationOptionsServicesAccesDonneesResponseType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return CommanderModificationOptionsServicesAccesDonneesResponseType
             `apply` optional (parseSchemaType "servicesModifies")
     schemaTypeToXML s x@CommanderModificationOptionsServicesAccesDonneesResponseType{} =
@@ -56,7 +55,7 @@ newtype ServicesModifiesType = ServicesModifiesType
         deriving (Eq,Show)
 instance SchemaType ServicesModifiesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServicesModifiesType
             `apply` between (Occurs (Just 1) (Just 100000))
                             (parseSchemaType "serviceSouscritId")
@@ -71,7 +70,7 @@ newtype ServiceSouscritIdType = ServiceSouscritIdType
         deriving (Eq,Show)
 instance SchemaType ServiceSouscritIdType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServiceSouscritIdType
             `apply` parseSchemaType "serviceSouscritId"
     schemaTypeToXML s x@ServiceSouscritIdType{} =
@@ -86,7 +85,7 @@ data DemandeType = DemandeType
         deriving (Eq,Show)
 instance SchemaType DemandeType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return DemandeType
             `apply` parseSchemaType "donneesGenerales"
             `apply` parseSchemaType "servicesSouscrits"
@@ -105,7 +104,7 @@ data DonneesGeneralesType = DonneesGeneralesType
         deriving (Eq,Show)
 instance SchemaType DonneesGeneralesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return DonneesGeneralesType
             `apply` parseSchemaType "pointId"
             `apply` parseSchemaType "initiateurLogin"
@@ -125,7 +124,7 @@ newtype ServicesSouscritsType = ServicesSouscritsType
         deriving (Eq,Show)
 instance SchemaType ServicesSouscritsType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServicesSouscritsType
             `apply` many1 (parseSchemaType "serviceSouscrit")
     schemaTypeToXML s x@ServicesSouscritsType{} =
@@ -141,7 +140,7 @@ data ServiceSouscritType = ServiceSouscritType
         deriving (Eq,Show)
 instance SchemaType ServiceSouscritType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServiceSouscritType
             `apply` parseSchemaType "serviceSouscritId"
             `apply` optional (parseSchemaType "ajouterOptionsPublication")
@@ -159,7 +158,7 @@ newtype OptionsPublicationType = OptionsPublicationType
         deriving (Eq,Show)
 instance SchemaType OptionsPublicationType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return OptionsPublicationType
             `apply` many1 (parseSchemaType "optionPublication")
     schemaTypeToXML s x@OptionsPublicationType{} =
@@ -174,7 +173,7 @@ data OptionPublicationType = OptionPublicationType
         deriving (Eq,Show)
 instance SchemaType OptionPublicationType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return OptionPublicationType
             `apply` optional (parseSchemaType "mesuresCorrigees")
             `apply` parseSchemaType "periodiciteTransmission"
@@ -241,8 +240,8 @@ instance SchemaType SensType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType SensType where
-    acceptingParser =  do literal "SOUTIRAGE"; return SensTypeSOUTIRAGE
-                      `onFail` do literal "INJECTION"; return SensTypeINJECTION
+    acceptingParser =  do _ <- literal "SOUTIRAGE"; return SensTypeSOUTIRAGE
+                      `onFail` do _ <- literal "INJECTION"; return SensTypeINJECTION
                       
     simpleTypeText SensTypeSOUTIRAGE = "SOUTIRAGE"
     simpleTypeText SensTypeINJECTION = "INJECTION"
@@ -283,7 +282,7 @@ instance SimpleType PeriodiciteTransmissionType where
     --      (Enumeration)
     simpleTypeText (PeriodiciteTransmissionType x) = simpleTypeText x
  
-data UtilisateurLoginType = UtilisateurLoginType
+type UtilisateurLoginType = AdresseEmailType
 -- Placeholder for a Union type, not yet implemented.
  
 newtype UtilisateurNniType = UtilisateurNniType Xsd.XsdString deriving (Eq,Show)

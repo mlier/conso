@@ -1,16 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
   ( module Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
   ) where
  
-import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Extension(..),Restricts(..))
 import Text.XML.HaXml.Schema.Schema as Schema
-import Text.XML.HaXml.OneOfN
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xs
-import V'''xsd'Dictionnaires'Metier'ENEDIS'Dictionnaire'TypeComplexe'v5'0'xsd as Dc
-import V'''xsd'Dictionnaires'Metier'ENEDIS'Dictionnaire'TypeSimple'v5'0'xsd as Ds
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
  
 -- Some hs-boot imports are required, for fwd-declaring types.
  
@@ -21,7 +19,7 @@ data CriteresType = CriteresType
         deriving (Eq,Show)
 instance SchemaType CriteresType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return CriteresType
             `apply` between (Occurs (Just 1) Nothing)
                             (parseSchemaType "pointId")
@@ -49,7 +47,7 @@ newtype RechercherServicesAccesDonneesReponseType = RechercherServicesAccesDonne
         deriving (Eq,Show)
 instance SchemaType RechercherServicesAccesDonneesReponseType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return RechercherServicesAccesDonneesReponseType
             `apply` optional (parseSchemaType "servicesSouscrits")
     schemaTypeToXML s x@RechercherServicesAccesDonneesReponseType{} =
@@ -64,7 +62,7 @@ data RechercherServicesAccesDonneesType = RechercherServicesAccesDonneesType
         deriving (Eq,Show)
 instance SchemaType RechercherServicesAccesDonneesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return RechercherServicesAccesDonneesType
             `apply` between (Occurs (Just 1) Nothing)
                             (parseSchemaType "criteres")
@@ -96,7 +94,7 @@ data ServiceSouscritType = ServiceSouscritType
         deriving (Eq,Show)
 instance SchemaType ServiceSouscritType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServiceSouscritType
             `apply` parseSchemaType "serviceSouscritId"
             `apply` parseSchemaType "pointId"
@@ -142,7 +140,7 @@ newtype OptionsPublicationType = OptionsPublicationType
         deriving (Eq,Show)
 instance SchemaType OptionsPublicationType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return OptionsPublicationType
             `apply` many1 (parseSchemaType "optionPublication")
     schemaTypeToXML s x@OptionsPublicationType{} =
@@ -159,7 +157,7 @@ data OptionPublicationType = OptionPublicationType
         deriving (Eq,Show)
 instance SchemaType OptionPublicationType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return OptionPublicationType
             `apply` optional (parseSchemaType "mesuresCorrigees")
             `apply` parseSchemaType "periodiciteTransmission"
@@ -179,7 +177,7 @@ newtype ServicesSouscritsType = ServicesSouscritsType
         deriving (Eq,Show)
 instance SchemaType ServicesSouscritsType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServicesSouscritsType
             `apply` between (Occurs (Just 0) (Just 200))
                             (parseSchemaType "serviceSouscrit")
@@ -188,23 +186,8 @@ instance SchemaType ServicesSouscritsType where
             [ concatMap (schemaTypeToXML "serviceSouscrit") $ servicesSouscritsType_serviceSouscrit x
             ]
  
-newtype BooleenType = BooleenType Xsd.Boolean deriving (Eq,Show)
-instance Restricts BooleenType Xsd.Boolean where
-    restricts (BooleenType x) = x
-instance SchemaType BooleenType where
-    parseSchemaType s = do
-        e <- element [s]
-        commit $ interior e parseSimpleType
-    schemaTypeToXML s (BooleenType x) = 
-        toXMLElement s [] [toXMLText (simpleTypeText x)]
-instance SimpleType BooleenType where
-    acceptingParser = fmap BooleenType acceptingParser
-    -- XXX should enforce the restrictions somehow?
-    -- The restrictions are:
-    simpleTypeText (BooleenType x) = simpleTypeText x
- 
-newtype PeriodiciteTransmissionType = PeriodiciteTransmissionType Xsd.XsdString deriving (Eq,Show)
-instance Restricts PeriodiciteTransmissionType Xsd.XsdString where
+newtype PeriodiciteTransmissionType = PeriodiciteTransmissionType Xs.XsdString deriving (Eq,Show)
+instance Restricts PeriodiciteTransmissionType Xs.XsdString where
     restricts (PeriodiciteTransmissionType x) = x
 instance SchemaType PeriodiciteTransmissionType where
     parseSchemaType s = do
@@ -220,17 +203,4 @@ instance SimpleType PeriodiciteTransmissionType where
     --      (Enumeration)
     simpleTypeText (PeriodiciteTransmissionType x) = simpleTypeText x
  
-newtype DateType = DateType Xsd.Date deriving (Eq,Show)
-instance Restricts DateType Xsd.Date where
-    restricts (DateType x) = x
-instance SchemaType DateType where
-    parseSchemaType s = do
-        e <- element [s]
-        commit $ interior e parseSimpleType
-    schemaTypeToXML s (DateType x) = 
-        toXMLElement s [] [toXMLText (simpleTypeText x)]
-instance SimpleType DateType where
-    acceptingParser = fmap DateType acceptingParser
-    -- XXX should enforce the restrictions somehow?
-    -- The restrictions are:
-    simpleTypeText (DateType x) = simpleTypeText x
+

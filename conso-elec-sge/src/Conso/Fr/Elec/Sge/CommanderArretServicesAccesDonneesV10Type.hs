@@ -5,10 +5,8 @@ module Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
   ( module Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
   ) where
  
-import Text.XML.HaXml.Schema.Schema (SchemaType(..),SimpleType(..),Extension(..),Restricts(..))
 import Text.XML.HaXml.Schema.Schema as Schema
-import Text.XML.HaXml.OneOfN
-import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
  
 -- Some hs-boot imports are required, for fwd-declaring types.
  
@@ -28,7 +26,7 @@ newtype CommanderArretServicesAccesDonneesType = CommanderArretServicesAccesDonn
         deriving (Eq,Show)
 instance SchemaType CommanderArretServicesAccesDonneesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return CommanderArretServicesAccesDonneesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@CommanderArretServicesAccesDonneesType{} =
@@ -42,7 +40,7 @@ newtype CommanderArretServicesAccesDonneesResponseType = CommanderArretServicesA
         deriving (Eq,Show)
 instance SchemaType CommanderArretServicesAccesDonneesResponseType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return CommanderArretServicesAccesDonneesResponseType
             `apply` parseSchemaType "servicesResilies"
     schemaTypeToXML s x@CommanderArretServicesAccesDonneesResponseType{} =
@@ -57,7 +55,7 @@ data DemandeType = DemandeType
         deriving (Eq,Show)
 instance SchemaType DemandeType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return DemandeType
             `apply` parseSchemaType "donneesGenerales"
             `apply` parseSchemaType "servicesSouscrits"
@@ -77,7 +75,7 @@ data DonneesGeneralesType = DonneesGeneralesType
         deriving (Eq,Show)
 instance SchemaType DonneesGeneralesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return DonneesGeneralesType
             `apply` optional (parseSchemaType "refExterne")
             `apply` parseSchemaType "pointId"
@@ -101,8 +99,8 @@ instance SchemaType SensType where
     schemaTypeToXML s x = 
         toXMLElement s [] [toXMLText (simpleTypeText x)]
 instance SimpleType SensType where
-    acceptingParser =  do literal "SOUTIRAGE"; return SensTypeSOUTIRAGE
-                      `onFail` do literal "INJECTION"; return SensTypeINJECTION
+    acceptingParser =  do _ <- literal "SOUTIRAGE"; return SensTypeSOUTIRAGE
+                      `onFail` do _ <- literal "INJECTION"; return SensTypeINJECTION
                       
     simpleTypeText SensTypeSOUTIRAGE = "SOUTIRAGE"
     simpleTypeText SensTypeINJECTION = "INJECTION"
@@ -113,7 +111,7 @@ newtype ServicesSouscritsType = ServicesSouscritsType
         deriving (Eq,Show)
 instance SchemaType ServicesSouscritsType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServicesSouscritsType
             `apply` many1 (parseSchemaType "serviceSouscritId")
     schemaTypeToXML s x@ServicesSouscritsType{} =
@@ -127,7 +125,7 @@ newtype ServicesResiliesType = ServicesResiliesType
         deriving (Eq,Show)
 instance SchemaType ServicesResiliesType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServicesResiliesType
             `apply` many1 (parseSchemaType "serviceResilie")
     schemaTypeToXML s x@ServicesResiliesType{} =
@@ -142,7 +140,7 @@ data ServiceResilieType = ServiceResilieType
         deriving (Eq,Show)
 instance SchemaType ServiceResilieType where
     parseSchemaType s = do
-        (pos,e) <- posnElement [s]
+        (_,e) <- posnElement [s]
         commit $ interior e $ return ServiceResilieType
             `apply` parseSchemaType "affaireId"
             `apply` parseSchemaType "serviceSouscritId"
