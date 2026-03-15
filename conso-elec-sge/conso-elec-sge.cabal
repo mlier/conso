@@ -89,6 +89,11 @@ library
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
         Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
+        Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
+        Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
+        Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type
+        Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
+        Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
 
         Conso.Fr.Elec.Rfiles.LoadRFiles
         Conso.Fr.Elec.Rfiles.DecryptRFiles
