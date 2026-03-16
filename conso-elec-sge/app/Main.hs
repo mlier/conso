@@ -57,6 +57,17 @@ import qualified Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30      a
 import           Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type  (CommanderCollectePublicationMesuresResponseType)
 import           Display.CollecteDisplay                                         ()   -- instance Renderable
 
+import qualified Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10                        as ACS
+import           Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type                    (CommanderServicesAccesDonneesResponseType)
+import qualified Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10                   as AARR
+import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type               (CommanderArretServicesAccesDonneesResponseType)
+import qualified Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10      as MOD
+import           Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type  (CommanderModificationOptionsServicesAccesDonneesResponseType)
+import qualified Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10           as RENOUV
+import           Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type       (RenouvelerServicesAccesResponseType)
+import qualified Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10                       as RSAD
+import           Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type                   (RechercherServicesAccesDonneesReponseType)
+
 
 data Options = Options
     {
@@ -74,9 +85,16 @@ data Command
     | MesuresDetail MesuresDetailCommand
     | Recherche RechercheOptions
     | M023 M023Command
-    | Acces AccesOptions
+    -- nouvelles commandes AccesDonnees
+    | AcsAcces      AcsAccesOptions
+    | AcsArret      AcsArretOptions
+    | AcsModifier   AcsModifierOptions
+    | AcsRenouveler AcsRenouvelerOptions
+    | AcsServices   AcsServicesOptions
+    -- anciennes commandes (old-)
+    | Acces    AccesOptions
     | Services ServicesOptions
-    | Arret ArretOptions
+    | Arret    ArretOptions
     | Collecte CollecteOptions
     deriving (Eq, Show)
 
@@ -186,6 +204,36 @@ data CollecteOptions = CollecteOptions
   , collecteAccord     :: AccesAccordOpts
   } deriving (Eq, Show)
 
+data AcsAccesOptions = AcsAccesOptions
+  { acsAccesPoint  :: String
+  , acsAccesSens   :: String
+  , acsAccesType   :: String
+  , acsAccesAccord :: AccesAccordOpts
+  } deriving (Eq, Show)
+
+data AcsArretOptions = AcsArretOptions
+  { acsArretPoint    :: String
+  , acsArretSens     :: String
+  , acsArretServices :: [String]
+  } deriving (Eq, Show)
+
+data AcsModifierOptions = AcsModifierOptions
+  { acsModifierPoint   :: String
+  , acsModifierSens    :: String
+  , acsModifierService :: String
+  } deriving (Eq, Show)
+
+data AcsRenouvelerOptions = AcsRenouvelerOptions
+  { acsRenouvelerPoint    :: String
+  , acsRenouvelerSens     :: String
+  , acsRenouvelerServices :: [String]
+  , acsRenouvelerAccord   :: AccesAccordOpts
+  } deriving (Eq, Show)
+
+newtype AcsServicesOptions = AcsServicesOptions
+  { acsServicesPoint :: String
+  } deriving (Eq, Show)
+
 
 opts :: Parser Options
 opts =
@@ -199,7 +247,8 @@ opts =
 comm :: Parser Command
 comm =
     subparser
-        (  command "info"
+        (  commandGroup "Recherche et information sur un point de mesure"
+        <> command "info"
             (   Info
             <$> info
                 ( infParser <**> helper )
@@ -214,6 +263,9 @@ comm =
                       "RechercherPointV20 : Rechercher des points par critères (adresse, nom, domaine…)"
                     , "" ] )
             )
+        )
+    <|> subparser
+        (  commandGroup "Accès direct aux données de mesures"
         <> command "mesures"
             (info
                 ( Mesures <$> mesuresParser <**> helper )
@@ -238,7 +290,50 @@ comm =
                   <> footerDoc (Just aideM023GlobalDetaillee)
                 )
             )
+        )
+        -- NOUVEAU : groupe AccesDonnees
+    <|> subparser
+        (  commandGroup "Accès aux flux R6x (API v26+)"
         <> command "services"
+            ( info
+                ( AcsServices <$> acsServicesParser <**> helper )
+                ( fullDesc
+                <> progDesc "RechercherServicesAccesDonneesV10 : Rechercher les services AccesDonnees sur un point"
+                )
+            )
+        <> command "acces"
+            ( info
+                ( AcsAcces <$> acsAccesParser <**> helper )
+                ( fullDesc
+                <> progDesc "CommanderServicesAccesDonneesV10 : Commander l'accès aux données de mesures"
+                )
+            )
+        <> command "modifier"
+            ( info
+                ( AcsModifier <$> acsModifierParser <**> helper )
+                ( fullDesc
+                <> progDesc "CommanderModificationOptionsServicesAccesDonneesV10 : Modifier les options d'un service AccesDonnees"
+                )
+            )
+        <> command "renouveler"
+            ( info
+                ( AcsRenouveler <$> acsRenouvelerParser <**> helper )
+                ( fullDesc
+                <> progDesc "CommanderRenouvellementServicesAccesDonneesV10 : Renouveler des services AccesDonnees"
+                )
+            )
+        <> command "arret"
+            ( info
+                ( AcsArret <$> acsArretParser <**> helper )
+                ( fullDesc
+                <> progDesc "CommanderArretServicesAccesDonneesV10 : Commander l'arrêt de services AccesDonnees"
+                )
+            )
+        )
+        -- RENOMMÉ : ancienne API (old-)
+    <|> subparser
+        (  commandGroup "Accès aux anciens flux bientôt obsolètes (API antérieure à v26)"
+        <> command "old-services"
             ( info
                 ( Services <$> servicesParser <**> helper )
                 ( fullDesc
@@ -246,31 +341,32 @@ comm =
                 <> footerDoc ( Just aideServicesDetaillee )
                 )
             )
-        <> command "acces"
+        <> command "old-acces"
             ( info
                 ( Acces <$> accesParser <**> helper )
-                (  fullDesc 
+                (  fullDesc
                 <> progDesc "CommanderAccesDonneesMesuresV10 : Commander l'accès aux données de mesures (AME)"
                 <> footerDoc ( Just aideAccesDetaillee )
                 )
             )
-        <> command "collecte"
+        <> command "old-collecte"
             ( info
                 ( Collecte <$> collecteParser <**> helper )
-                ( fullDesc 
-                <> progDesc "CommanderCollectePublicationMesuresV30 : Commander la collecte ou la publication de mesures (AME/CDC/IDX)" 
+                ( fullDesc
+                <> progDesc "CommanderCollectePublicationMesuresV30 : Commander la collecte ou la publication de mesures (AME/CDC/IDX)"
                 <> footerDoc ( Just aideCollecteDetaillee )
                 )
             )
-        <> command "arret"
+        <> command "old-arret"
             ( info
                 ( Arret <$> arretParser <**> helper )
-                ( fullDesc 
-                <> progDesc "CommanderArretServiceSouscritMesuresV10 : Commander l'arrêt d'un service souscrit de mesures (ASS)" 
+                ( fullDesc
+                <> progDesc "CommanderArretServiceSouscritMesuresV10 : Commander l'arrêt d'un service souscrit de mesures (ASS)"
                 <> footerDoc ( Just aideArretDetaillee )
                 )
             )
         )
+
 
 aideMesuresDetaillee :: Doc
 aideMesuresDetaillee = vsep
@@ -894,6 +990,50 @@ accesAccordParser =
                    <> help "Dénomination sociale de la personne morale ayant donné accord"))
 
 
+acsAccesParser :: Parser AcsAccesOptions
+acsAccesParser = AcsAccesOptions
+    <$> strOption (long "point" <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point de mesure sélectionné")
+    <*> strOption (long "sens"  <> metavar "SOUTIRAGE|INJECTION"
+                  <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> strOption (long "type"  <> short 't' <> metavar "CDC|IDX|ENERGIE|PMAX"
+                  <> help "Type de données demandé")
+    <*> accesAccordParser
+
+acsArretParser :: Parser AcsArretOptions
+acsArretParser = AcsArretOptions
+    <$> strOption (long "point"   <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point de mesure sélectionné")
+    <*> strOption (long "sens"    <> metavar "SOUTIRAGE|INJECTION"
+                  <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> some      (strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
+                  <> help "Identifiant de service à arrêter (répétable)"))
+
+acsModifierParser :: Parser AcsModifierOptions
+acsModifierParser = AcsModifierOptions
+    <$> strOption (long "point"   <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point de mesure sélectionné")
+    <*> strOption (long "sens"    <> metavar "SOUTIRAGE|INJECTION"
+                  <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
+                  <> help "Identifiant du service à modifier")
+
+acsRenouvelerParser :: Parser AcsRenouvelerOptions
+acsRenouvelerParser = AcsRenouvelerOptions
+    <$> strOption (long "point"   <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point de mesure sélectionné")
+    <*> strOption (long "sens"    <> metavar "SOUTIRAGE|INJECTION"
+                  <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
+    <*> some      (strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
+                  <> help "Identifiant de service à renouveler (répétable)"))
+    <*> accesAccordParser
+
+acsServicesParser :: Parser AcsServicesOptions
+acsServicesParser = AcsServicesOptions
+    <$> strOption (long "point" <> short 'p' <> metavar "PRM"
+                  <> help "Identifiant PRM du point")
+
+
 toDomaineTension :: String -> DomaineTensionCodeType
 toDomaineTension "BTINF" = DomaineTensionCodeTypeBTINF
 toDomaineTension "BTSUP" = DomaineTensionCodeTypeBTSUP
@@ -977,6 +1117,26 @@ toSensAcces :: String -> ACCES.Sens
 toSensAcces "SOUTIRAGE" = ACCES.SensSOUTIRAGE
 toSensAcces "INJECTION" = ACCES.SensINJECTION
 toSensAcces s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toSensACS :: String -> ACS.Sens
+toSensACS "SOUTIRAGE" = ACS.SensSOUTIRAGE
+toSensACS "INJECTION" = ACS.SensINJECTION
+toSensACS s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toSensAARR :: String -> AARR.Sens
+toSensAARR "SOUTIRAGE" = AARR.SensSOUTIRAGE
+toSensAARR "INJECTION" = AARR.SensINJECTION
+toSensAARR s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toSensMOD :: String -> MOD.Sens
+toSensMOD "SOUTIRAGE" = MOD.SensSOUTIRAGE
+toSensMOD "INJECTION" = MOD.SensINJECTION
+toSensMOD s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+toSensRENOUV :: String -> RENOUV.Sens
+toSensRENOUV "SOUTIRAGE" = RENOUV.SensSOUTIRAGE
+toSensRENOUV "INJECTION" = RENOUV.SensINJECTION
+toSensRENOUV s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
 
 
 docommand :: Options -> IO ()
@@ -1132,6 +1292,47 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
           else do
             rep <- ACCES.wsRequest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
             if raw then pPrint rep else renderApp rep
+
+    AcsAcces o -> do
+        let accordType = case acsAccesAccord o of
+                AccesPhysique nom -> ACS.AccordPersonnePhysiqueNom nom
+                AccesMorale   den -> ACS.AccordPersonneMoraleDenominationSociale den
+        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) accordType (acsAccesType o)
+        if xml then ACS.xmlRequest myType >>= (putStrLn . prettyXml)
+        else ACS.wsRequest myType >>= \rep -> do
+            let rep' = rep :: Either (String, String) CommanderServicesAccesDonneesResponseType
+            if raw then pPrint rep' else pPrint rep'
+
+    AcsArret o -> do
+        myType <- AARR.initType (acsArretPoint o) (toSensAARR (acsArretSens o)) (acsArretServices o)
+        if xml then AARR.xmlRequest myType >>= (putStrLn . prettyXml)
+        else AARR.wsRequest myType >>= \rep -> do
+            let rep' = rep :: Either (String, String) CommanderArretServicesAccesDonneesResponseType
+            pPrint rep'
+
+    AcsModifier o -> do
+        myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o)
+        if xml then MOD.xmlRequest myType >>= (putStrLn . prettyXml)
+        else MOD.wsRequest myType >>= \rep -> do
+            let rep' = rep :: Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType
+            pPrint rep'
+
+    AcsRenouveler o -> do
+        let accordType = case acsRenouvelerAccord o of
+                AccesPhysique nom -> RENOUV.AccordPersonnePhysiqueNom nom
+                AccesMorale   den -> RENOUV.AccordPersonneMoraleDenominationSociale den
+        myType <- RENOUV.initType (acsRenouvelerPoint o) (toSensRENOUV (acsRenouvelerSens o)) accordType (acsRenouvelerServices o)
+        if xml then RENOUV.xmlRequest myType >>= (putStrLn . prettyXml)
+        else RENOUV.wsRequest myType >>= \rep -> do
+            let rep' = rep :: Either (String, String) RenouvelerServicesAccesResponseType
+            pPrint rep'
+
+    AcsServices o -> do
+        myType <- RSAD.initType (acsServicesPoint o)
+        if xml then RSAD.xmlRequest myType >>= (putStrLn . prettyXml)
+        else RSAD.wsRequest myType >>= \rep -> do
+            let rep' = rep :: Either (String, String) RechercherServicesAccesDonneesReponseType
+            pPrint rep'
 
 
 main :: IO ()
