@@ -9,8 +9,6 @@ import Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM
     ( AffaireId
     , Sens(Sens_SOUTIRAGE)
     , CadreAcces(CadreAcces_ACCORD_CLIENT) )
-import           Data.Either (isLeft)
-
 
 -- | Pour les services de commande, SGT570 ("service déjà actif") est
 --   également recevable.
@@ -28,10 +26,7 @@ shouldRefuserHomo :: [String] -> String -> Expectation
 shouldRefuserHomo prms expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prms Sens_SOUTIRAGE CadreAcces_ACCORD_CLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+    rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec

@@ -7,7 +7,7 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresV11
     ( initType, initTypeTest )
 import Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
     ( ConsulterMesuresResponseType )
-import           Data.Either (isRight, isLeft)
+import           Data.Either (isRight)
 
 
 shouldConsulterProd :: String -> Bool -> Expectation
@@ -26,10 +26,7 @@ shouldRefuserHomo :: String -> Bool -> String -> Expectation
 shouldRefuserHomo myPointId auth expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest myPointId auth
     rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+    rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec

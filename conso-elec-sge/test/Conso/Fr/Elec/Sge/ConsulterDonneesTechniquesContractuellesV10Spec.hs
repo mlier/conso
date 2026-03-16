@@ -4,7 +4,6 @@ import SpecHelper
     ( hspec,
       describe,
       it,
-      shouldBe,
       shouldSatisfy,
       Spec,
       Expectation,
@@ -15,7 +14,8 @@ import SpecHelper
       homologationC,
       recevablesC,
       nonRecevablesC,
-      pendingOnNetworkError )
+      pendingOnNetworkError,
+      shouldHaveCode )
 
 
 import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
@@ -60,10 +60,7 @@ spec = do
                 myType <- initType pointIdUnkown True
                 rep <- wsRequest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
 
-                let (e, _) = case rep of
-                                Left r -> r
-                                Right _ -> ("toto", "titi")
-                e `shouldBe` "SGT401" -- Demande non recevable : point inexistant
+                rep `shouldHaveCode` "SGT401" -- Demande non recevable : point inexistant
 
     describe homologationC $ do
         

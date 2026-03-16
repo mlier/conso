@@ -4,7 +4,8 @@ module SpecHelper (
   module Test.Hspec, wsRequest, wsRequestTest,
   testPointId, testNomClient,
   productionC, homologationC, recevablesC, nonRecevablesC,
-  pendingOnNetworkError
+  pendingOnNetworkError,
+  shouldHaveCode
 ) where
 
 import Test.Hspec
@@ -68,3 +69,16 @@ cyanC = col "\ESC[36m"
 
 col :: String -> String -> String
 col c s = c ++ s ++ "\ESC[0m"
+
+
+-- | Vérifie le code d'erreur d'une réponse Left.
+--   En cas d'échec, affiche aussi le libellé SGE pour faciliter le diagnostic.
+shouldHaveCode :: Either (String, String) a -> String -> Expectation
+shouldHaveCode (Right _) _ =
+    expectationFailure "Expected Left (code d'erreur), got Right (succès inattendu)"
+shouldHaveCode (Left (code, label)) expected
+    | code == expected = return ()
+    | otherwise = expectationFailure $
+        "expected: " ++ show expected ++
+        "\n but got: " ++ show code ++
+        " (" ++ label ++ ")"

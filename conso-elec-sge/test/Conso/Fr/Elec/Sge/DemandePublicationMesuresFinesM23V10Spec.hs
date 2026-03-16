@@ -12,8 +12,6 @@ import Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
     , MesuresTypeCode(..)
     , Sens(SensSOUTIRAGE)
     , CadreAcces(CadreAccesACCORDCLIENT) )
-import           Data.Either (isLeft)
-
 
 -- | Pour les services de commande, SGT570 ("service déjà actif") est
 --   également recevable.
@@ -31,10 +29,7 @@ shouldRefuserHomo :: [String] -> MesuresTypeCode -> String -> String -> String -
 shouldRefuserHomo prms typeCode debut fin expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prms typeCode Nothing debut fin SensSOUTIRAGE CadreAccesACCORDCLIENT
     rep    <- wsRequestTest myType :: IO (Either (String, String) AffaireId)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+    rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec

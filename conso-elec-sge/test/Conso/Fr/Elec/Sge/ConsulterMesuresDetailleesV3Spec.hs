@@ -14,7 +14,7 @@ import Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesCommunV12Type
     , MesuresPasType(..)
     , SensMesureType(..)
     , CadreAccesType(..) )
-import           Data.Either (isRight, isLeft)
+import           Data.Either (isRight)
 
 
 shouldConsulterHomo
@@ -35,10 +35,7 @@ shouldRefuserHomo prm typeCode grandeur debut fin maybePas corrigees sens cadre 
     pendingOnNetworkError $ do
         myType <- initTypeTest prm typeCode grandeur debut fin maybePas corrigees sens cadre
         rep    <- wsRequestTest myType :: IO (Either (String, String) ConsulterMesuresDetailleesV3ResponseType)
-        rep `shouldSatisfy` isLeft
-        case rep of
-            Left (code, _) -> code `shouldBe` expectedCode
-            Right _        -> expectationFailure "Réponse inattendue : Right"
+        rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec

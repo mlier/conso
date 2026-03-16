@@ -9,8 +9,6 @@ import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10
     , Sens(SensSOUTIRAGE) )
 import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
     ( CommanderAccesDonneesMesuresResponseType )
-import           Data.Either (isLeft)
-
 
 -- | Pour les services de commande, SGT570 ("service déjà actif") est
 --   également recevable.
@@ -28,10 +26,7 @@ shouldRefuserHomo :: String -> Maybe Integer -> String -> String -> Expectation
 shouldRefuserHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prm duree (AccordPersonnePhysiqueNom "Toto") typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
-    rep `shouldSatisfy` isLeft
-    case rep of
-        Left (code, _) -> code `shouldBe` expectedCode
-        Right _        -> expectationFailure "Réponse inattendue : Right"
+    rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec

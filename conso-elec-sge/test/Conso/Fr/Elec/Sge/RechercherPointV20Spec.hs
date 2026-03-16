@@ -10,7 +10,7 @@ import Conso.Fr.Elec.Sge.RechercherPointV20
     ( initTypeTest )
 import Conso.Fr.Elec.Sge.RechercherPointV20Type
     ( RechercherPointResponseType )
-import           Data.Either (isRight, isLeft)
+import           Data.Either (isRight)
 
 
 shouldRechercherHomo
@@ -35,10 +35,7 @@ shouldRefuserHomo voie lieuDit codePostal insee numSiret nom horsPerimetre expec
                     Nothing Nothing voie lieuDit codePostal insee
                     numSiret Nothing Nothing nom Nothing horsPerimetre
         rep <- wsRequestTest myType :: IO (Either (String, String) RechercherPointResponseType)
-        rep `shouldSatisfy` isLeft
-        case rep of
-            Left (code, _) -> code `shouldBe` expectedCode
-            Right _        -> expectationFailure "Réponse inattendue : Right"
+        rep `shouldHaveCode` expectedCode
 
 
 spec :: Spec
