@@ -78,7 +78,7 @@ instance ResponseType CommanderAccesDonneesMesuresResponseType where
                    }
               
 
-initType_ :: Bool -> String -> Maybe Integer -> AccordPersonneType -> String -> Sens -> IO CommanderAccesDonneesMesuresType
+initType_ :: Bool -> String -> Maybe Integer -> Maybe AccordPersonneType -> String -> Sens -> IO CommanderAccesDonneesMesuresType
 initType_ prod myPointId duree accordPersonneType typeDonnees sens = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
@@ -86,22 +86,25 @@ initType_ prod myPointId duree accordPersonneType typeDonnees sens = do
     let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
 
     let dateFin = case duree of
-            Just d -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" $ addDays d (utctDay currentTime) 
+            Just d -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" $ addDays d (utctDay currentTime)
             Nothing -> Nothing
-    
-    let soutirage = case sens of 
+
+    let soutirage = case sens of
             SensSOUTIRAGE -> True
             SensINJECTION -> False
 
-    let personTypeChoice = case accordPersonneType of 
-            AccordPersonnePhysiqueNom nom -> Just $ OneOf2 $ PersonnePhysiqueType
+    let (accordBool, personTypeChoice) = case accordPersonneType of
+            Nothing -> (False, Nothing)
+            Just (AccordPersonnePhysiqueNom nom) ->
+                (True, Just $ OneOf2 $ PersonnePhysiqueType
                   { personnePhysiqueType_civilite = Nothing
                   , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nom
                   , personnePhysiqueType_prenom = Nothing
-                  } 
-            AccordPersonneMoraleDenominationSociale nom -> Just $ TwoOf2 $ PersonneMoraleType
+                  })
+            Just (AccordPersonneMoraleDenominationSociale nom) ->
+                (True, Just $ TwoOf2 $ PersonneMoraleType
                   { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString nom
-                  } 
+                  })
 
     let requestType = CommanderAccesDonneesMesuresType{
           commanderAccesDonneesMesuresType_demande = DemandeType
@@ -120,7 +123,7 @@ initType_ prod myPointId duree accordPersonneType typeDonnees sens = do
             { accesDonneesType_dateDebut = DateType $ Xsd.Date dateDebut
             , accesDonneesType_dateFin = dateFin
             , accesDonneesType_declarationAccordClient = DeclarationAccordClientType
-              { declarationAccordClientType_accord = BooleenType True
+              { declarationAccordClientType_accord = BooleenType accordBool
               , declarationAccordClientType_choice1 = personTypeChoice
               }
             , accesDonneesType_typeDonnees = TypeDonneesType $ Xsd.XsdString typeDonnees
@@ -138,11 +141,12 @@ initType :: String              -- ^ myPointId : identifiant PRM du point sur le
                                 -- - Pour un point C5 et P4, la durée ne peut excéder 3 ans,
                                 -- - Pour un point C1-C4 et P1-P3, si une durée est fournie, elle ne peut 
                                 --   excéder 3 ans.
-         -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client et son type : 
+         -> Maybe AccordPersonneType -- ^ accordPersonneType : certifie l'accord du client et son type :
                                 --
-                                -- - PersonnePhysique donne le nom de la personne physique qui a donné accord,
-                                -- - PersonneMorale donne la dénomination morale qui a donné son accord.
-         -> String              -- ^ typeDonnees : pour un point C5, les valeurs possibles sont : 
+                                -- - Just PersonnePhysique : accord True, nom de la personne physique,
+                                -- - Just PersonneMorale : accord True, dénomination morale,
+                                -- - Nothing : accord False (cas non-recevable, ex. ACCES-NR1 → SGT566).
+         -> String              -- ^ typeDonnees : pour un point C5, les valeurs possibles sont :
                                 -- 
                                 -- - CDC courbe de mesure,
                                 -- - IDX index quotidien,
@@ -154,14 +158,14 @@ initType :: String              -- ^ myPointId : identifiant PRM du point sur le
                                 -- - CDC courbe de mesure,
                                 -- - IDX index quotidien,
                                 -- - ENERGIE énergie globale.
-         -> Sens                -- ^ sens : indique le Sens de l’énergie circulant vers le réseau d’Enedis : 
-                                -- 
+         -> Sens                -- ^ sens : indique le Sens de l’énergie circulant vers le réseau d’Enedis :
+                                --
                                 -- - INJECTION,
                                 -- - SOUTIRAGE.
          -> IO CommanderAccesDonneesMesuresType
 initType = initType_ True
 
-initTypeTest :: String -> Maybe Integer -> AccordPersonneType -> String -> Sens -> IO CommanderAccesDonneesMesuresType
+initTypeTest :: String -> Maybe Integer -> Maybe AccordPersonneType -> String -> Sens -> IO CommanderAccesDonneesMesuresType
 initTypeTest = initType_ False
 
 
@@ -169,8 +173,8 @@ myrequest :: IO()
 myrequest = do 
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv) (Just $ 3*364) 
-                        ( AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
+    myType <- initType (T.unpack $ pointId testEnv) (Just $ 3*364)
+                        ( Just $ AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
                         "CDC" SensSOUTIRAGE
     rep <- wsRequest myType :: IO ( Either (String, String) CommanderAccesDonneesMesuresResponseType )
     pPrint rep

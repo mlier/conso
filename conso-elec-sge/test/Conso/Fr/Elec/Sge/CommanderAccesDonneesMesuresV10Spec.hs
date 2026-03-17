@@ -18,13 +18,19 @@ isRightOrSgt570 (Left (code, _))   = code == "SGT570"
 
 shouldCommanderHomo :: String -> Maybe Integer -> String -> Expectation
 shouldCommanderHomo prm duree typeDonnees = pendingOnNetworkError $ do
-    myType <- initTypeTest prm duree (AccordPersonnePhysiqueNom "Toto") typeDonnees SensSOUTIRAGE
+    myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldSatisfy` isRightOrSgt570
 
 shouldRefuserHomo :: String -> Maybe Integer -> String -> String -> Expectation
 shouldRefuserHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
-    myType <- initTypeTest prm duree (AccordPersonnePhysiqueNom "Toto") typeDonnees SensSOUTIRAGE
+    myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
+    rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
+    rep `shouldHaveCode` expectedCode
+
+shouldRefuserSansAccordHomo :: String -> String -> Expectation
+shouldRefuserSansAccordHomo prm expectedCode = pendingOnNetworkError $ do
+    myType <- initTypeTest prm (Just (3 * 365)) Nothing "CDC" SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldHaveCode` expectedCode
 
@@ -46,6 +52,9 @@ spec = do
                 shouldCommanderHomo accesPrmC5 Nothing "ENERGIE"
 
         describe nonRecevablesC $ do
+            it "ACCES-NR1 - Sans accord client (SGT566)" $ do
+                shouldRefuserSansAccordHomo accesPrmC5 "SGT566"
+
             it "ACCES-NR2 - Durée supérieure à 3 ans (SGT567)" $ do
                 -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
                 shouldRefuserHomo accesPrmC5 (Just 1097) "CDC" "SGT567"

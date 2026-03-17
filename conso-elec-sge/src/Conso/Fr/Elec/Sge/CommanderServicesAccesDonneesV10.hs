@@ -6,6 +6,9 @@ module Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10 (
 ) where
 
 import qualified Data.Text as T
+import           Data.Time.Clock (getCurrentTime, utctDay)
+import           Data.Time.Calendar (addDays)
+import           Data.Time.Format (formatTime, defaultTimeLocale)
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
@@ -15,6 +18,7 @@ import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
       BooleenType(BooleenType),
       Chaine255Type(Chaine255Type),
       CommanderServicesAccesDonneesResponseType,
+      DateType(DateType),
       CommanderServicesAccesDonneesType(..),
       ContratIdType(ContratIdType),
       DeclarationAccordClientType(DeclarationAccordClientType,
@@ -76,23 +80,34 @@ instance ResponseType CommanderServicesAccesDonneesResponseType where
                    }
 
 
-initType_ :: Bool -> String -> Sens -> AccordPersonneType -> String -> IO CommanderServicesAccesDonneesType
-initType_ prod myPointId sens accordPersonneType typeDonnees = do
+initType_ :: Bool -> String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> IO CommanderServicesAccesDonneesType
+initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
+
+    currentTime <- getCurrentTime
+    let dateFin = case duree of
+            Just d  -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d"
+                         $ addDays d (utctDay currentTime)
+            Nothing -> Nothing
 
     let sensType = case sens of
             SensSOUTIRAGE -> SensTypeSOUTIRAGE
             SensINJECTION -> SensTypeINJECTION
 
-    let personTypeChoice = case accordPersonneType of
-            AccordPersonnePhysiqueNom nom -> Just $ OneOf2 $ PersonnePhysiqueType
-                  { personnePhysiqueType_civilite = Nothing
-                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nom
-                  , personnePhysiqueType_prenom = Nothing
-                  }
-            AccordPersonneMoraleDenominationSociale nom -> Just $ TwoOf2 $ PersonneMoraleType
-                  { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString nom
-                  }
+    let accordDecl = case accordPersonneType of
+            Nothing -> Nothing
+            Just ap -> Just $ DeclarationAccordClientType
+              { declarationAccordClientType_accord = BooleenType True
+              , declarationAccordClientType_choice1 = case ap of
+                  AccordPersonnePhysiqueNom nom -> Just $ OneOf2 $ PersonnePhysiqueType
+                    { personnePhysiqueType_civilite = Nothing
+                    , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nom
+                    , personnePhysiqueType_prenom = Nothing
+                    }
+                  AccordPersonneMoraleDenominationSociale nom -> Just $ TwoOf2 $ PersonneMoraleType
+                    { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString nom
+                    }
+              }
 
     let requestType = CommanderServicesAccesDonneesType{
           commanderServicesAccesDonneesType_demande = DemandeType
@@ -101,12 +116,9 @@ initType_ prod myPointId sens accordPersonneType typeDonnees = do
             , donneesGeneralesType_pointId = PointIdType $ Xsd.XsdString myPointId
             , donneesGeneralesType_initiateurLogin = AdresseEmailType $ Xsd.XsdString loginUtilisateur
             , donneesGeneralesType_contratId = ContratIdType $ Xsd.XsdString contratId
-            , donneesGeneralesType_dateFin = Nothing
+            , donneesGeneralesType_dateFin = dateFin
             , donneesGeneralesType_sens = sensType
-            , donneesGeneralesType_declarationAccordClient = Just $ DeclarationAccordClientType
-              { declarationAccordClientType_accord = BooleenType True
-              , declarationAccordClientType_choice1 = personTypeChoice
-              }
+            , donneesGeneralesType_declarationAccordClient = accordDecl
             }
           , demandeType_servicesSouscrits = ServicesSouscritsType
             [ ServiceSouscritType
@@ -119,14 +131,19 @@ initType_ prod myPointId sens accordPersonneType typeDonnees = do
     return requestType
 
 -- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
-initType :: String              -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
-         -> Sens                -- ^ sens : indique le sens de l'énergie.
-         -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client.
-         -> String              -- ^ typeDonnees : type de données demandé (CDC, IDX, PMAX, ENERGIE).
+initType :: String                  -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
+         -> Sens                    -- ^ sens : indique le sens de l'énergie.
+         -> Maybe AccordPersonneType -- ^ accordPersonneType : certifie l'accord du client.
+                                    --
+                                    -- - Just PersonnePhysique : accord True, nom de la personne,
+                                    -- - Just PersonneMorale : accord True, dénomination morale,
+                                    -- - Nothing : accord False (SAD-NR1 → SGT566).
+         -> String                  -- ^ typeDonnees : type de données demandé (CDC, IDX, PMAX, ENERGIE).
+         -> Maybe Integer            -- ^ duree : durée en jours depuis aujourd'hui, ou Nothing (SAD-NR2 → SGT509 si > 3 ans).
          -> IO CommanderServicesAccesDonneesType
 initType = initType_ True
 
-initTypeTest :: String -> Sens -> AccordPersonneType -> String -> IO CommanderServicesAccesDonneesType
+initTypeTest :: String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> IO CommanderServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
@@ -136,8 +153,8 @@ myrequest = do
     let testEnv = test env
     myType <- initType (T.unpack $ pointId testEnv)
                        SensSOUTIRAGE
-                       (AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv))
-                       "CDC"
+                       (Just $ AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv))
+                       "CDC" Nothing
     rep <- wsRequest myType :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     pPrint rep
 

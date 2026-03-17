@@ -51,23 +51,31 @@ instance ResponseType CommanderTransmissionDonneesInfraJResponseType where
                    }
               
 
-initType_ :: Bool -> String -> AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
+initType_ :: Bool -> String -> Maybe AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
 initType_ prod myPointId accordPersonneType sens getCDC getIDX getPTD = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
-    let soutirage = case sens of 
+    let soutirage = case sens of
             SensSOUTIRAGE -> True
             SensINJECTION -> False
-    
-    let personTypeChoice = case accordPersonneType of 
-            AccordPersonnePhysiqueNom nomPhy -> OneOf2 $ PersonnePhysiqueType
+
+    let (accordBool, personTypeChoice) = case accordPersonneType of
+            Nothing ->
+                (False, OneOf2 $ PersonnePhysiqueType
+                  { personnePhysiqueType_civilite = Nothing
+                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString ""
+                  , personnePhysiqueType_prenom = Nothing
+                  })
+            Just (AccordPersonnePhysiqueNom nomPhy) ->
+                (True, OneOf2 $ PersonnePhysiqueType
                   { personnePhysiqueType_civilite = Nothing
                   , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString nomPhy
                   , personnePhysiqueType_prenom = Nothing
-                  } 
-            AccordPersonneMoraleDenominationSociale denomi -> TwoOf2 $ PersonneMoraleType
+                  })
+            Just (AccordPersonneMoraleDenominationSociale denomi) ->
+                (True, TwoOf2 $ PersonneMoraleType
                   { personneMoraleType_denominationSociale = Chaine255Type $ Xsd.XsdString denomi
-                  } 
+                  })
 
     let requestType = CommanderTransmissionDonneesInfraJType{
           commanderTransmissionDonneesInfraJType_demande = DemandeType
@@ -80,7 +88,7 @@ initType_ prod myPointId accordPersonneType sens getCDC getIDX getPTD = do
             }
           , demandeType_accesDonnees = DemandeAccesDonneesType
             { demandeAccesDonneesType_declarationAccordClient = [DeclarationAccordClientType
-              { declarationAccordClientType_accordClient = Ds.BooleenType True
+              { declarationAccordClientType_accordClient = Ds.BooleenType accordBool
               , declarationAccordClientType_injection = Ds.BooleenType $ not soutirage
               , declarationAccordClientType_soutirage = Ds.BooleenType soutirage
               , declarationAccordClientType_choice3 = personTypeChoice
@@ -97,10 +105,11 @@ initType_ prod myPointId accordPersonneType sens getCDC getIDX getPTD = do
 
 -- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE. 
 initType :: String              -- ^ myPointId : point de référence sur lequel on souhaite obtenir des informations.
-         -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client et son type : 
+         -> Maybe AccordPersonneType -- ^ accordPersonneType : certifie l'accord du client et son type :
                                 --
-                                -- - PersonnePhysique donne le nom de la personne physique qui a donné accord,
-                                -- - PersonneMorale donne la dénomination morale qui a donné son accord.
+                                -- - Just PersonnePhysique : accord True, nom de la personne physique,
+                                -- - Just PersonneMorale : accord True, dénomination morale,
+                                -- - Nothing : accord False (cas non-recevable, ex. F375A-NR1 → SGT566).
          -> Sens                -- ^ sens : indique le sens de l’énergie circulant vers le réseau d’Enedis : 
                                 -- 
                                 -- - INJECTION,
@@ -111,16 +120,16 @@ initType :: String              -- ^ myPointId : point de référence sur lequel
          -> IO CommanderTransmissionDonneesInfraJType
 initType = initType_ True
 
-initTypeTest :: String -> AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
+initTypeTest :: String -> Maybe AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
 initTypeTest = initType_ False
 
 
 myrequest :: IO()
-myrequest = do 
+myrequest = do
     env <- getEnv
     let testEnv = test env
-    myType <- initType (T.unpack $ pointId testEnv)  
-                       (AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
+    myType <- initType (T.unpack $ pointId testEnv)
+                       ( Just $ AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv) )
                        SensSOUTIRAGE False True False
     rep <- wsRequest myType :: IO (Either (String, String) CommanderTransmissionDonneesInfraJResponseType)
     pPrint rep 

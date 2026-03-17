@@ -93,6 +93,32 @@ accesPrmC2C4 = "98800003605600"
 
 
 -- ---------------------------------------------------------------------------
+-- CommanderServicesAccesDonneesV10 (SAD) + RechercherServicesAccesDonneesV10 (RSA)
+-- + CommanderArretServicesAccesDonneesV10 (ASAD)
+-- + CommanderRenouvellementServicesAccesDonneesV10 (RSAD)
+
+sadPrmC5R1 :: String  -- SAD-R1 ENERGIE | RSA-R1 | RSAD-R1, NR1
+sadPrmC5R1 = "25855571545617"
+
+sadPrmC5R2 :: String  -- SAD-R2 CDC
+sadPrmC5R2 = "24377424002398"
+
+sadPrmC5R3 :: String  -- SAD-R3 IDX | ASAD-R1
+sadPrmC5R3 = "24380318190106"
+
+sadPrmC5R4 :: String  -- SAD-R4 IDX (multi-service)
+sadPrmC5R4 = "25852098337945"
+
+sadPrmC2C4 :: String  -- Segment C2-C4 commun SAD-R1..R4
+sadPrmC2C4 = "98800003605600"
+
+-- | Periodicité de transmission pour les options MOSAD (ex : "J" = journalier).
+--   À ajuster selon le catalogue en vigueur.
+mosadPeriodicite :: String
+mosadPeriodicite = "J"
+
+
+-- ---------------------------------------------------------------------------
 -- CommanderTransmissionDonneesInfraJV10 (F375A)
 
 f375aPrmC2C4 :: String
