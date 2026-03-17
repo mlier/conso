@@ -6,6 +6,7 @@ module Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
   ) where
  
 import Text.XML.HaXml.Schema.Schema as Schema
+import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
  
 -- Some hs-boot imports are required, for fwd-declaring types.
@@ -13,7 +14,7 @@ import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50 as Ds
 elementCommanderArretServicesAccesDonnees :: XMLParser CommanderArretServicesAccesDonneesType
 elementCommanderArretServicesAccesDonnees = parseSchemaType "commanderArretServicesAccesDonnees"
 elementToXMLCommanderArretServicesAccesDonnees :: CommanderArretServicesAccesDonneesType -> [Content ()]
-elementToXMLCommanderArretServicesAccesDonnees = schemaTypeToXML "commanderArretServicesAccesDonnees"
+elementToXMLCommanderArretServicesAccesDonnees = schemaTypeToXML "sc:commanderArretServicesAccesDonnees"
  
 elementCommanderArretServicesAccesDonneesResponse :: XMLParser CommanderArretServicesAccesDonneesResponseType
 elementCommanderArretServicesAccesDonneesResponse = parseSchemaType "commanderArretServicesAccesDonneesResponse"
@@ -30,7 +31,8 @@ instance SchemaType CommanderArretServicesAccesDonneesType where
         commit $ interior e $ return CommanderArretServicesAccesDonneesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@CommanderArretServicesAccesDonneesType{} =
-        toXMLElement s []
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/b2b/commanderarretservicesaccesdonnees/v1.0"
+                       ]
             [ schemaTypeToXML "demande" $ commanderArretServicesAccesDonneesType_demande x
             ]
  

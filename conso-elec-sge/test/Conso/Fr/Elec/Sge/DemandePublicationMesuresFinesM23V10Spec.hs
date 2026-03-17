@@ -3,7 +3,8 @@ module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Spec where
 import SpecHelper
 import TestData
     ( mfiPrmsC5, mfiPrmsC2C4
-    , mfiDateDebut, mfiDateFin )
+    , mfiDateDebut, mfiDateFin
+    , mfiDateDebutNR1, mfiDateDebutNR2 )
 
 import Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10
     ( initTypeTest )
@@ -49,8 +50,10 @@ spec = do
                 shouldDemanderHomo mfiPrmsC5 MesuresTypeCodeENERGIE mfiDateDebut mfiDateFin
 
         describe nonRecevablesC $ do
-            it "MFI-GK-NR1 - Liste vide de PRMs (SGT4ZM)" $ do
-                shouldRefuserHomo [] MesuresTypeCodeINDEX mfiDateDebut mfiDateFin "SGT4ZM"
+            it "MFI-GK-NR1 - Profondeur CDC > 24 mois (SGT4L8)" $ do
+                shouldRefuserHomo mfiPrmsC5 MesuresTypeCodeCOURBES mfiDateDebutNR1 mfiDateFin "SGT4L8"
+            it "MFI-GK-NR2 - Profondeur IDX > 36 mois (SGT4L8)" $ do
+                shouldRefuserHomo mfiPrmsC5 MesuresTypeCodeINDEX mfiDateDebutNR2 mfiDateFin "SGT4L8"
 
 
 main :: IO ()

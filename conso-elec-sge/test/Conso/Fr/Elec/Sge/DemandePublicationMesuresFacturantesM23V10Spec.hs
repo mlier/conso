@@ -42,8 +42,8 @@ spec = do
                 shouldDemanderHomo mfaPrmsC2C4 mfaDateDebut mfaDateFin
 
         describe nonRecevablesC $ do
-            it "MFA-GK-NR1 - Liste vide de PRMs (SGT4ZM)" $ do
-                shouldRefuserHomo [] mfaDateDebut mfaDateFin "SGT4ZM"
+            it "MFA-GK-NR1 - Dates incohérentes : dateFin < dateDebut (SGT4K4)" $ do
+                shouldRefuserHomo mfaPrmsC5 mfaDateFin mfaDateDebut "SGT4K4"
 
 
 main :: IO ()

@@ -63,7 +63,7 @@ initType_ prod myPointId accordPersonneType sens getCDC getIDX getPTD = do
             Nothing ->
                 (False, OneOf2 $ PersonnePhysiqueType
                   { personnePhysiqueType_civilite = Nothing
-                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString ""
+                  , personnePhysiqueType_nom = Chaine255Type $ Xsd.XsdString "Toto"
                   , personnePhysiqueType_prenom = Nothing
                   })
             Just (AccordPersonnePhysiqueNom nomPhy) ->

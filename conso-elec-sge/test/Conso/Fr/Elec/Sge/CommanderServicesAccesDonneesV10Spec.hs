@@ -45,13 +45,13 @@ spec = do
     describe homologationC $ do
         describe recevablesC $ do
             it "SAD-R1 C5    - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderHomo sadPrmC5R1 "ENERGIE"
+                shouldDemanderHomo sadPrmC5R1 "ENERGIES"
             it "SAD-R1 C2-C4 - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderHomo sadPrmC2C4 "ENERGIE"
+                shouldDemanderHomo sadPrmC2C4 "ENERGIES"
             it "SAD-R2 C5    - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderHomo sadPrmC5R2 "CDC"
+                shouldDemanderHomo sadPrmC5R2 "COURBE"
             it "SAD-R2 C2-C4 - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderHomo sadPrmC2C4 "CDC"
+                shouldDemanderHomo sadPrmC2C4 "COURBE"
             it "SAD-R3 C5    - Accès aux données d'INDEX" $
                 shouldDemanderHomo sadPrmC5R3 "IDX"
             it "SAD-R3 C2-C4 - Accès aux données d'INDEX" $
@@ -63,9 +63,9 @@ spec = do
 
         describe nonRecevablesC $ do
             it "SAD-NR1 C5 - Sans accord client (SGT566)" $
-                shouldRefuserHomo sadPrmC5R1 "ENERGIE" "SGT566"
-            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT509)" $
-                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIE" "SGT509"
+                shouldRefuserHomo sadPrmC5R1 "ENERGIES" "SGT566"
+            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT5O9)" $
+                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIES" "SGT5O9"
 
 
 main :: IO ()

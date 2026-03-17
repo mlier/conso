@@ -15,7 +15,7 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 elementCommanderRenouvellementServicesAccesDonnees :: XMLParser RenouvelerServicesAccesType
 elementCommanderRenouvellementServicesAccesDonnees = parseSchemaType "commanderRenouvellementServicesAccesDonnees"
 elementToXMLCommanderRenouvellementServicesAccesDonnees :: RenouvelerServicesAccesType -> [Content ()]
-elementToXMLCommanderRenouvellementServicesAccesDonnees = schemaTypeToXML "commanderRenouvellementServicesAccesDonnees"
+elementToXMLCommanderRenouvellementServicesAccesDonnees = schemaTypeToXML "sc:commanderRenouvellementServicesAccesDonnees"
  
 elementCommanderRenouvellementServicesAccesDonneesResponse :: XMLParser RenouvelerServicesAccesResponseType
 elementCommanderRenouvellementServicesAccesDonneesResponse = parseSchemaType "commanderRenouvellementServicesAccesDonneesResponse"
@@ -32,7 +32,8 @@ instance SchemaType RenouvelerServicesAccesType where
         commit $ interior e $ return RenouvelerServicesAccesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@RenouvelerServicesAccesType{} =
-        toXMLElement s []
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/b2b/commanderrenouvellementservicesaccesdonnees/v1.0"
+                       ]
             [ schemaTypeToXML "demande" $ renouvelerServicesAccesType_demande x
             ]
  

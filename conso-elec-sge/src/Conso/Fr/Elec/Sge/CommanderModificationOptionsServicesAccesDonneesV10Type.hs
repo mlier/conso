@@ -14,7 +14,7 @@ import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 elementCommanderModificationOptionsServicesAccesDonnees :: XMLParser CommanderModificationOptionsServicesAccesDonneesType
 elementCommanderModificationOptionsServicesAccesDonnees = parseSchemaType "commanderModificationOptionsServicesAccesDonnees"
 elementToXMLCommanderModificationOptionsServicesAccesDonnees :: CommanderModificationOptionsServicesAccesDonneesType -> [Content ()]
-elementToXMLCommanderModificationOptionsServicesAccesDonnees = schemaTypeToXML "commanderModificationOptionsServicesAccesDonnees"
+elementToXMLCommanderModificationOptionsServicesAccesDonnees = schemaTypeToXML "sc:commanderModificationOptionsServicesAccesDonnees"
  
 elementCommanderModificationOptionsServicesAccesDonneesResponse :: XMLParser CommanderModificationOptionsServicesAccesDonneesResponseType
 elementCommanderModificationOptionsServicesAccesDonneesResponse = parseSchemaType "commanderModificationOptionsServicesAccesDonneesResponse"
@@ -31,7 +31,8 @@ instance SchemaType CommanderModificationOptionsServicesAccesDonneesType where
         commit $ interior e $ return CommanderModificationOptionsServicesAccesDonneesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@CommanderModificationOptionsServicesAccesDonneesType{} =
-        toXMLElement s []
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/b2b/commandermodificationoptionsservicesaccesdonnees/v1.0"
+                       ]
             [ schemaTypeToXML "demande" $ commanderModificationOptionsServicesAccesDonneesType_demande x
             ]
  

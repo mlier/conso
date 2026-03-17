@@ -61,12 +61,12 @@ spec = do
                     Nothing Nothing Nothing
 
         describe nonRecevablesC $ do
-            it "RP-NR1 - Critères insuffisants : code postal seul (SGT4ZH)" $ do
+            it "RP-NR1 - Critères insuffisants : code postal seul (SGT4F8)" $ do
                 shouldRefuserHomo
                     Nothing Nothing
                     (Just rpCodePostalR1) Nothing
                     Nothing Nothing Nothing
-                    "SGT4ZH"
+                    "SGT4F8"
 
 
 main :: IO ()

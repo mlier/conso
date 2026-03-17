@@ -63,13 +63,13 @@ rpInseeR1 = "34231"
 
 -- | RP-R2 : recherche par code postal + commune + nom client.
 rpCodePostalR2 :: String
-rpCodePostalR2 = "34650"
+rpCodePostalR2 = "84160"
 
 rpInseeR2 :: String
-rpInseeR2 = "34231"
+rpInseeR2 = "84042"
 
 rpNomClientR2 :: String
-rpNomClientR2 = "Dupont"
+rpNomClientR2 = "TEST"
 
 -- | RP-R3 : recherche par code postal + commune + voie.
 rpCodePostalR3 :: String
@@ -152,6 +152,13 @@ mfiDateDebut = "2025-01-01"
 
 mfiDateFin :: String
 mfiDateFin = "2025-02-01"
+
+-- | Dates longues pour MFI-GK NR (profondeur > limite).
+mfiDateDebutNR1 :: String   -- CDC > 24 mois avant mfiDateFin="2025-02-01"
+mfiDateDebutNR1 = "2022-01-01"
+
+mfiDateDebutNR2 :: String   -- IDX > 36 mois avant mfiDateFin="2025-02-01"
+mfiDateDebutNR2 = "2021-01-01"
 
 
 -- ---------------------------------------------------------------------------

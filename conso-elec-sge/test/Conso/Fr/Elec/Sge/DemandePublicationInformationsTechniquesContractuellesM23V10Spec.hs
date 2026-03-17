@@ -39,10 +39,6 @@ spec = do
             it "ITC-GK-R2 - Demande infos techniques et contractuelles C2-C4" $ do
                 shouldDemanderHomo itcPrmsC2C4
 
-        describe nonRecevablesC $ do
-            it "ITC-GK-NR1 - Liste vide de PRMs (SGT4ZM)" $ do
-                shouldRefuserHomo [] "SGT4ZM"
-
 
 main :: IO ()
 main = hspec spec

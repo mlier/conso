@@ -48,16 +48,16 @@ spec = do
             it "ACCES-R3 - Accès CDC C2-C4 sur 3 ans" $ do
                 shouldCommanderHomo accesPrmC2C4 (Just (3 * 365)) "CDC"
 
-            it "ACCES-R4 - Accès ENERGIE C5 sans durée explicite" $ do
-                shouldCommanderHomo accesPrmC5 Nothing "ENERGIE"
+            it "ACCES-R4 - Accès ENERGIE C5 avec durée 3 ans" $ do
+                shouldCommanderHomo accesPrmC5 (Just (3 * 365)) "ENERGIE"
 
         describe nonRecevablesC $ do
             it "ACCES-NR1 - Sans accord client (SGT566)" $ do
                 shouldRefuserSansAccordHomo accesPrmC5 "SGT566"
 
-            it "ACCES-NR2 - Durée supérieure à 3 ans (SGT567)" $ do
+            it "ACCES-NR2 - Durée supérieure à 3 ans (SGT5O9)" $ do
                 -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
-                shouldRefuserHomo accesPrmC5 (Just 1097) "CDC" "SGT567"
+                shouldRefuserHomo accesPrmC5 (Just 1097) "CDC" "SGT5O9"
 
 
 main :: IO ()

@@ -34,7 +34,7 @@ instance SchemaType CriteresType where
 elementRechercherServicesAccesDonnees :: XMLParser RechercherServicesAccesDonneesType
 elementRechercherServicesAccesDonnees = parseSchemaType "rechercherServicesAccesDonnees"
 elementToXMLRechercherServicesAccesDonnees :: RechercherServicesAccesDonneesType -> [Content ()]
-elementToXMLRechercherServicesAccesDonnees = schemaTypeToXML "rechercherServicesAccesDonnees"
+elementToXMLRechercherServicesAccesDonnees = schemaTypeToXML "sc:rechercherServicesAccesDonnees"
  
 elementRechercherServicesAccesDonneesReponse :: XMLParser RechercherServicesAccesDonneesReponseType
 elementRechercherServicesAccesDonneesReponse = parseSchemaType "rechercherServicesAccesDonneesReponse"
@@ -69,7 +69,8 @@ instance SchemaType RechercherServicesAccesDonneesType where
             `apply` between (Occurs (Just 1) Nothing)
                             (parseSchemaType "loginUtilisateur")
     schemaTypeToXML s x@RechercherServicesAccesDonneesType{} =
-        toXMLElement s []
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xs.XsdString "http://www.enedis.fr/sge/b2b/rechercherservicesaccesdonnees/v1.0"
+                       ]
             [ concatMap (schemaTypeToXML "criteres") $ rechercherServicesAccesDonneesType_criteres x
             , concatMap (schemaTypeToXML "loginUtilisateur") $ rechercherServicesAccesDonneesType_loginUtilisateur x
             ]

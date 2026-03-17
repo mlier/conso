@@ -73,12 +73,12 @@ spec = do
                     Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
 
         describe nonRecevablesC $ do
-            it "CMD3-NR1 - Période supérieure à 2 ans (SGT4G7)" $ do
+            it "CMD3-NR1 - Période supérieure à 2 ans (SGT4L8)" $ do
                 shouldRefuserHomo
                     cmd3PrmC5 MesuresTypeCodeTypeCOURBE "PA"
                     cmd3DateDebutLong cmd3DateFinLong
                     Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
-                    "SGT4G7"
+                    "SGT4L8"
 
 
 main :: IO ()

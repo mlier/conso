@@ -1,7 +1,7 @@
 module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Spec where
 
 import SpecHelper
-import TestData (sadPrmC5R1, mosadPeriodicite)
+import TestData (sadPrmC5R2, mosadPeriodicite)
 import Data.Maybe (listToMaybe)
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
@@ -38,7 +38,7 @@ extractServiceId resp = do
 createService :: String -> IO (Maybe String)
 createService prm = do
     sadType <- SAD.initTypeTest prm SAD.SensSOUTIRAGE
-                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIE" Nothing
+                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIES" Nothing
     rep     <- wsRequestTest sadType
                  :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     case rep of
@@ -96,9 +96,9 @@ spec = do
     describe homologationC $ do
         describe recevablesC $ do
             it "MOSAD-R1 C5 - Ajout d'une option de publication sur un service d'accès" $
-                shouldAjouterOptionsHomo sadPrmC5R1
+                shouldAjouterOptionsHomo sadPrmC5R2
             it "MOSAD-R2 C5 - Suppression d'une option de publication sur un service d'accès" $
-                shouldSupprimerOptionsHomo sadPrmC5R1
+                shouldSupprimerOptionsHomo sadPrmC5R2
 
 
 main :: IO ()
