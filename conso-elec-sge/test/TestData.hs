@@ -56,10 +56,10 @@ cmd3DateFinLong = "2025-04-01"
 
 -- | RP-R1 : recherche par code postal + commune INSEE seuls.
 rpCodePostalR1 :: String
-rpCodePostalR1 = "34650"
+rpCodePostalR1 = "84160"
 
 rpInseeR1 :: String
-rpInseeR1 = "34231"
+rpInseeR1 = "84042"
 
 -- | RP-R2 : recherche par code postal + commune + nom client.
 rpCodePostalR2 :: String

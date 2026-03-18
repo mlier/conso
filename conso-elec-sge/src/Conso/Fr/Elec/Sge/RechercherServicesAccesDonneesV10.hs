@@ -39,7 +39,7 @@ import Conso.Fr.Elec.Sge.Sge
 
 instance RequestType RechercherServicesAccesDonneesType where
   configReq = ConfigRequest{
-                     urlSge = "/RechercherServicesAccesDonnees/v1.0"
+                     urlSge = "/RechercheServicesAccesDonnees/v1.0"
                    , soapAction = " "
                    , elementToXMLRequest = elementToXMLRechercherServicesAccesDonnees
                    }

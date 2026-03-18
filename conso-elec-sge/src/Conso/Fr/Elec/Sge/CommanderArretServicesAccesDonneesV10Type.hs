@@ -31,7 +31,7 @@ instance SchemaType CommanderArretServicesAccesDonneesType where
         commit $ interior e $ return CommanderArretServicesAccesDonneesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@CommanderArretServicesAccesDonneesType{} =
-        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/b2b/commanderarretservicesaccesdonnees/v1.0"
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/ws/commanderarretservicesaccesdonnees/v1.0"
                        ]
             [ schemaTypeToXML "demande" $ commanderArretServicesAccesDonneesType_demande x
             ]

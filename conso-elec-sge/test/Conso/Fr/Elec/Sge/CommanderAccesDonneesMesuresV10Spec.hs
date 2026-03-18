@@ -28,6 +28,14 @@ shouldRefuserHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ d
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldHaveCode` expectedCode
 
+shouldRefuserUnlessActiveHomo :: String -> Maybe Integer -> String -> String -> Expectation
+shouldRefuserUnlessActiveHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
+    myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
+    rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
+    case rep of
+        Left ("SGT570", _) -> pendingWith "Service déjà actif (SGT570) : durée non vérifiable sur ce PRM"
+        _                  -> rep `shouldHaveCode` expectedCode
+
 shouldRefuserSansAccordHomo :: String -> String -> Expectation
 shouldRefuserSansAccordHomo prm expectedCode = pendingOnNetworkError $ do
     myType <- initTypeTest prm (Just (3 * 365)) Nothing "CDC" SensSOUTIRAGE
@@ -57,7 +65,7 @@ spec = do
 
             it "ACCES-NR2 - Durée supérieure à 3 ans (SGT5O9)" $ do
                 -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
-                shouldRefuserHomo accesPrmC5 (Just 1097) "CDC" "SGT5O9"
+                shouldRefuserUnlessActiveHomo accesPrmC5 (Just 1097) "CDC" "SGT5O9"
 
 
 main :: IO ()

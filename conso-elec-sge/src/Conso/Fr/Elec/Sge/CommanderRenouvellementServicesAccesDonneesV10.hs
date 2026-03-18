@@ -61,7 +61,7 @@ import Conso.Fr.Elec.Sge.Sge
 
 instance RequestType RenouvelerServicesAccesType where
   configReq = ConfigRequest{
-                     urlSge = "/CommanderRenouvellementServicesAccesDonnees/v1.0"
+                     urlSge = "/CommandeRenouvellementServicesAccesDonnees/v1.0"
                    , soapAction = " "
                    , elementToXMLRequest = elementToXMLCommanderRenouvellementServicesAccesDonnees
                    }

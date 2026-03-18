@@ -32,7 +32,7 @@ instance SchemaType RenouvelerServicesAccesType where
         commit $ interior e $ return RenouvelerServicesAccesType
             `apply` parseSchemaType "demande"
     schemaTypeToXML s x@RenouvelerServicesAccesType{} =
-        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/b2b/commanderrenouvellementservicesaccesdonnees/v1.0"
+        toXMLElement s [ toXMLAttribute "xmlns:sc" $ Xsd.XsdString "http://www.enedis.fr/sge/ws/commanderRenouvellementServicesAccesDonnees/v1.0"
                        ]
             [ schemaTypeToXML "demande" $ renouvelerServicesAccesType_demande x
             ]

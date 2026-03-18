@@ -68,7 +68,7 @@ import Conso.Fr.Elec.Sge.Sge
 
 instance RequestType CommanderServicesAccesDonneesType where
   configReq = ConfigRequest{
-                     urlSge = "/CommanderServicesAccesDonnees/v1.0"
+                     urlSge = "/CommandeServicesAccesDonnees/v1.0"
                    , soapAction = " "
                    , elementToXMLRequest = elementToXMLCommanderServicesAccesDonnees
                    }
