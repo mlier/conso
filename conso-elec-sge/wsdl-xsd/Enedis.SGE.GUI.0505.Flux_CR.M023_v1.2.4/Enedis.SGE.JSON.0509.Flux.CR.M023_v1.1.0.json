@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "synthese": {
+      "type": "object",
+      "properties": {
+        "nbPrmTotal": {
+          "type": "integer"
+        },
+        "nbPrmRecevables": {
+          "type": "integer"
+        },
+        "nbPrmNonRecevables": {
+          "type": "integer"
+        },
+        "nbPrmPublies": {
+          "type": "integer"
+        },
+        "nbPrmNonPublies": {
+          "type": "integer"
+        },
+        "nbFichiersPublies": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "nbPrmTotal",
+        "nbPrmRecevables",
+        "nbPrmNonRecevables",
+        "nbPrmPublies",
+        "nbPrmNonPublies",
+        "nbFichiersPublies"
+      ]
+    },
+    "fichiersPublies": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "nomFichier": {
+              "type": "string"
+            },
+            "cleFichier": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "nomFichier",
+            "cleFichier"
+          ]
+        }
+      ]
+    },
+    "prmDemandes": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "idPrm": {
+              "type": "string"
+            },
+            "recevabilite": {
+              "type": "string"
+            },
+            "publication": {
+              "type": "string"
+            },
+            "motif": {
+              "type": "string"
+            },
+            "cleFichier": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "idPrm",
+            "recevabilite",
+            "publication"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "synthese",
+    "fichiersPublies",
+    "prmDemandes"
+  ]
+}

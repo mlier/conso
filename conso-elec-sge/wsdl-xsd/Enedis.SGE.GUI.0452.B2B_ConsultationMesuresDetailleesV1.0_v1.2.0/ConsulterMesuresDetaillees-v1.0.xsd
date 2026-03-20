@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://www.enedis.fr/sge/b2b/services/consultermesuresdetaillees/v1.0" version="1.0.1" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:sc="http://www.enedis.fr/sge/b2b/services/consultermesuresdetaillees/v1.0" xmlns:ds="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/ds" xmlns:dc="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/dc">
+  <xs:import namespace="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/dc" schemaLocation="../../Dictionnaires/Metier/v5.0/ENEDIS.Dictionnaire.TypeComplexe.v5.0.xsd"/>
+  <xs:import namespace="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/ds" schemaLocation="../../Dictionnaires/Metier/v5.0/ENEDIS.Dictionnaire.TypeSimple.v5.0.xsd"/>
+  <xs:element name="consulterMesuresDetaillees" type="sc:ConsulterMesuresDetailleesType"/>
+  <xs:element name="consulterMesuresDetailleesResponse" type="sc:ConsulterMesuresDetailleesResponseType"/>
+  <xs:complexType name="ConsulterMesuresDetailleesResponseType">
+    <xs:sequence>
+      <xs:element name="aPasFixe" type="sc:SerieMesuresAPasFixeType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ConsulterMesuresDetailleesType">
+    <xs:sequence>
+      <xs:element name="demande" type="sc:DemandeType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DeclarationAccordClientType">
+    <xs:sequence>
+      <xs:element name="accordClient" type="ds:BooleenType"/>
+      <xs:choice minOccurs="0">
+        <xs:element name="personnePhysique" type="sc:PersonnePhysiqueType"/>
+        <xs:element name="personneMorale" type="sc:PersonneMoraleType"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DemandeType">
+    <xs:sequence>
+      <xs:element name="initiateurLogin" type="ds:UtilisateurLoginType"/>
+      <xs:element name="pointId" type="ds:PointIdType"/>
+      <xs:element name="contratId" type="ds:ContratIdType"/>
+      <xs:element name="mesuresTypeCode" type="ds:MesureTypeCodeType"/>
+      <xs:element name="dateDebut" type="ds:DateType"/>
+      <xs:element name="dateFin" type="ds:DateType"/>
+      <xs:element name="mesuresCorrigees" type="ds:BooleenType"/>
+      <xs:element name="pasCdc" type="dc:DureeType" minOccurs="0"/>
+      <xs:element name="declarationAccordClient" type="sc:DeclarationAccordClientType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PersonneMoraleType">
+    <xs:sequence>
+      <xs:element name="denominationSociale" type="ds:Chaine255Type"/>
+      <xs:element name="nomCommercial" type="ds:Chaine255Type" minOccurs="0"/>
+      <xs:element name="activiteCodeNaf" type="ds:ActiviteCodeNafType" minOccurs="0"/>
+      <xs:element name="secteurActivite" type="ds:ActiviteSecteurCodeType" minOccurs="0"/>
+      <xs:element name="etablissementPrincipalNumSiret" type="ds:EtablissementNumSiretType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PersonnePhysiqueType">
+    <xs:sequence>
+      <xs:element name="civilite" type="ds:CiviliteAbreviationType" minOccurs="0"/>
+      <xs:element name="nom" type="ds:Chaine255Type"/>
+      <xs:element name="prenom" type="ds:Chaine255Type" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SerieMesuresAPasFixeMesureType">
+    <xs:sequence/>
+    <xs:attribute name="n" use="required" type="ds:NbEntierStrictementPositifType"/>
+    <xs:attribute name="v" use="optional" type="ds:NbDecimalType"/>
+    <xs:attribute name="s" use="optional" type="ds:MesureStatutCodeType"/>
+    <xs:attribute name="c" use="optional" type="ds:Chaine255Type"/>
+  </xs:complexType>
+  <xs:complexType name="SerieMesuresAPasFixeType">
+    <xs:sequence>
+      <xs:element name="m" type="sc:SerieMesuresAPasFixeMesureType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="dateHeureDebut" use="required" type="ds:DateHeureType"/>
+    <xs:attribute name="dateHeureFin" use="required" type="ds:DateHeureType"/>
+    <xs:attribute name="unite" use="required" type="ds:MesureUniteSymboleType"/>
+  </xs:complexType>
+</xs:schema>

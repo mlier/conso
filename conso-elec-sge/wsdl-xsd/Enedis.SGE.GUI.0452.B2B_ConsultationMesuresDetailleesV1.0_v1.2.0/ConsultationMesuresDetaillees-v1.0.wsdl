@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="ConsultationMesuresDetaillees-v1.0" targetNamespace="http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v1.0" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v1.0" xmlns:ope="http://www.enedis.fr/sge/b2b/services/consultermesuresdetaillees/v1.0" xmlns:dic="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/dc" xmlns:tec="http://www.enedis.fr/sge/b2b/technique/v1.0">
+  <wsdl:types>
+    <xs:schema xmlns:dic="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/dc" xmlns:ope="http://www.enedis.fr/sge/b2b/services/consultermesuresdetaillees/v1.0" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tec="http://www.enedis.fr/sge/b2b/technique/v1.0" xmlns:tns="http://www.enedis.fr/sge/b2b/services/consultationmesuresdetaillees/v1.0" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <xs:import namespace="http://www.enedis.fr/sge/b2b/services/consultermesuresdetaillees/v1.0" schemaLocation="ConsulterMesuresDetaillees-v1.0.xsd"/>
+      <xs:import namespace="http://www.enedis.fr/sge/b2b/dictionnaire/v5.0/dc" schemaLocation="../../Dictionnaires/Metier/v5.0/ENEDIS.Dictionnaire.TypeComplexe.v5.0.xsd"/>
+      <xs:import namespace="http://www.enedis.fr/sge/b2b/technique/v1.0" schemaLocation="../../Dictionnaires/Technique/v1.0/ENEDIS.Dictionnaire.Technique.v1.0.xsd"/>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="consulterMesuresDetaillees">
+    <wsdl:part element="ope:consulterMesuresDetaillees" name="consulterMesuresDetaillees"/>
+  </wsdl:message>
+  <wsdl:message name="consulterMesuresDetailleesResponse">
+    <wsdl:part element="ope:consulterMesuresDetailleesResponse" name="consulterMesuresDetailleesResponse"/>
+  </wsdl:message>
+  <wsdl:message name="erreur">
+    <wsdl:part element="tec:erreur" name="Erreur"/>
+  </wsdl:message>
+  <wsdl:message name="entete">
+    <wsdl:part element="tec:entete" name="entete"/>
+  </wsdl:message>
+  <wsdl:message name="acquittement">
+    <wsdl:part element="tec:acquittement" name="acquittement"/>
+  </wsdl:message>
+  <wsdl:portType name="ConsultationMesuresDetailleesPortType">
+    <wsdl:operation name="consulterMesuresDetaillees">
+      <wsdl:input message="tns:consulterMesuresDetaillees" name="consulterMesuresDetaillees"/>
+      <wsdl:output message="tns:consulterMesuresDetailleesResponse" name="consulterMesuresDetailleesResponse"/>
+      <wsdl:fault message="tns:erreur" name="erreur"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ConsultationMesuresDetailleesBinding" type="tns:ConsultationMesuresDetailleesPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="consulterMesuresDetaillees">
+      <soap:operation style="document"/>
+		  <wsdl:input name="consulterMesuresDetaillees">
+		   <soap:body use="literal"/>
+		   <soap:header use="literal" part="entete" message="tns:entete"/>
+		  </wsdl:input>
+		  <wsdl:output name="consulterMesuresDetailleesResponse">
+			<soap:body use="literal"/>
+			<soap:header use="literal" part="acquittement" message="tns:acquittement"/>
+		  </wsdl:output>
+      <wsdl:fault name="erreur">
+        <soap:fault name="erreur" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="ConsultationMesuresDetaillees-v1.0">
+    <wsdl:port binding="tns:ConsultationMesuresDetailleesBinding" name="ConsultationMesuresDetailleesPort">
+      <soap:address location="https://sge-b2b.erdf.fr/ConsultationMesuresDetaillees/v1.0"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

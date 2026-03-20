@@ -1,0 +1,124 @@
+{
+  "type": "object",
+  "properties": {
+    "fichiersPublies": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "nomFichier": {
+              "type": "string"
+            },
+            "prmPublies": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "idPrm": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "idPrm"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "idPrm": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "idPrm"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "nomFichier",
+            "prmPublies"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nomFichier": {
+              "type": "string"
+            },
+            "prmPublies": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "idPrm": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "idPrm"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "nomFichier",
+            "prmPublies"
+          ]
+        }
+      ]
+    },
+    "prmNonPublies": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "idPrm": {
+              "type": "string"
+            },
+            "codeErreur": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "idPrm",
+            "codeErreur",
+            "message"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "idPrm": {
+              "type": "string"
+            },
+            "codeErreur": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "idPrm",
+            "codeErreur",
+            "message"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "fichiersPublies",
+    "prmNonPublies"
+  ]
+}

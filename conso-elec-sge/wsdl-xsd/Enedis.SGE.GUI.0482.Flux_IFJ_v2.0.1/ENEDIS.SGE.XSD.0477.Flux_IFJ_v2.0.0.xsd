@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+>
+  <xs:attributeGroup name="InfoGenerale">
+    <xs:attribute name="Emetteur" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="10"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Destinataire" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="16"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="VersionLogiciel" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="20"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="DateDocument" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="19"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="VersionFlux" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="10"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="IdentifiantPRM" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="14"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="InfoAlarmeGenerale">
+    <xs:attribute name="IdAlarme" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:long">
+          <xs:totalDigits value="15"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="TypeAlarme" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:integer">
+          <xs:totalDigits value="3"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="DateHeureAlarme" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="19"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:simpleType name="yyyy-mm-dd">
+    <xs:annotation>
+      <xs:documentation>Calendar dates are represented yyyy-mm-dd format, following ISO 8601. This is a W3C XML Schema date type, but without the optional timezone data.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:date">
+      <xs:pattern value="[^:Z]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CompteRendu_Type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Commentaire_Type">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="300"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="Info_Type">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="Nom" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="32"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Mesure_Type">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="Nom" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="250"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Categorie" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="20"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="DataType" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Date" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="19"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Rang" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:integer">
+              <xs:totalDigits value="4"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Tc" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:integer">
+              <xs:totalDigits value="2"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Unite" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Periode" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="4"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="FonctionCptr" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:integer">
+              <xs:totalDigits value="3"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Cadran" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="3"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="PasseePar0" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="oui"/>
+              <xs:enumeration value="non"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Forcee" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="oui"/>
+              <xs:enumeration value="non"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Structure_Type">
+    <xs:sequence>
+      <xs:element name="Mesure" type="Mesure_Type" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="Nom" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="100"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Categorie" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="20"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Date" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="19"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="Rang" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:integer">
+          <xs:totalDigits value="4"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="IDC_Type">
+    <xs:sequence>
+      <xs:element name="Info" type="Info_Type" maxOccurs="unbounded"/>
+      <xs:element name="Compteur" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Info" type="Info_Type" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="IdCompteur" use="required">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:maxLength value="20"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="BTR" type="BTR_Type" minOccurs="0"/>
+      <xs:element name="CPL" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="IdCPL" use="required">
+            <xs:simpleType>
+              <xs:restriction base="xs:string"/>
+            </xs:simpleType>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="BoitierIbis" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="IdIbis" use="required">
+            <xs:simpleType>
+              <xs:restriction base="xs:string"/>
+            </xs:simpleType>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="AntenneExterne" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="IdIDC" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="8"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="MesureHistoType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="Nom" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="20"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="Unite" use="optional">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="DataType" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="BTR_Type">
+    <xs:sequence>
+      <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="IdBTR" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="20"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:element name="DemandePonctuelle">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="DemandeOperation" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Info" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:restriction base="Info_Type"/>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="CodeOperation" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="32"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Rang" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:integer">
+                  <xs:totalDigits value="2"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="DateDebut" use="optional">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="19"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="DateFin" use="optional">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="19"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="DepuisDerniereReleve" use="optional">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="oui"/>
+                  <xs:enumeration value="non"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="IDC" type="IDC_Type" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="IdDemande" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="15"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+          <xs:attribute name="NumeroDT" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="15"/>
+                </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+      <xs:attribute name="DateDemande" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Urgence" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="PRIORITAIRE"/>
+            <xs:enumeration value="IMMEDIAT"/>
+            <xs:enumeration value="JOURNEE"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="IdMa" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="5"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="IdModem" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="5"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="MajIDC">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element name="IDC" type="IDC_Type"/>
+        <xs:element name="SuppressionIDC">
+          <xs:complexType>
+            <xs:attribute name="IdIDC" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="8"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+      <xs:attributeGroup ref="InfoGenerale"/>
+      <xs:attribute name="IdMajIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="15"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="TypeAppareil">
+    <xs:complexType>
+      <xs:attribute name="IdTypeCompteur" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DeriveToleree" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:long">
+            <xs:totalDigits value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DeriveAvantAlarme" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:long">
+            <xs:totalDigits value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DeriveMax" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:long">
+            <xs:totalDigits value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CRDemandePonctuelle">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="ResultatOperation" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+              <xs:element name="CROperation" type="CompteRendu_Type"/>
+              <xs:element name="Mesure" type="Mesure_Type"/>
+              <xs:element name="Structure" type="Structure_Type"/>
+            </xs:choice>
+            <xs:attribute name="CodeOperation" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="32"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="Rang" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:integer">
+                  <xs:totalDigits value="2"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="IdDemande" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="15"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="CRDemande" use="required">
+        <xs:simpleType>
+          <xs:restriction base="CompteRendu_Type">
+            <xs:enumeration value="REALISE"/>
+            <xs:enumeration value="ERREUR_DP"/>
+            <xs:enumeration value="ERREUR_APPEL"/>
+            <xs:enumeration value="ERREUR_OPG"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="CauseErreur" type="xs:string" use="optional"/>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateReleve" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+      <xs:attribute name="TypeCompteur" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="12"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Alarme">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="IDC" type="IDC_Type" minOccurs="0"/>
+        <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfoAlarmeGenerale"/>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="AlarmeBTR">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="BTR" type="BTR_Type" minOccurs="0"/>
+        <xs:element name="Info" type="Info_Type" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfoAlarmeGenerale"/>
+      <xs:attribute name="IdBTR" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="DonneeMaintenance">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="Mesure" type="Mesure_Type"/>
+        <xs:element name="Structure" type="Structure_Type"/>
+      </xs:choice>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateReleve" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CommentaireReleve">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="Commentaire_Type">
+          <xs:attribute name="IdIDC">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:maxLength value="8"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+          <xs:attribute name="DateReleve">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:maxLength value="19"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+          <xs:attributeGroup ref="InfoGenerale"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CommentaireReleveBTR">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="Commentaire_Type">
+          <xs:attribute name="IdBTR">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:maxLength value="20"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+          <xs:attribute name="DateReleve">
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:maxLength value="19"/>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+          <xs:attributeGroup ref="InfoGenerale"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="InitParc">
+    <xs:complexType>
+      <xs:attribute name="Phase" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="DEBUT"/>
+            <xs:enumeration value="FIN"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attributeGroup ref="InfoGenerale"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CalendrierPdrPdt">
+    <xs:complexType>
+      <xs:sequence maxOccurs="unbounded" minOccurs="1">
+        <xs:element name="CalendrierTypeReleve">
+          <xs:complexType>
+            <xs:sequence maxOccurs="1" minOccurs="1">
+              <xs:element name="Description">
+                <xs:complexType>
+                  <xs:sequence maxOccurs="unbounded" minOccurs="1">
+                    <xs:element name="DatesUnMoisPdrPdt">
+                      <xs:complexType>
+                        <xs:attribute name="MoisConso" type="xs:string" use="required" />
+                        <xs:attribute name="DateDebPdrPdt" type="yyyy-mm-dd"
+                          use="required" />
+                        <xs:attribute name="DateFinPdrPdt" type="yyyy-mm-dd"
+                          use="required" />
+                        <xs:attribute name="DateUltimePdrPdt" type="yyyy-mm-dd"
+                          use="optional"/>
+                        <xs:attribute name="HorodateMiseAJour" type="xs:dateTime"
+                          use="optional" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="OidPdrPdt" type="xs:integer" use="required" />
+                  <xs:attribute name="NomPdrPdt" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:maxLength value="10" />
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="NbJoursDecalage" type="xs:integer"
+                    use="required" />
+                  <xs:attribute name="RefDecalage" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:maxLength value="3" />
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="DureePdrPdt" type="xs:integer" use="required" />
+                  <xs:attribute name="TypeMoisConso" use="optional">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:maxLength value="10" />
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="TypeJourPdr" use="optional">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:maxLength value="5" />
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="TypeReleve" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:length value="3" />
+                    <xs:enumeration value="PDR"/>
+                    <xs:enumeration value="PDT"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="LibelleTypeReleve" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:maxLength value="30" />
+                    <xs:enumeration value="PeriodeDeReleve"/>
+                    <xs:enumeration value="PeriodeDeTelereleve"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="Emetteur" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Destinataire" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="16"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="VersionLogiciel" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateDocument" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CalendrierPlageDeReleve">
+    <xs:complexType>
+      <xs:sequence maxOccurs="unbounded">
+        <xs:element name="PDR">
+          <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+              <xs:element name="DatesUnMois">
+                <xs:complexType>
+                  <xs:attribute name="MoisConso" type="xs:string" use="required"/>
+                  <xs:attribute name="DateDebPdr" type="xs:string" use="required"/>
+                  <xs:attribute name="DateFinPdr" type="xs:string" use="required"/>
+                  <xs:attribute name="DateUltimePdr" type="xs:string" use="optional"/>
+                  <xs:attribute name="HorodateMiseAJour" type="xs:string" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="OidPdr" type="xs:long" use="required"/>
+            <xs:attribute name="NomPdr" type="xs:string" use="required"/>
+            <xs:attribute name="NbJoursDecalage" type="xs:integer" use="required"/>
+            <xs:attribute name="RefDecalage" type="xs:string" use="required"/>
+            <xs:attribute name="DureePdr" type="xs:integer" use="required"/>
+            <xs:attribute name="TypeMoisConso" type="xs:string" use="optional"/>
+            <xs:attribute name="TypeJourPdr" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="Emetteur" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Destinataire" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="16"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="VersionLogiciel" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateDocument" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CalendrierPlageDeTelereleve">
+    <xs:complexType>
+      <xs:sequence maxOccurs="unbounded">
+        <xs:element name="PDT">
+          <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+              <xs:element name="DatesUnMoisPDT">
+                <xs:complexType>
+                  <xs:attribute name="MoisConso" type="xs:string" use="required"/>
+                  <xs:attribute name="DateDebPdt" type="xs:string" use="required"/>
+                  <xs:attribute name="DateFinPdt" type="xs:string" use="required"/>
+                  <xs:attribute name="HorodateMiseAJour" type="xs:string" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="OidPdt" type="xs:long" use="required"/>
+            <xs:attribute name="NomPdt" type="xs:string" use="required"/>
+            <xs:attribute name="NbJoursDecalage" type="xs:integer" use="required"/>
+            <xs:attribute name="RefDecalage" type="xs:string" use="required"/>
+            <xs:attribute name="DureePdt" type="xs:integer" use="required"/>
+            <xs:attribute name="TypeMoisConso" type="xs:string" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="Emetteur" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Destinataire" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="16"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="VersionLogiciel" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateDocument" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="MesureReguliere">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="Mesure" type="Mesure_Type"/>
+        <xs:element name="Structure" type="Structure_Type"/>
+        <xs:element name="CommentaireLibre" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="300"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:choice>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateReleve" type="xs:string" use="required"/>
+      <xs:attributeGroup ref="InfoGenerale"/>
+      <xs:attribute name="TypeCompteur" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="12"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CRMajIDC">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="CRGlobalMajIDC">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="OK"/>
+              <xs:enumeration value="NOK"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="CauseRefusIDC" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="250"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="IdMajIDC" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="15"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="IdIDC" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Emetteur" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Destinataire" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="16"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="VersionLogiciel" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateDocument" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Historique">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="MessageRev" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="Message" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="MesureHisto" type="MesureHistoType" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="IdIDC" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateReleve" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Emetteur" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="10"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="Destinataire" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="16"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="VersionLogiciel" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="DateDocument" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="19"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Graphique">
+    <xs:complexType>
+      <xs:choice>
+        <xs:element ref="DemandePonctuelle"/>
+        <xs:element ref="MajIDC"/>
+        <xs:element ref="TypeAppareil"/>
+        <xs:element ref="CRDemandePonctuelle"/>
+        <xs:element ref="Alarme"/>
+        <xs:element ref="AlarmeBTR"/>
+        <xs:element ref="DonneeMaintenance"/>
+        <xs:element ref="CommentaireReleve"/>
+        <xs:element ref="CommentaireReleveBTR"/>
+        <xs:element ref="InitParc"/>
+        <xs:element ref="CalendrierPdrPdt"/>
+        <xs:element ref="CalendrierPlageDeReleve"/>
+        <xs:element ref="CalendrierPlageDeTelereleve"/>
+        <xs:element ref="MesureReguliere"/>
+        <xs:element ref="CRMajIDC"/>
+        <xs:element ref="Historique"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
