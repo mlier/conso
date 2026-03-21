@@ -9,7 +9,6 @@ import           Database.SQLite.Simple
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Time
-import           Data.Time.Format       (parseTimeM, defaultTimeLocale, formatTime)
 import           Data.Maybe             (mapMaybe)
 import qualified Data.Set               as Set
 import           Conso.Fr.Elec.SgeDB.Types.Common (Periode(..), Pas, pasToSeconds)
