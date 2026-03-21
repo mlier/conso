@@ -5,7 +5,7 @@ import TestData (sadPrmC5R1, sadPrmC5R2, sadPrmC5R3, sadPrmC5R4, sadPrmC2C4)
 
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
     ( initTypeTest
-    , AccordPersonneType(AccordPersonnePhysiqueNom)
+    , AccordPersonneType(AccordPersonnePhysiqueNom, AccordPersonneMoraleDenominationSociale)
     , Sens(SensSOUTIRAGE) )
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
     ( CommanderServicesAccesDonneesResponseType )
@@ -17,9 +17,16 @@ isRightOrSgt570 :: Either (String, String) a -> Bool
 isRightOrSgt570 (Right _)        = True
 isRightOrSgt570 (Left (code, _)) = code == "SGT570"
 
-shouldDemanderHomo :: String -> String -> Expectation
-shouldDemanderHomo prm typeDonnees = pendingOnNetworkError $ do
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees Nothing
+shouldDemanderC5Homo :: String -> String -> Maybe Integer -> Expectation
+shouldDemanderC5Homo prm typeDonnees duree = pendingOnNetworkError $ do
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees duree
+    rep    <- wsRequestTest myType
+                :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
+    rep `shouldSatisfy` isRightOrSgt570
+
+shouldDemanderC2C4Homo :: String -> String -> Maybe Integer -> Expectation
+shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees duree
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldSatisfy` isRightOrSgt570
@@ -45,21 +52,21 @@ spec = do
     describe homologationC $ do
         describe recevablesC $ do
             it "SAD-R1 C5    - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderHomo sadPrmC5R1 "ENERGIES"
+                shouldDemanderC5Homo sadPrmC5R1 "ENERGIES" (Just 500)
             it "SAD-R1 C2-C4 - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderHomo sadPrmC2C4 "ENERGIES"
+                shouldDemanderC2C4Homo sadPrmC2C4 "ENERGIES" (Just 500)
             it "SAD-R2 C5    - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderHomo sadPrmC5R2 "COURBE"
+                shouldDemanderC5Homo sadPrmC5R2 "COURBE" (Just 500)
             it "SAD-R2 C2-C4 - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderHomo sadPrmC2C4 "COURBE"
+                shouldDemanderC2C4Homo sadPrmC2C4 "COURBE" (Just 500)
             it "SAD-R3 C5    - Accès aux données d'INDEX" $
-                shouldDemanderHomo sadPrmC5R3 "IDX"
+                shouldDemanderC5Homo sadPrmC5R3 "IDX" (Just 500)
             it "SAD-R3 C2-C4 - Accès aux données d'INDEX" $
-                shouldDemanderHomo sadPrmC2C4 "IDX"
+                shouldDemanderC2C4Homo sadPrmC2C4 "IDX" (Just 500)
             it "SAD-R4 C5    - Accès aux données d'INDEX (multi-service IDX+CDC, IDX seulement)" $
-                shouldDemanderHomo sadPrmC5R4 "IDX"
+                shouldDemanderC5Homo sadPrmC5R4 "IDX" (Just 500)
             it "SAD-R4 C2-C4 - Accès aux données d'INDEX (multi-service IDX+CDC, IDX seulement)" $
-                shouldDemanderHomo sadPrmC2C4 "IDX"
+                shouldDemanderC2C4Homo sadPrmC2C4 "IDX" (Just 500)
 
         describe nonRecevablesC $ do
             it "SAD-NR1 C5 - Sans accord client (SGT566)" $

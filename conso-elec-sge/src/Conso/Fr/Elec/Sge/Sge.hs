@@ -12,7 +12,7 @@ import qualified Data.Text.Lazy.Encoding as LE
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
 import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc,
-                 --printRequest, printBody 
+                 printRequest, printBody 
                  )
 import           Network.SOAP.Transport.HTTP.TLS ( makeSettings )
 import           Data.X509.Validation ( validateDefault )
@@ -221,7 +221,7 @@ soapRequest envSge myUrlSge mySoapAction body = do
     transport <- initTransportWithM
         settings
         fullUrlSge
-        ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> pure  ) -- or printRequest
+        ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> printRequest  ) -- pure or printRequest
         pure -- or printBody
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
