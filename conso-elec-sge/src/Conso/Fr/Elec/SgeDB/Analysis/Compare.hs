@@ -1,4 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Analysis.Compare
+Description : Comparaison de deux périodes sur une même grandeur
+
+Fournit 'comparePeriods' pour calculer les statistiques (somme, moyenne, max)
+sur deux périodes distinctes et la variation relative entre elles :
+
+> variation = (somme_p2 - somme_p1) / somme_p1 * 100  -- en %
+-}
 module Conso.Fr.Elec.SgeDB.Analysis.Compare
   ( ComparisonResult(..)
   , comparePeriods
@@ -7,25 +16,25 @@ module Conso.Fr.Elec.SgeDB.Analysis.Compare
 import           Database.SQLite.Simple
 import           Data.Text              (Text)
 
--- | Résultat de comparaison de deux périodes
+-- | Résultat de comparaison de deux périodes sur une même grandeur.
 data ComparisonResult = ComparisonResult
-  { cmpPeriode1Somme :: Double
-  , cmpPeriode2Somme :: Double
-  , cmpVariation     :: Double  -- (p2 - p1) / p1 * 100 en %
-  , cmpPeriode1Moy   :: Double
-  , cmpPeriode2Moy   :: Double
-  , cmpPeriode1Max   :: Double
-  , cmpPeriode2Max   :: Double
+  { cmpPeriode1Somme :: Double -- ^ Somme des valeurs sur la période de référence
+  , cmpPeriode2Somme :: Double -- ^ Somme des valeurs sur la période de comparaison
+  , cmpVariation     :: Double -- ^ Variation relative : @(p2 - p1) \/ p1 * 100@ (en %) ; @0@ si p1 = 0
+  , cmpPeriode1Moy   :: Double -- ^ Moyenne sur la période de référence
+  , cmpPeriode2Moy   :: Double -- ^ Moyenne sur la période de comparaison
+  , cmpPeriode1Max   :: Double -- ^ Maximum sur la période de référence
+  , cmpPeriode2Max   :: Double -- ^ Maximum sur la période de comparaison
   } deriving (Eq, Show)
 
--- | Compare deux périodes sur une même grandeur.
+-- | Compare deux périodes sur une même grandeur de courbe de charge.
 comparePeriods
   :: Connection
-  -> Text      -- grandeur_metier
-  -> Text      -- grandeur_physique
-  -> Text      -- etape_metier
-  -> (Text, Text)  -- période 1 (début, fin)
-  -> (Text, Text)  -- période 2 (début, fin)
+  -> Text         -- ^ @grandeur_metier@
+  -> Text         -- ^ @grandeur_physique@
+  -> Text         -- ^ @etape_metier@
+  -> (Text, Text) -- ^ Période de référence (début, fin) — ISO 8601
+  -> (Text, Text) -- ^ Période de comparaison (début, fin) — ISO 8601
   -> IO ComparisonResult
 comparePeriods conn gm gp em (deb1, fin1) (deb2, fin2) = do
   (s1, avg1, mx1) <- queryStats conn gm gp em deb1 fin1

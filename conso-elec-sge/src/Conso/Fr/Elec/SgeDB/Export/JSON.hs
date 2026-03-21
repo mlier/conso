@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Export.JSON
+Description : Re-sérialisation JSON des mesures SgeDB (via Aeson)
+
+Les fonctions retournent un 'Value' Aeson avec des noms de champs camelCase
+(ex. @etapeMetier@, @grandeurMetier@) cohérents avec la structure d'origine
+des flux Enedis.
+
+'exportPrmInfoJSON' est particulier : il re-parse le texte JSON brut stocké
+dans la colonne @raw_json@ de @prm_info@, permettant de retourner l'arbre
+JSON C68 complet.
+-}
 module Conso.Fr.Elec.SgeDB.Export.JSON
   ( exportCurveJSON
   , exportEnergyJSON
@@ -11,11 +23,14 @@ import           Data.Aeson
 import           Database.SQLite.Simple     (Connection)
 import           Conso.Fr.Elec.SgeDB.Storage.Query
 
--- | Sérialise les courbes de charge en JSON
+-- | Sérialise les courbes de charge en tableau JSON Aeson.
 exportCurveJSON
   :: Connection
-  -> Maybe Text -> Maybe Text -> Maybe Text
-  -> Text -> Text
+  -> Maybe Text -- ^ Filtre @etape_metier@
+  -> Maybe Text -- ^ Filtre @grandeur_metier@
+  -> Maybe Text -- ^ Filtre @grandeur_physique@
+  -> Text       -- ^ Horodate début (ISO 8601)
+  -> Text       -- ^ Horodate fin (ISO 8601)
   -> IO Value
 exportCurveJSON conn mEm mGm mGp deb fin = do
   rows <- queryCurvePoints conn mEm mGm mGp deb fin
@@ -35,11 +50,12 @@ exportCurveJSON conn mEm mGm mGp deb fin = do
       , "ec"               .= crEc r
       ]
 
--- | Sérialise les énergies quotidiennes en JSON
+-- | Sérialise les énergies quotidiennes en tableau JSON Aeson.
 exportEnergyJSON
   :: Connection
-  -> Maybe Text
-  -> Text -> Text
+  -> Maybe Text -- ^ Filtre @grandeur_metier@
+  -> Text       -- ^ Date début (@YYYY-MM-DD@)
+  -> Text       -- ^ Date fin (@YYYY-MM-DD@)
   -> IO Value
 exportEnergyJSON conn mGm deb fin = do
   rows <- queryDailyEnergy conn mGm deb fin
@@ -55,7 +71,9 @@ exportEnergyJSON conn mGm deb fin = do
       , "valeur"           .= erValeur r
       ]
 
--- | Retourne le JSON brut des informations techniques courantes
+-- | Retourne le JSON C68 complet de la dernière 'PrmInfoRow' ingérée.
+-- Re-parse le texte @raw_json@ stocké en base vers un 'Value' Aeson.
+-- Retourne 'Nothing' si aucune info C68 n'a été ingérée pour ce PRM.
 exportPrmInfoJSON :: Connection -> IO (Maybe Value)
 exportPrmInfoJSON conn = do
   mRow <- queryPrmInfo conn

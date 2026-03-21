@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Types.R65
+Description : Types pour les énergies quotidiennes Enedis (flux R65)
+
+Représente le flux M023 ponctuel des énergies quotidiennes. La hiérarchie est :
+
+> FluxR65 → [MesureR65] → [GrandeurR65] → [PointEnergie]
+
+Chaque 'PointEnergie' représente l'énergie d'une journée entière (pas @P1D@).
+Le mode de calcul varie selon le segment :
+
+  * @DIFF.INDEX@ — Différence d'index à minuit (C5\/P4 Linky)
+  * @INTEG.COURBE@ — Intégrale de la courbe de charge (C1-C4)
+-}
 module Conso.Fr.Elec.SgeDB.Types.R65 where
 
 import           Data.Text                                (Text)
@@ -8,35 +22,35 @@ import           Data.Aeson.Types                         (Parser)
 import           Conso.Fr.Elec.SgeDB.Types.Common
 import           Conso.Fr.Elec.SgeDB.Types.Header
 
--- | Point d'énergie quotidienne (date fonctionnelle uniquement)
+-- | Point d'énergie quotidienne (une journée calendaire complète).
 data PointEnergie = PointEnergie
-  { peValeur :: Text  -- "v"
-  , peDate   :: Day   -- "d" : YYYY-MM-DD
+  { peValeur :: Text -- ^ @v@ — Énergie de la journée (chaîne, en Wh ou VArh selon grandeur)
+  , peDate   :: Day  -- ^ @d@ — Date fonctionnelle (@YYYY-MM-DD@)
   } deriving (Eq, Show)
 
--- | Grandeur R65
+-- | Grandeur R65 avec ses points journaliers.
 data GrandeurR65 = GrandeurR65
-  { gr65GrandeurMetier   :: GrandeurMetier
-  , gr65GrandeurPhysique :: GrandeurPhysiqueEnergie
-  , gr65Unite            :: Text
-  , gr65Points           :: [PointEnergie]
+  { gr65GrandeurMetier   :: GrandeurMetier          -- ^ Sens (@CONS@ ou @PROD@)
+  , gr65GrandeurPhysique :: GrandeurPhysiqueEnergie -- ^ Type d'énergie (@EA@, @ERI@, @ERC@)
+  , gr65Unite            :: Text                    -- ^ Unité (ex. @\"Wh\"@)
+  , gr65Points           :: [PointEnergie]          -- ^ Points journaliers ordonnés par date
   } deriving (Eq, Show)
 
--- | Mesure R65 pour un PRM
+-- | Mesure R65 pour un PRM (un objet du tableau @mesures@).
 data MesureR65 = MesureR65
-  { mr65IdPrm       :: PrmId
-  , mr65EtapeMetier :: EtapeMetier
-  , mr65Periode     :: Periode
-  , mr65TypeValeur  :: Text       -- "GLOBALE"
-  , mr65ModeCalcul  :: ModeCalcul
-  , mr65Pas         :: Pas        -- P1D
-  , mr65Grandeurs   :: [GrandeurR65]
+  { mr65IdPrm       :: PrmId          -- ^ Identifiant du PRM
+  , mr65EtapeMetier :: EtapeMetier    -- ^ Étape (@BRUT@ ou @BEST@)
+  , mr65Periode     :: Periode        -- ^ Période couverte
+  , mr65TypeValeur  :: Text           -- ^ Type de valeur (ex. @\"GLOBALE\"@)
+  , mr65ModeCalcul  :: ModeCalcul     -- ^ @DIFF_INDEX@ (C5\/P4) ou @INTEG_COURBE@ (C1-C4)
+  , mr65Pas         :: Pas            -- ^ Toujours @P1D@ (journalier)
+  , mr65Grandeurs   :: [GrandeurR65]  -- ^ Grandeurs mesurées
   } deriving (Eq, Show)
 
--- | Flux R65 complet (ponctuel uniquement)
+-- | Flux R65 complet (ponctuel M023 uniquement, pas de variante REC).
 data FluxR65 = FluxR65
-  { r65Header  :: Header
-  , r65Mesures :: [MesureR65]
+  { r65Header  :: Header       -- ^ En-tête du fichier
+  , r65Mesures :: [MesureR65]  -- ^ Une entrée par PRM
   } deriving (Show)
 
 -- ---------------------------------------------------------------------------
@@ -63,6 +77,7 @@ instance FromJSON GrandeurR65 where
     ps <- o .: "points"
     pure $ GrandeurR65 gm gp u ps
 
+-- | Parse un objet @mesure@ R65 depuis le JSON.
 parseMesureR65 :: Value -> Parser MesureR65
 parseMesureR65 = withObject "MesureR65" $ \o ->
   MesureR65

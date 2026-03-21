@@ -1,4 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Storage.Query
+Description : Requêtes SQLite pour toutes les tables SgeDB
+
+Définit les types de résultat aplatis (@CurveRow@, @IndexRow@, …) et les
+fonctions de requête par période, grandeur et étape métier.
+
+Les filtres @Maybe Text@ sont tous optionnels : passer 'Nothing' revient
+à ne pas filtrer sur ce critère. Les bornes temporelles sont des chaînes
+ISO 8601 (@YYYY-MM-DDTHH:MM:SS@ ou @YYYY-MM-DD@).
+-}
 module Conso.Fr.Elec.SgeDB.Storage.Query
   ( CurveRow(..)
   , IndexRow(..)
@@ -24,18 +35,19 @@ import           Conso.Fr.Elec.SgeDB.Types.Common
 -- ---------------------------------------------------------------------------
 -- Types de résultat aplatis (lignes de la base)
 
+-- | Ligne de résultat d'une requête sur @curve_points@.
 data CurveRow = CurveRow
-  { crEtapeMetier      :: Text
-  , crGrandeurMetier   :: Text
-  , crGrandeurPhysique :: Text
-  , crUnite            :: Text
-  , crHorodate         :: Text
-  , crValeur           :: Text
-  , crPas              :: Text
-  , crNature           :: Text
-  , crTypeCompletion   :: Maybe Text
-  , crIv               :: Maybe Int
-  , crEc               :: Maybe Int
+  { crEtapeMetier      :: Text       -- ^ @etape_metier@ — @\"BRUT\"@ ou @\"BEST\"@
+  , crGrandeurMetier   :: Text       -- ^ @grandeur_metier@ — @\"CONS\"@ ou @\"PROD\"@
+  , crGrandeurPhysique :: Text       -- ^ @grandeur_physique@ — @\"PA\"@, @\"PRI\"@, …
+  , crUnite            :: Text       -- ^ @unite@ — ex. @\"W\"@
+  , crHorodate         :: Text       -- ^ @horodate@ — ISO 8601
+  , crValeur           :: Text       -- ^ @valeur@ — valeur de puissance (chaîne)
+  , crPas              :: Text       -- ^ @pas@ — @\"PT5M\"@..@\"PT60M\"@
+  , crNature           :: Text       -- ^ @nature@ — @\"B\"@, @\"C\"@, @\"E\"@, …
+  , crTypeCompletion   :: Maybe Text -- ^ @type_completion@ — présent si @etapeMetier = BEST@
+  , crIv               :: Maybe Int  -- ^ @iv@ — indicateur de vraisemblance (0-2)
+  , crEc               :: Maybe Int  -- ^ @ec@ — état complémentaire (si @iv = 2@)
   } deriving (Eq, Show)
 
 instance FromRow CurveRow where
@@ -43,23 +55,24 @@ instance FromRow CurveRow where
                      <*> field <*> field <*> field <*> field
                      <*> field <*> field <*> field
 
+-- | Ligne de résultat d'une requête sur @index_values@.
 data IndexRow = IndexRow
-  { irEtapeMetier      :: Text
-  , irContexteReleve   :: Text
-  , irTypeReleve       :: Text
-  , irMotifReleve      :: Maybe Text
-  , irGrandeurMetier   :: Text
-  , irGrandeurPhysique :: Text
-  , irUnite            :: Text
-  , irIdCalendrier     :: Maybe Text
-  , irLibelleGrille    :: Maybe Text
-  , irIdClasse         :: Maybe Text
-  , irLibelleClasse    :: Maybe Text
-  , irCodeCadran       :: Maybe Text
-  , irIsTotalisateur   :: Int
-  , irHorodate         :: Text
-  , irValeur           :: Int
-  , irIv               :: Maybe Int
+  { irEtapeMetier      :: Text       -- ^ @etape_metier@
+  , irContexteReleve   :: Text       -- ^ @contexte_releve@ — @\"COL\"@, @\"TOP\"@, …
+  , irTypeReleve       :: Text       -- ^ @type_releve@ — @\"AQ\"@, @\"LC\"@, …
+  , irMotifReleve      :: Maybe Text -- ^ @motif_releve@
+  , irGrandeurMetier   :: Text       -- ^ @grandeur_metier@
+  , irGrandeurPhysique :: Text       -- ^ @grandeur_physique@ — @\"EA\"@, @\"PMA\"@, …
+  , irUnite            :: Text       -- ^ @unite@
+  , irIdCalendrier     :: Maybe Text -- ^ @id_calendrier@ (ex. @DI000001@)
+  , irLibelleGrille    :: Maybe Text -- ^ @libelle_grille@
+  , irIdClasse         :: Maybe Text -- ^ @id_classe_temporelle@
+  , irLibelleClasse    :: Maybe Text -- ^ @libelle_classe_temp@
+  , irCodeCadran       :: Maybe Text -- ^ @code_cadran@
+  , irIsTotalisateur   :: Int        -- ^ @is_totalisateur@ — @1@ si cadran totalisateur, @0@ sinon
+  , irHorodate         :: Text       -- ^ @horodate@ — ISO 8601
+  , irValeur           :: Int        -- ^ @valeur@ — valeur entière de l'index
+  , irIv               :: Maybe Int  -- ^ @iv@ — indicateur vraisemblance (4 bits 0-15)
   } deriving (Eq, Show)
 
 instance FromRow IndexRow where
@@ -68,53 +81,56 @@ instance FromRow IndexRow where
                      <*> field <*> field <*> field <*> field
                      <*> field <*> field <*> field <*> field
 
+-- | Ligne de résultat d'une requête sur @daily_energy@.
 data EnergyRow = EnergyRow
-  { erEtapeMetier      :: Text
-  , erGrandeurMetier   :: Text
-  , erGrandeurPhysique :: Text
-  , erUnite            :: Text
-  , erModeCalcul       :: Text
-  , erDateMesure       :: Text
-  , erValeur           :: Text
+  { erEtapeMetier      :: Text -- ^ @etape_metier@
+  , erGrandeurMetier   :: Text -- ^ @grandeur_metier@
+  , erGrandeurPhysique :: Text -- ^ @grandeur_physique@ — @\"EA\"@, @\"ERI\"@, @\"ERC\"@
+  , erUnite            :: Text -- ^ @unite@ — ex. @\"Wh\"@
+  , erModeCalcul       :: Text -- ^ @mode_calcul@ — @\"DIFF_INDEX\"@ ou @\"INTEG_COURBE\"@
+  , erDateMesure       :: Text -- ^ @date_mesure@ — @YYYY-MM-DD@
+  , erValeur           :: Text -- ^ @valeur@ — énergie de la journée (chaîne)
   } deriving (Eq, Show)
 
 instance FromRow EnergyRow where
   fromRow = EnergyRow <$> field <*> field <*> field <*> field
                       <*> field <*> field <*> field
 
+-- | Ligne de résultat d'une requête sur @daily_pmax@.
 data PmaxRow = PmaxRow
-  { pmEtapeMetier      :: Text
-  , pmGrandeurMetier   :: Text
-  , pmGrandeurPhysique :: Text
-  , pmUnite            :: Text
-  , pmHorodate         :: Text
-  , pmValeur           :: Text
+  { pmEtapeMetier      :: Text -- ^ @etape_metier@
+  , pmGrandeurMetier   :: Text -- ^ @grandeur_metier@
+  , pmGrandeurPhysique :: Text -- ^ @grandeur_physique@ — @\"PMA\"@, @\"PMA1\"@..@\"PMA3\"@
+  , pmUnite            :: Text -- ^ @unite@ — toujours @\"VA\"@
+  , pmHorodate         :: Text -- ^ @horodate@ — instant exact de la Pmax (ISO 8601)
+  , pmValeur           :: Text -- ^ @valeur@ — valeur de la Pmax (chaîne, en VA)
   } deriving (Eq, Show)
 
 instance FromRow PmaxRow where
   fromRow = PmaxRow <$> field <*> field <*> field
                     <*> field <*> field <*> field
 
+-- | Ligne de résultat d'une requête sur @billing_measures@.
 data BillingRow = BillingRow
-  { brEtapeMetier     :: Text
-  , brIdMotifReleve   :: Text
-  , brGrandeurMetier  :: Text
-  , brGrandeurPhysique:: Text
-  , brUnite           :: Text
-  , brCodeGrille      :: Maybe Text
-  , brLibelleGrille   :: Text
-  , brCodeCalendrier  :: Maybe Text
-  , brLibelleCalendrier :: Text
-  , brIdClasse        :: Text
-  , brLibelleClasse   :: Text
-  , brDateCreation    :: Text
-  , brDbtMesure       :: Text
-  , brFinMesure       :: Text
-  , brQuantite        :: Int
-  , brCodeNature      :: Maybe Text
-  , brLibelleNature   :: Text
-  , brCodeStatut      :: Maybe Text
-  , brLibelleStatut   :: Text
+  { brEtapeMetier       :: Text       -- ^ @etape_metier@ — @\"FACT\"@
+  , brIdMotifReleve     :: Text       -- ^ @id_motif_releve@ — code du motif de relevé
+  , brGrandeurMetier    :: Text       -- ^ @grandeur_metier@
+  , brGrandeurPhysique  :: Text       -- ^ @grandeur_physique@
+  , brUnite             :: Text       -- ^ @unite@
+  , brCodeGrille        :: Maybe Text -- ^ @code_grille@
+  , brLibelleGrille     :: Text       -- ^ @libelle_grille@ — ex. @\"HC-HP\"@
+  , brCodeCalendrier    :: Maybe Text -- ^ @code_calendrier@
+  , brLibelleCalendrier :: Text       -- ^ @libelle_calendrier@
+  , brIdClasse          :: Text       -- ^ @id_classe_temporelle@ — ex. @\"HPH\"@
+  , brLibelleClasse     :: Text       -- ^ @libelle_classe_temp@
+  , brDateCreation      :: Text       -- ^ @date_creation@
+  , brDbtMesure         :: Text       -- ^ @dbt_mesure@ — début de la période (@YYYY-MM-DD@)
+  , brFinMesure         :: Text       -- ^ @fin_mesure@ — fin de la période (@YYYY-MM-DD@)
+  , brQuantite          :: Int        -- ^ @quantite@ — valeur entière facturée
+  , brCodeNature        :: Maybe Text -- ^ @code_nature@ — @E@, @I@, @C@, @R@
+  , brLibelleNature     :: Text       -- ^ @libelle_nature@
+  , brCodeStatut        :: Maybe Text -- ^ @code_statut@ — @I@, @A@, @R@
+  , brLibelleStatut     :: Text       -- ^ @libelle_statut@
   } deriving (Eq, Show)
 
 instance FromRow BillingRow where
@@ -124,15 +140,16 @@ instance FromRow BillingRow where
                        <*> field <*> field <*> field <*> field
                        <*> field <*> field <*> field
 
+-- | Ligne de résultat d'une requête sur @prm_info@.
 data PrmInfoRow = PrmInfoRow
-  { piId               :: Int
-  , piSegment          :: Maybe Text
-  , piEtatContractuel  :: Maybe Text
-  , piEtatAlimentation :: Maybe Text
-  , piPuissance        :: Maybe Text
-  , piDomaineTension   :: Maybe Text
-  , piRawJson          :: Text
-  , piDateIngestion    :: Text
+  { piId               :: Int        -- ^ @id@ — clé primaire auto-incrémentée
+  , piSegment          :: Maybe Text -- ^ @segment@ — @\"C5\"@, @\"P4\"@, …
+  , piEtatContractuel  :: Maybe Text -- ^ @etat_contractuel@
+  , piEtatAlimentation :: Maybe Text -- ^ @etat_alimentation@
+  , piPuissance        :: Maybe Text -- ^ @puissance_souscrite@ (kVA)
+  , piDomaineTension   :: Maybe Text -- ^ @domaine_tension@ — @\"BT\"@, @\"HTA\"@, @\"HTB\"@
+  , piRawJson          :: Text       -- ^ @raw_json@ — JSON C68 complet sérialisé
+  , piDateIngestion    :: Text       -- ^ @date_ingestion@
   } deriving (Eq, Show)
 
 instance FromRow PrmInfoRow where

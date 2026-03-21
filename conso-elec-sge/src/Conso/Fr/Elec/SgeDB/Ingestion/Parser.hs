@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Ingestion.Parser
+Description : Parser unifié des flux M023 Enedis (JSON → FluxRxx)
+
+Définit 'FluxRxx', le type union de tous les flux possibles, et 'parseFluxRxx',
+le point d'entrée de parsing qui dispatche selon le 'CodeFlux' fourni.
+
+Particularité C68 : la racine JSON est un tableau d'objets (sans enveloppe
+@header\/mesures@), traité séparément via 'parseFluxC68'.
+
+Pour tous les autres flux, la racine JSON est un objet @{ header, mesures }@.
+-}
 module Conso.Fr.Elec.SgeDB.Ingestion.Parser
   ( FluxRxx(..)
   , parseFluxRxx
@@ -16,19 +28,21 @@ import           Conso.Fr.Elec.SgeDB.Types.R66    (FluxR66)
 import           Conso.Fr.Elec.SgeDB.Types.R67    (FluxR67)
 import           Conso.Fr.Elec.SgeDB.Types.C68    (InfoTechniqueContractuelle, parseFluxC68)
 
--- | Type union de tous les flux possibles
+-- | Type union de tous les flux M023 Enedis.
 data FluxRxx
-  = FluxCourbeCharge FluxR63
-  | FluxIndex        FluxR64
-  | FluxEnergie      FluxR65
-  | FluxPmax         FluxR66
-  | FluxFacturant    FluxR67
-  | FluxITC          [InfoTechniqueContractuelle]
+  = FluxCourbeCharge FluxR63                  -- ^ R63, R63A, R63B — courbes de charge
+  | FluxIndex        FluxR64                  -- ^ R64, R64A, R64B — index compteur
+  | FluxEnergie      FluxR65                  -- ^ R65 — énergies quotidiennes
+  | FluxPmax         FluxR66                  -- ^ R66, R66B — puissances maximales
+  | FluxFacturant    FluxR67                  -- ^ R67 — mesures facturantes
+  | FluxITC          [InfoTechniqueContractuelle] -- ^ C68 — informations techniques
   deriving (Show)
 
--- | Parse un ByteString JSON selon le code flux fourni.
--- Pour C68, la racine JSON est un tableau (pas d'enveloppe header/mesures).
--- Pour les autres flux, la racine est un objet { header, mesures }.
+-- | Parse un 'ByteString' JSON en 'FluxRxx' selon le 'CodeFlux' fourni.
+--
+-- Cas particulier C68 : la racine JSON est un tableau (sans enveloppe
+-- @header\/mesures@). Pour tous les autres flux, la racine est un objet
+-- @{ header, mesures }@.
 parseFluxRxx :: CodeFlux -> ByteString -> Either Text FluxRxx
 parseFluxRxx CF_C68 bs =
   case eitherDecodeStrict bs :: Either String Value of

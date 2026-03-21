@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Types.Header
+Description : En-tête commun et code flux des fichiers M023 Enedis
+
+Définit le 'CodeFlux' (11 constructeurs couvrant les flux R63..R67, C68,
+et leurs variantes récurrentes), le 'Header' commun à tous les flux R6X,
+et le bloc 'Echeances' présent uniquement dans les services récurrents (R6X-REC).
+
+Chaque fichier M023 contient un objet @header@ racine avec notamment :
+
+  * @codeFlux@ — identifie le type de données
+  * @modePublication@ — @\"P\"@ (ponctuel M023) ou @\"Q\"@\/@\"H\"@\/@\"M\"@ (récurrent)
+  * @publicationCrp@ — @\"oui\"@ pour M023, @\"non\"@ pour REC
+-}
 module Conso.Fr.Elec.SgeDB.Types.Header where
 
 import           Data.Text                       (Text)
@@ -8,13 +22,23 @@ import           Data.Aeson
 import           Data.Aeson.Types                (Parser)
 import           Conso.Fr.Elec.SgeDB.Types.Common (parseDateTimeText, ModePublication(..))
 
--- | Code flux identifiant le type de données
+-- | Code flux identifiant le type de fichier M023.
 data CodeFlux
-  = CF_R63 | CF_R64 | CF_R65 | CF_R66 | CF_R67   -- M023 (ponctuels)
-  | CF_R63A | CF_R63B | CF_R64A | CF_R64B | CF_R66B  -- REC (récurrents)
-  | CF_C68                                             -- Informations techniques
+  = CF_R63  -- ^ Courbes de charge — M023 ponctuel (@R63@)
+  | CF_R64  -- ^ Index (relevés compteur) — M023 ponctuel (@R64@)
+  | CF_R65  -- ^ Énergies quotidiennes — M023 ponctuel (@R65@)
+  | CF_R66  -- ^ Puissances maximales (Pmax) — M023 ponctuel (@R66@)
+  | CF_R67  -- ^ Mesures facturantes — M023 ponctuel (@R67@)
+  | CF_R63A -- ^ Courbes de charge récurrentes, variante A (@R63A@)
+  | CF_R63B -- ^ Courbes de charge récurrentes, variante B (@R63B@)
+  | CF_R64A -- ^ Index récurrents, variante A (@R64A@)
+  | CF_R64B -- ^ Index récurrents, variante B (@R64B@)
+  | CF_R66B -- ^ Pmax récurrentes (@R66B@)
+  | CF_C68  -- ^ Informations Techniques et Contractuelles (@C68@)
   deriving (Eq, Ord, Show)
 
+-- | Parse un 'CodeFlux' depuis sa représentation textuelle Enedis (ex. @\"R63\"@, @\"C68\"@).
+-- Retourne 'Nothing' si le code n'est pas reconnu.
 codeFluxFromText :: Text -> Maybe CodeFlux
 codeFluxFromText "R63"  = Just CF_R63
 codeFluxFromText "R64"  = Just CF_R64
@@ -29,6 +53,7 @@ codeFluxFromText "R66B" = Just CF_R66B
 codeFluxFromText "C68"  = Just CF_C68
 codeFluxFromText _      = Nothing
 
+-- | Convertit un 'CodeFlux' en sa représentation textuelle Enedis.
 codeFluxToText :: CodeFlux -> Text
 codeFluxToText CF_R63  = "R63";  codeFluxToText CF_R64  = "R64"
 codeFluxToText CF_R65  = "R65";  codeFluxToText CF_R66  = "R66"
@@ -37,30 +62,31 @@ codeFluxToText CF_R63B = "R63B"; codeFluxToText CF_R64A = "R64A"
 codeFluxToText CF_R64B = "R64B"; codeFluxToText CF_R66B = "R66B"
 codeFluxToText CF_C68  = "C68"
 
--- | En-tête commun à tous les flux R6X
--- idCanalContact : présent pour M023 ; idPublication : présent pour REC
+-- | En-tête commun à tous les flux R6X (objet @header@ du JSON racine).
 data Header = Header
-  { hSiDemandeur     :: Text
-  , hTypeDestinataire :: Text
-  , hIdDestinataire   :: Text
-  , hCodeFlux         :: CodeFlux
-  , hIdDemande        :: Text
-  , hModePublication  :: ModePublication
-  , hIdCanalContact   :: Maybe Text   -- M023
-  , hIdPublication    :: Maybe Text   -- REC
-  , hFormat           :: Text
-  , hPublicationCrp   :: Maybe Text
+  { hSiDemandeur      :: Text        -- ^ SIRET du demandeur (11 chiffres)
+  , hTypeDestinataire :: Text        -- ^ Type du destinataire
+  , hIdDestinataire   :: Text        -- ^ Identifiant du destinataire
+  , hCodeFlux         :: CodeFlux    -- ^ Type de flux (@R63@, @R64@, …)
+  , hIdDemande        :: Text        -- ^ Identifiant de la demande SGE
+  , hModePublication  :: ModePublication -- ^ Mode de publication (@P@\/@Q@\/@H@\/@M@)
+  , hIdCanalContact   :: Maybe Text  -- ^ Canal de contact (M023 uniquement)
+  , hIdPublication    :: Maybe Text  -- ^ Identifiant de publication (R6X-REC uniquement)
+  , hFormat           :: Text        -- ^ Format du message (ex. @\"json\"@)
+  , hPublicationCrp   :: Maybe Text  -- ^ @\"oui\"@ (M023) ou @\"non\"@ (REC)
   } deriving (Eq, Show)
 
--- | Type de publication récurrente
-data TypePublication = FilEau | Immediat
+-- | Type de publication récurrente (champ @type@ du bloc @echeances@).
+data TypePublication
+  = FilEau  -- ^ Publication quotidienne multi-guichet (@\"FIL_EAU\"@)
+  | Immediat -- ^ Publication groupée hebdomadaire ou mensuelle (@\"IMMEDIAT\"@)
   deriving (Eq, Ord, Show)
 
--- | Bloc échéances (présent uniquement pour R6X-REC)
+-- | Bloc @echeances@ présent uniquement dans les flux R6X-REC (services récurrents).
 data Echeances = Echeances
-  { ecType                     :: TypePublication
-  , ecHorodateDebutPublication :: Maybe UTCTime
-  , ecFrequence                :: Maybe Text
+  { ecType                     :: TypePublication -- ^ Mode de déclenchement ('FilEau' ou 'Immediat')
+  , ecHorodateDebutPublication :: Maybe UTCTime   -- ^ Début effectif de la publication
+  , ecFrequence                :: Maybe Text       -- ^ Fréquence (ex. @\"QUOTIDIEN\"@)
   } deriving (Eq, Show)
 
 -- ---------------------------------------------------------------------------
@@ -86,7 +112,8 @@ instance FromJSON TypePublication where
     "IMMEDIAT" -> pure Immediat
     _          -> fail $ "TypePublication inconnue: " ++ T.unpack t
 
--- | Parse un header M023 (idCanalContact requis, pas idPublication)
+-- | Parse le header d'un flux M023 ponctuel.
+-- Attend @idCanalContact@ et utilise @modePublication = \"P\"@.
 parseHeaderM023 :: Object -> Parser Header
 parseHeaderM023 o = do
   hdr <- o .: "header"
@@ -102,7 +129,8 @@ parseHeaderM023 o = do
     <*> hdr .: "format"
     <*> hdr .:? "publicationCrp"
 
--- | Parse un header REC (idPublication requis, pas idCanalContact)
+-- | Parse le header d'un flux R6X-REC (service récurrent).
+-- Attend @idPublication@ ; @modePublication@ vaut @\"Q\"@, @\"H\"@ ou @\"M\"@.
 parseHeaderREC :: Object -> Parser Header
 parseHeaderREC o = do
   hdr <- o .: "header"
@@ -118,7 +146,8 @@ parseHeaderREC o = do
     <*> hdr .: "format"
     <*> hdr .:? "publicationCrp"
 
--- | Parse le bloc écheances (optionnel dans le JSON racine)
+-- | Parse le bloc @echeances@ optionnel du JSON racine.
+-- Retourne 'Nothing' si le champ est absent (flux M023 ponctuels).
 parseEcheances :: Object -> Parser (Maybe Echeances)
 parseEcheances o = do
   mEch <- o .:? "echeances"

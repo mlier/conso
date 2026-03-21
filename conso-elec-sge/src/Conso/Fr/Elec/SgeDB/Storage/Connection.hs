@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Storage.Connection
+Description : Connexion SQLite par PRM avec sharding 3×3 chiffres
+
+Gère l'ouverture des bases SQLite, une par PRM, dans une arborescence
+répartie sur 3 niveaux de 3 chiffres pour éviter les répertoires trop peuplés :
+
+> baseDir/123/456/789/12345678901234.db
+
+À chaque ouverture, les PRAGMA WAL sont configurés et les migrations
+manquantes sont appliquées (voir "Conso.Fr.Elec.SgeDB.Storage.Migration").
+-}
 module Conso.Fr.Elec.SgeDB.Storage.Connection
   ( prmDbPath
   , openPrmDb
@@ -34,7 +46,13 @@ openPrmDb baseDir prmId = do
   ensureSchema conn
   return conn
 
--- | Configure les PRAGMA SQLite pour chaque connexion ouverte.
+-- | Configure les PRAGMA SQLite optimisés pour les accès concurrents.
+-- PRAGMA appliqués :
+--
+-- * @journal_mode = WAL@ — écriture non bloquante
+-- * @synchronous = NORMAL@ — compromis performance\/durabilité
+-- * @foreign_keys = ON@ — intégrité référentielle activée
+-- * @busy_timeout = 5000@ — attente 5 s en cas de verrou
 configurePragmas :: Connection -> IO ()
 configurePragmas conn = do
   execute_ conn "PRAGMA journal_mode = WAL"

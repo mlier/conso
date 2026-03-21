@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Storage.Gaps
+Description : Détection de trous temporels dans les données SgeDB
+
+Fournit trois fonctions de détection de trous :
+
+  * 'detectCurveGaps' — trous dans les courbes de charge (résultat groupé en 'Periode')
+  * 'detectEnergyGaps' — dates manquantes dans les énergies quotidiennes
+  * 'detectPmaxGaps'   — dates manquantes dans les Pmax quotidiennes
+
+La détection de trous courbe génère tous les timestamps attendus selon le pas
+(via 'pasToSeconds'), les compare aux horodates présentes en base et regroupe
+les manquants consécutifs en intervalles 'Periode'.
+-}
 module Conso.Fr.Elec.SgeDB.Storage.Gaps
   ( detectCurveGaps
   , detectEnergyGaps
@@ -17,15 +31,17 @@ import           Conso.Fr.Elec.SgeDB.Types.Common (Periode(..), Pas, pasToSecond
 -- Détection de trous dans les courbes de charge
 
 -- | Identifie les intervalles manquants dans les courbes de charge.
--- Génère les horodates attendues d'après le pas, compare avec la base.
+-- Génère la séquence complète des horodates attendues d'après le pas,
+-- la compare aux horodates présentes en base, puis regroupe les manquants
+-- consécutifs en intervalles 'Periode'.
 detectCurveGaps
   :: Connection
-  -> Text    -- grandeur_metier
-  -> Text    -- grandeur_physique
-  -> Text    -- etape_metier
-  -> Pas     -- pas attendu
-  -> UTCTime -- début de la période à vérifier
-  -> UTCTime -- fin de la période à vérifier
+  -> Text    -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
+  -> Text    -- ^ @grandeur_physique@ (@\"PA\"@, @\"PRI\"@, …)
+  -> Text    -- ^ @etape_metier@ (@\"BRUT\"@ ou @\"BEST\"@)
+  -> Pas     -- ^ Pas attendu des mesures (détermine la fréquence des points)
+  -> UTCTime -- ^ Début de la période à vérifier (inclus)
+  -> UTCTime -- ^ Fin de la période à vérifier (inclus)
   -> IO [Periode]
 detectCurveGaps conn gm gp em pas start end = do
   rows <- query conn
@@ -43,10 +59,12 @@ detectCurveGaps conn gm gp em pas start end = do
 -- ---------------------------------------------------------------------------
 -- Détection de trous dans les énergies quotidiennes
 
+-- | Retourne la liste des dates manquantes dans @daily_energy@ pour une grandeur.
 detectEnergyGaps
   :: Connection
-  -> Text   -- grandeur_metier
-  -> Day -> Day
+  -> Text -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
+  -> Day  -- ^ Date de début (incluse)
+  -> Day  -- ^ Date de fin (incluse)
   -> IO [Day]
 detectEnergyGaps conn gm start end = do
   rows <- query conn
@@ -62,10 +80,13 @@ detectEnergyGaps conn gm start end = do
 -- ---------------------------------------------------------------------------
 -- Détection de trous dans les Pmax quotidiennes
 
+-- | Retourne la liste des dates manquantes dans @daily_pmax@ pour une grandeur.
+-- Groupe par date (une Pmax par jour, quel que soit l'horodate exact).
 detectPmaxGaps
   :: Connection
-  -> Text   -- grandeur_metier
-  -> Day -> Day
+  -> Text -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
+  -> Day  -- ^ Date de début (incluse)
+  -> Day  -- ^ Date de fin (incluse)
   -> IO [Day]
 detectPmaxGaps conn gm start end = do
   rows <- query conn

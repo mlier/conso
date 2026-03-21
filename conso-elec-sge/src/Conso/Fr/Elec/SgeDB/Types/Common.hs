@@ -1,4 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Types.Common
+Description : Types partagés entre tous les modules SgeDB
+
+Définit les types de base utilisés dans l'ensemble du pipeline :
+identifiant PRM, grandeurs métier et physiques, étapes métier, pas de mesure,
+natures de point, contextes de relève et la structure 'Periode'.
+
+Ces types sont issus de la nomenclature des flux M023 Enedis
+(guide GUI.0503 et GUI.0504).
+-}
 module Conso.Fr.Elec.SgeDB.Types.Common where
 
 import           Data.Text           (Text)
@@ -12,68 +23,141 @@ import           Control.Applicative ((<|>))
 -- ---------------------------------------------------------------------------
 -- Types de base
 
--- | Identifiant PRM (14 caractères)
+-- | Identifiant d'un point de mesure (PRM) — 14 chiffres attribués par Enedis.
 newtype PrmId = PrmId { unPrmId :: Text }
   deriving (Eq, Ord, Show)
 
--- | Grandeur métier
-data GrandeurMetier = CONS | PROD
+-- | Sens de la mesure.
+data GrandeurMetier
+  = CONS -- ^ Consommation (Soutirage du réseau)
+  | PROD -- ^ Production (Injection vers le réseau)
   deriving (Eq, Ord, Show, Enum, Bounded)
 
--- | Grandeur physique pour les courbes de charge (R63)
-data GrandeurPhysiqueR63 = GP_PA | GP_PRI | GP_PRC | GP_E
+-- | Grandeur physique pour les courbes de charge R63.
+data GrandeurPhysiqueR63
+  = GP_PA  -- ^ Puissance Active (W)
+  | GP_PRI -- ^ Puissance Réactive Inductive (VAr)
+  | GP_PRC -- ^ Puissance Réactive Capacitive (VAr)
+  | GP_E   -- ^ Tension (V)
   deriving (Eq, Ord, Show)
 
--- | Grandeur physique pour les index (R64) et mesures facturantes (R67)
+-- | Grandeur physique pour les index R64 et mesures facturantes R67.
 data GrandeurPhysiqueIndex
-  = GP_DD | GP_DE | GP_DQ | GP_EA | GP_ER | GP_ERC | GP_ERI | GP_PMA_I | GP_TF | GP_PA_IDX
+  = GP_DD    -- ^ Durée de Dépassement (s)
+  | GP_DE    -- ^ Dépassement Énergétique (Wh)
+  | GP_DQ    -- ^ Dépassement Quadratique (W)
+  | GP_EA    -- ^ Énergie Active (Wh)
+  | GP_ER    -- ^ Énergie Réactive (VArh)
+  | GP_ERC   -- ^ Énergie Réactive Capacitive (VArh)
+  | GP_ERI   -- ^ Énergie Réactive Inductive (VArh)
+  | GP_PMA_I -- ^ Puissance Maximale (VA)
+  | GP_TF    -- ^ Temps de Fonctionnement (s)
+  | GP_PA_IDX -- ^ Puissance Active en index
   deriving (Eq, Ord, Show)
 
--- | Grandeur physique pour les Pmax (R66)
-data GrandeurPhysiquePmax = GP_PMA_MONO | GP_PMA1 | GP_PMA2 | GP_PMA3
+-- | Grandeur physique pour les Pmax R66 (C5\/P4 Linky uniquement, unité VA).
+data GrandeurPhysiquePmax
+  = GP_PMA_MONO -- ^ Pmax monophasé ou somme des 3 phases (@PMA@)
+  | GP_PMA1     -- ^ Pmax phase 1 (@PMA1@, triphasé)
+  | GP_PMA2     -- ^ Pmax phase 2 (@PMA2@, triphasé)
+  | GP_PMA3     -- ^ Pmax phase 3 (@PMA3@, triphasé)
   deriving (Eq, Ord, Show)
 
--- | Grandeur physique pour les énergies quotidiennes (R65)
-data GrandeurPhysiqueEnergie = GP_EA_E | GP_ERI_E | GP_ERC_E
+-- | Grandeur physique pour les énergies quotidiennes R65.
+data GrandeurPhysiqueEnergie
+  = GP_EA_E  -- ^ Énergie Active (Wh)
+  | GP_ERI_E -- ^ Énergie Réactive Inductive (VArh)
+  | GP_ERC_E -- ^ Énergie Réactive Capacitive (VArh)
   deriving (Eq, Ord, Show)
 
--- | Etape métier
-data EtapeMetier = BRUT | BEST | FACT
+-- | Étape de traitement d'une mesure.
+data EtapeMetier
+  = BRUT -- ^ Données brutes issues du compteur, sans correction
+  | BEST -- ^ Inclut les points estimés et corrigés (segments C1-C4\/P1-P3 uniquement)
+  | FACT -- ^ Données facturantes (R67)
   deriving (Eq, Ord, Show)
 
--- | Pas de mesure
-data Pas = PT5M | PT10M | PT15M | PT30M | PT60M | P1D
+-- | Pas de temps d'une mesure (durée ISO 8601).
+data Pas
+  = PT5M  -- ^ Segments C1-C4 (haute tension)
+  | PT10M -- ^ Segments C1-C4 (haute tension)
+  | PT15M -- ^ Segments C5\/P4 (Linky résidentiel)
+  | PT30M -- ^ Segments C5\/P4 (Linky résidentiel)
+  | PT60M -- ^ Segments C5\/P4 (Linky résidentiel)
+  | P1D   -- ^ Journalier (R65, R66)
   deriving (Eq, Ord, Show)
 
--- | Nature d'un point de courbe (R63)
-data NaturePoint = N_B | N_C | N_R | N_D | N_S | N_T | N_F | N_G | N_H | N_E | N_P
+-- | Nature d'un point de courbe R63 (champ @n@ du JSON).
+data NaturePoint
+  = N_B -- ^ Brut Linky
+  | N_C -- ^ Corrigé
+  | N_R -- ^ Réel (compteur >36 kVA)
+  | N_D -- ^ Importé
+  | N_S -- ^ Coupure secteur
+  | N_T -- ^ Coupure courte
+  | N_F -- ^ Début de coupure
+  | N_G -- ^ Fin de coupure
+  | N_H -- ^ Puissance reconstituée
+  | N_E -- ^ Estimé
+  | N_P -- ^ Puissance
   deriving (Eq, Ord, Show)
 
--- | Type de complétion R63
+-- | Type de complétion R63 (champ @tc@, présent uniquement si @etapeMetier = BEST@).
 data TypeCompletion
-  = TC_F | TC_G | TC_N | TC_H | TC_I | TC_O | TC_J | TC_K | TC_L | TC_C | TC_A | TC_M
+  = TC_F -- ^ Corrigé
+  | TC_G -- ^ Corrigé
+  | TC_N -- ^ Corrigé
+  | TC_H -- ^ Corrigé
+  | TC_I -- ^ Corrigé
+  | TC_O -- ^ Corrigé
+  | TC_J -- ^ Corrigé
+  | TC_K -- ^ Corrigé
+  | TC_L -- ^ Corrigé
+  | TC_C -- ^ Estimé
+  | TC_A -- ^ Estimé
+  | TC_M -- ^ Estimé
   deriving (Eq, Ord, Show)
 
--- | Contexte de relève (R64)
-data ContexteReleve = COL | TOP | FMR | CRD | CRI | RHF
+-- | Contexte de relevé des index R64.
+data ContexteReleve
+  = COL -- ^ Collecte
+  | TOP -- ^ Télé-Opération
+  | FMR -- ^ Flux Mesures Régulier (C1-C4)
+  | CRD -- ^ Compte-Rendu Demande (C1-C4)
+  | CRI -- ^ Intervention
+  | RHF -- ^ Relevé Heure Fixe (C1-C4)
   deriving (Eq, Ord, Show)
 
--- | Type de relève (R64)
-data TypeReleve = TR_AQ | TR_AV | TR_AS | TR_AP | TR_LC | TR_RM | TR_RC
+-- | Type de relevé R64.
+data TypeReleve
+  = TR_AQ -- ^ Arrêté Quotidien
+  | TR_AV -- ^ aVant reprogrammation
+  | TR_AS -- ^ aSynchrone
+  | TR_AP -- ^ aPrès reprogrammation
+  | TR_LC -- ^ Lecture Courante
+  | TR_RM -- ^ Relevé Mensuel (C1-C4)
+  | TR_RC -- ^ Relevé Courant (C1-C4)
   deriving (Eq, Ord, Show)
 
--- | Mode de calcul
-data ModeCalcul = MESURE | DIFF_INDEX | INTEG_COURBE
+-- | Mode de calcul des énergies quotidiennes R65.
+data ModeCalcul
+  = MESURE       -- ^ Valeur de mesure directe
+  | DIFF_INDEX   -- ^ Différence d'index à minuit (C5\/P4)
+  | INTEG_COURBE -- ^ Intégrale de la courbe de charge (C1-C4)
   deriving (Eq, Ord, Show)
 
--- | Mode de publication
-data ModePublication = MP_Ponctuel | MP_Quotidien | MP_Hebdomadaire | MP_Mensuel
+-- | Mode de publication d'un flux R6X (champ @modePublication@ du header).
+data ModePublication
+  = MP_Ponctuel     -- ^ @P@ — publication unique (M023)
+  | MP_Quotidien    -- ^ @Q@ — service récurrent quotidien (R6X-REC)
+  | MP_Hebdomadaire -- ^ @H@ — service récurrent hebdomadaire
+  | MP_Mensuel      -- ^ @M@ — service récurrent mensuel
   deriving (Eq, Ord, Show)
 
--- | Période fonctionnelle
+-- | Intervalle temporel fonctionnel (bornes incluses).
 data Periode = Periode
-  { periodeDebut :: UTCTime
-  , periodeFin   :: UTCTime
+  { periodeDebut :: UTCTime -- ^ Début de la période (ISO 8601)
+  , periodeFin   :: UTCTime -- ^ Fin de la période (ISO 8601)
   } deriving (Eq, Show)
 
 -- ---------------------------------------------------------------------------
@@ -145,24 +229,29 @@ parsePeriode o = do
 -- ---------------------------------------------------------------------------
 -- Conversions vers Text (pour stockage SQLite)
 
+-- | Convertit un 'GrandeurMetier' en sa représentation textuelle SQLite (@\"CONS\"@ ou @\"PROD\"@).
 grandeurMetierToText :: GrandeurMetier -> Text
 grandeurMetierToText CONS = "CONS"
 grandeurMetierToText PROD = "PROD"
 
+-- | Parse un 'GrandeurMetier' depuis son code texte. Retourne 'Nothing' si inconnu.
 grandeurMetierFromText :: Text -> Maybe GrandeurMetier
 grandeurMetierFromText "CONS" = Just CONS
 grandeurMetierFromText "PROD" = Just PROD
 grandeurMetierFromText _      = Nothing
 
+-- | Convertit un 'EtapeMetier' en texte (@\"BRUT\"@, @\"BEST\"@, @\"FACT\"@).
 etapeMetierToText :: EtapeMetier -> Text
 etapeMetierToText BRUT = "BRUT"
 etapeMetierToText BEST = "BEST"
 etapeMetierToText FACT = "FACT"
 
+-- | Convertit un 'Pas' en son code ISO 8601 (@\"PT5M\"@, @\"PT30M\"@, @\"P1D\"@, …).
 pasToText :: Pas -> Text
 pasToText PT5M  = "PT5M"; pasToText PT10M = "PT10M"; pasToText PT15M = "PT15M"
 pasToText PT30M = "PT30M"; pasToText PT60M = "PT60M"; pasToText P1D   = "P1D"
 
+-- | Parse un 'Pas' depuis son code ISO 8601. Retourne 'Nothing' si inconnu.
 pasFromText :: Text -> Maybe Pas
 pasFromText "PT5M"  = Just PT5M; pasFromText "PT10M" = Just PT10M
 pasFromText "PT15M" = Just PT15M; pasFromText "PT30M" = Just PT30M
@@ -216,6 +305,8 @@ grandeurPhysiqueEnergieToText GP_ERC_E = "ERC"
 -- ---------------------------------------------------------------------------
 -- Helpers de parsing des dates
 
+-- | Parse un 'UTCTime' depuis un texte ISO 8601.
+-- Accepte les formats : @YYYY-MM-DDTHH:MM:SS+HH:MM@, @YYYY-MM-DDTHH:MM:SS@, @YYYY-MM-DD@.
 parseDateTimeText :: Text -> Parser UTCTime
 parseDateTimeText t =
   let s = T.unpack t
@@ -226,6 +317,7 @@ parseDateTimeText t =
     Just ut -> pure ut
     Nothing -> fail $ "Cannot parse datetime: " ++ s
 
+-- | Parse un 'Day' depuis un texte au format @YYYY-MM-DD@.
 parseDayText :: Text -> Parser Day
 parseDayText t =
   case parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t) of

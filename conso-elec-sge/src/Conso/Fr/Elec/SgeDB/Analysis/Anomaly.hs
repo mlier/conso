@@ -1,4 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Analysis.Anomaly
+Description : Détection d'anomalies dans les courbes de charge
+
+Fournit 'detectAnomalies' qui combine deux approches de détection :
+
+  1. __Z-score__ — signale les points dont l'écart à la moyenne dépasse
+     un seuil (ex. 3 écarts-types)
+  2. __Bornes absolues__ — signale les points en dehors d'une plage [min, max]
+
+L'algorithme calcule d'abord la moyenne puis la variance en mémoire Haskell
+pour éviter deux requêtes SQL (la variance n'est pas native en SQLite standard).
+-}
 module Conso.Fr.Elec.SgeDB.Analysis.Anomaly
   ( AnomalyType(..)
   , Anomaly(..)
@@ -8,31 +21,34 @@ module Conso.Fr.Elec.SgeDB.Analysis.Anomaly
 import           Database.SQLite.Simple
 import           Data.Text              (Text)
 
--- | Type d'anomalie détectée
+-- | Type d'anomalie détectée sur un point de courbe.
 data AnomalyType
-  = ZScore Double  -- écart à la moyenne en nombre d'écarts-types
-  | BorneMin       -- valeur inférieure à la borne minimale
-  | BorneMax       -- valeur supérieure à la borne maximale
+  = ZScore Double -- ^ Anomalie statistique : valeur portant le z-score (nombre d'écarts-types)
+  | BorneMin      -- ^ Valeur inférieure à la borne minimale absolue fournie
+  | BorneMax      -- ^ Valeur supérieure à la borne maximale absolue fournie
   deriving (Eq, Show)
 
--- | Anomalie détectée sur un point de courbe
+-- | Anomalie détectée sur un point de courbe de charge.
 data Anomaly = Anomaly
-  { anomHorodate  :: Text
-  , anomValeur    :: Double
-  , anomType      :: AnomalyType
+  { anomHorodate :: Text        -- ^ Horodate du point anormal (ISO 8601)
+  , anomValeur   :: Double      -- ^ Valeur du point anormal
+  , anomType     :: AnomalyType -- ^ Type et détail de l'anomalie
   } deriving (Eq, Show)
 
 -- | Détecte les anomalies dans les courbes de charge.
--- Utilise le z-score (seuil configurable) et des bornes absolues optionnelles.
+--
+-- Algorithme : calcul de la moyenne → variance → écart-type → z-score par point.
+-- Un point est anormal si son z-score dépasse @zThreshold@ ou s'il est hors bornes.
 detectAnomalies
   :: Connection
-  -> Text           -- grandeur_metier
-  -> Text           -- grandeur_physique
-  -> Text           -- etape_metier
-  -> Text -> Text   -- période (horodate début/fin)
-  -> Double         -- seuil z-score (ex: 3.0)
-  -> Maybe Double   -- borne minimale absolue
-  -> Maybe Double   -- borne maximale absolue
+  -> Text         -- ^ @grandeur_metier@
+  -> Text         -- ^ @grandeur_physique@
+  -> Text         -- ^ @etape_metier@
+  -> Text         -- ^ Horodate début (ISO 8601)
+  -> Text         -- ^ Horodate fin (ISO 8601)
+  -> Double       -- ^ Seuil z-score (valeur typique : @3.0@)
+  -> Maybe Double -- ^ Borne minimale absolue (optionnelle)
+  -> Maybe Double -- ^ Borne maximale absolue (optionnelle)
   -> IO [Anomaly]
 detectAnomalies conn gm gp em deb fin zThreshold mMin mMax = do
   -- Calcul de la moyenne

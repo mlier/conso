@@ -1,17 +1,31 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Storage.Migration
+Description : Migrations SQLite numérotées pour les bases PRM SgeDB
+
+Gère le versionnement du schéma SQLite. À chaque ouverture de connexion,
+'ensureSchema' vérifie la table @schema_version@ et applique les migrations
+manquantes dans une transaction atomique.
+
+__Règle immuable__ : ne jamais modifier une migration déjà publiée.
+Pour corriger une erreur ou ajouter une colonne, ajouter une nouvelle migration
+numérotée à la liste 'migrations'.
+-}
 module Conso.Fr.Elec.SgeDB.Storage.Migration where
 
 import           Database.SQLite.Simple
 import           Control.Monad          (when, forM_)
 
--- | Version courante du schéma attendue par le code.
--- Incrémenter à chaque nouvelle migration ajoutée.
+-- | Version courante du schéma attendue par ce code.
+-- À incrémenter à chaque nouvelle migration ajoutée dans 'migrations'.
 currentSchemaVersion :: Int
 currentSchemaVersion = 1
 
--- | Liste ordonnée des migrations.
--- RÈGLE : ne jamais modifier une migration déjà publiée.
--- Pour corriger une erreur, ajouter une nouvelle migration.
+-- | Liste ordonnée des migrations, indexées par numéro de version.
+--
+-- Pour ajouter une migration : ajouter un tuple @(n, [sql1, sql2, …])@
+-- avec @n = currentSchemaVersion + 1@, puis incrémenter 'currentSchemaVersion'.
+-- Ne jamais modifier les migrations existantes.
 migrations :: [(Int, [Query])]
 migrations =
   [ (1,
@@ -169,8 +183,9 @@ migrations =
   --     ])
   ]
 
--- | Applique les migrations manquantes.
--- À appeler à chaque ouverture de connexion (via openPrmDb).
+-- | Applique les migrations manquantes de façon idempotente.
+-- Crée la table @schema_version@ si absente, puis exécute dans une transaction
+-- toutes les migrations dont le numéro est supérieur à la version actuelle.
 ensureSchema :: Connection -> IO ()
 ensureSchema conn = do
   -- Table de version : créée en dehors des migrations pour bootstrapping

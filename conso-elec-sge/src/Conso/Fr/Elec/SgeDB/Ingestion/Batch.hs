@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Ingestion.Batch
+Description : Ingestion transactionnelle de fichiers JSON SGE par lot
+
+Fournit 'ingestFile' pour ingérer un fichier unique et 'ingestBatch' pour
+un lot de fichiers. Chaque PRM est traité dans une transaction distincte :
+log d'ingestion + insertions métier sont atomiques.
+
+Un 'IngestResult' est produit par PRM présent dans le flux. En cas d'erreur
+(parsing ou base), la transaction est annulée et un 'IngestErr' est retourné
+sans interrompre les autres PRM.
+-}
 module Conso.Fr.Elec.SgeDB.Ingestion.Batch
   ( ingestFile
   , ingestBatch
@@ -26,19 +38,22 @@ import           Conso.Fr.Elec.SgeDB.Ingestion.Versioning ()
 import           Conso.Fr.Elec.SgeDB.Storage.Connection   (openPrmDb)
 import           Conso.Fr.Elec.SgeDB.Storage.Insert
 
+-- | Résultat de l'ingestion pour un PRM.
 data IngestResult
-  = IngestOk  PrmId Text  -- PRM + code flux
-  | IngestErr PrmId Text  -- PRM + message d'erreur
+  = IngestOk  PrmId Text -- ^ Succès : PRM ingéré + code flux (ex. @\"R63\"@)
+  | IngestErr PrmId Text -- ^ Échec  : PRM + message d'erreur
   deriving (Show)
 
--- | Ingère un fichier JSON dans la base du PRM.
--- Le CodeFlux est passé explicitement (déterminé par le contexte appelant).
--- Toute l'ingestion (log + insertions) se fait dans une transaction unique.
+-- | Ingère un fichier JSON SGE dans les bases SQLite des PRM qu'il contient.
+--
+-- Le 'CodeFlux' est fourni par l'appelant (déterminé par le contexte de récupération).
+-- La log d'ingestion et toutes les insertions métier se font dans une transaction
+-- unique par PRM. Retourne un 'IngestResult' par PRM présent dans le flux.
 ingestFile
-  :: FilePath    -- répertoire de bases SQLite
-  -> CodeFlux
-  -> Maybe Text  -- fichier source (pour log)
-  -> ByteString  -- contenu JSON
+  :: FilePath    -- ^ Répertoire racine des bases SQLite (sharding 3×3)
+  -> CodeFlux    -- ^ Type de flux à ingérer
+  -> Maybe Text  -- ^ Nom du fichier source (pour traçabilité dans @ingestion_log@)
+  -> ByteString  -- ^ Contenu JSON du fichier
   -> IO [IngestResult]
 ingestFile baseDir cf mSrc bs = do
   now <- getCurrentTime
@@ -136,10 +151,12 @@ doInsert baseDir prm action = do
     Left  ex -> IngestErr prm (T.pack (show (ex :: SomeException)))
     Right _  -> IngestOk  prm (unPrmId prm)
 
--- | Ingère un batch de fichiers (liste de (codeFlux, contenu))
+-- | Ingère un lot de fichiers JSON de façon séquentielle.
+-- Equivalent à @concat \<$\> mapM (uncurry3 ingestFile) files@.
+-- Les erreurs sur un fichier n'interrompent pas les suivants.
 ingestBatch
-  :: FilePath
-  -> [(CodeFlux, Maybe Text, ByteString)]
+  :: FilePath                           -- ^ Répertoire racine des bases
+  -> [(CodeFlux, Maybe Text, ByteString)] -- ^ Liste de (codeFlux, nom fichier, contenu)
   -> IO [IngestResult]
 ingestBatch baseDir files = do
   results <- mapM (\(cf, src, bs) -> ingestFile baseDir cf src bs) files

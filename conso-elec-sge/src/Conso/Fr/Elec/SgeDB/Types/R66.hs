@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Types.R66
+Description : Types pour les puissances maximales quotidiennes Enedis (flux R66, R66B)
+
+Représente le flux M023\/R6X-REC des Pmax quotidiennes. La hiérarchie est :
+
+> FluxR66 → [MesureR66] → [GrandeurR66] → [PointPmax]
+
+Chaque 'PointPmax' contient la valeur de puissance apparente maximale atteinte
+dans la journée et l'horodate exacte à laquelle elle a été mesurée.
+
+Ce flux est disponible uniquement pour les compteurs Linky (segments C5\/P4).
+L'unité est toujours @VA@ (VoltAmpère, puissance apparente).
+-}
 module Conso.Fr.Elec.SgeDB.Types.R66 where
 
 import           Data.Text                                (Text)
@@ -8,35 +22,36 @@ import           Data.Aeson.Types                         (Parser)
 import           Conso.Fr.Elec.SgeDB.Types.Common
 import           Conso.Fr.Elec.SgeDB.Types.Header
 
--- | Point Pmax quotidien (horodate exacte de la Pmax)
+-- | Point Pmax quotidien : valeur maximale sur la journée et instant exact.
 data PointPmax = PointPmax
-  { ppValeur   :: Text     -- "v"
-  , ppHorodate :: UTCTime  -- "d" : horodate fonctionnelle exacte
+  { ppValeur   :: Text    -- ^ @v@ — Valeur de la Pmax (en VA, chaîne)
+  , ppHorodate :: UTCTime -- ^ @d@ — Horodate fonctionnelle exacte de la Pmax
   } deriving (Eq, Show)
 
--- | Grandeur R66
+-- | Grandeur R66 avec ses points Pmax journaliers.
 data GrandeurR66 = GrandeurR66
-  { gr66GrandeurMetier   :: GrandeurMetier
-  , gr66GrandeurPhysique :: GrandeurPhysiquePmax
-  , gr66Unite            :: Text     -- "VA"
-  , gr66Points           :: [PointPmax]
+  { gr66GrandeurMetier   :: GrandeurMetier      -- ^ Sens (@CONS@ ou @PROD@)
+  , gr66GrandeurPhysique :: GrandeurPhysiquePmax -- ^ Phase mesurée (@PMA@, @PMA1@, @PMA2@, @PMA3@)
+  , gr66Unite            :: Text                -- ^ Toujours @\"VA\"@ (puissance apparente)
+  , gr66Points           :: [PointPmax]         -- ^ Un point par journée
   } deriving (Eq, Show)
 
--- | Mesure R66 pour un PRM
+-- | Mesure R66 pour un PRM (un objet du tableau @mesures@).
 data MesureR66 = MesureR66
-  { mr66IdPrm       :: PrmId
-  , mr66EtapeMetier :: EtapeMetier
-  , mr66Periode     :: Periode
-  , mr66ModeCalcul  :: ModeCalcul
-  , mr66Pas         :: Pas         -- P1D
-  , mr66Grandeurs   :: [GrandeurR66]
+  { mr66IdPrm       :: PrmId         -- ^ Identifiant du PRM
+  , mr66EtapeMetier :: EtapeMetier   -- ^ Étape (@BRUT@)
+  , mr66Periode     :: Periode       -- ^ Période couverte
+  , mr66ModeCalcul  :: ModeCalcul    -- ^ Mode de calcul
+  , mr66Pas         :: Pas           -- ^ Toujours @P1D@ (journalier)
+  , mr66Grandeurs   :: [GrandeurR66] -- ^ Grandeurs mesurées (une par phase)
   } deriving (Eq, Show)
 
--- | Flux R66 complet (R66, R66B)
+-- | Flux R66 complet (commun aux codes R66 et R66B).
+-- 'r66Echeances' est présent uniquement pour R66B (service récurrent).
 data FluxR66 = FluxR66
-  { r66Header    :: Header
-  , r66Echeances :: Maybe Echeances
-  , r66Mesures   :: [MesureR66]
+  { r66Header    :: Header          -- ^ En-tête du fichier
+  , r66Echeances :: Maybe Echeances -- ^ Bloc échéances (R6X-REC uniquement)
+  , r66Mesures   :: [MesureR66]     -- ^ Une entrée par PRM
   } deriving (Show)
 
 -- ---------------------------------------------------------------------------
@@ -64,6 +79,7 @@ instance FromJSON GrandeurR66 where
       <*> o .: "unite"
       <*> o .: "points"
 
+-- | Parse un objet @mesure@ R66 depuis le JSON.
 parseMesureR66 :: Value -> Parser MesureR66
 parseMesureR66 = withObject "MesureR66" $ \o ->
   MesureR66

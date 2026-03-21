@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Types.R67
+Description : Types pour les mesures facturantes Enedis (flux R67)
+
+Représente le flux M023 ponctuel des mesures facturantes. La hiérarchie est :
+
+> FluxR67 → [MesureR67] → [ContexteR67] → [GrandeurR67] → [CalendrierR67] → [ClasseTemporelleR67] → [Quantite]
+
+Chaque 'Quantite' représente une mesure sur une période de facturation avec
+son motif de relevé, sa grille tarifaire, sa classe temporelle, sa valeur
+entière et ses codes nature\/statut.
+
+Ce flux est ponctuel M023 uniquement (pas de variante REC).
+-}
 module Conso.Fr.Elec.SgeDB.Types.R67 where
 
 import           Data.Text                                (Text)
@@ -8,61 +22,61 @@ import           Data.Aeson.Types                         (Parser)
 import           Conso.Fr.Elec.SgeDB.Types.Common
 import           Conso.Fr.Elec.SgeDB.Types.Header
 
--- | Quantité facturante
+-- | Quantité facturante (feuille de la hiérarchie R67).
 data Quantite = Quantite
-  { qDateCreation  :: UTCTime
-  , qDbtMesure     :: Day
-  , qFinMesure     :: Day
-  , qQuantite      :: Int
-  , qCodeNature    :: Maybe Text    -- "E", "I", "C", "R"
-  , qLibelleNature :: Text
-  , qCodeStatut    :: Maybe Text    -- "I", "A", "R"
-  , qLibelleStatut :: Text
+  { qDateCreation  :: UTCTime     -- ^ Date de création de l'enregistrement
+  , qDbtMesure     :: Day         -- ^ Début de la période de facturation (@YYYY-MM-DD@)
+  , qFinMesure     :: Day         -- ^ Fin de la période de facturation (@YYYY-MM-DD@)
+  , qQuantite      :: Int         -- ^ Valeur mesurée (entière, ex. Wh)
+  , qCodeNature    :: Maybe Text  -- ^ Code nature (@E@=estimé, @I@=initial, @C@=corrigé, @R@=réel)
+  , qLibelleNature :: Text        -- ^ Libellé de la nature
+  , qCodeStatut    :: Maybe Text  -- ^ Code statut (@I@=initial, @A@=annulé, @R@=remplacé)
+  , qLibelleStatut :: Text        -- ^ Libellé du statut
   } deriving (Eq, Show)
 
--- | Classe temporelle R67
+-- | Classe temporelle R67 (tranche tarifaire, ex. HPH, HCH).
 data ClasseTemporelleR67 = ClasseTemporelleR67
-  { ct67IdClasseTemporelle      :: Text
-  , ct67LibelleClasseTemporelle :: Text
-  , ct67Quantites               :: [Quantite]
+  { ct67IdClasseTemporelle      :: Text       -- ^ Identifiant de la classe (ex. @\"HPH\"@)
+  , ct67LibelleClasseTemporelle :: Text       -- ^ Libellé (ex. @\"Heures Pleines Hiver\"@)
+  , ct67Quantites               :: [Quantite] -- ^ Quantités facturantes de cette classe
   } deriving (Eq, Show)
 
--- | Calendrier R67
+-- | Calendrier R67 (grille tarifaire associée à une grandeur).
 data CalendrierR67 = CalendrierR67
-  { cal67CodeGrille         :: Maybe Text
-  , cal67LibelleGrille      :: Text
-  , cal67CodeCalendrier     :: Maybe Text
-  , cal67LibelleCalendrier  :: Text
-  , cal67ClassesTemporelles :: [ClasseTemporelleR67]
+  { cal67CodeGrille         :: Maybe Text              -- ^ Code de la grille tarifaire (optionnel)
+  , cal67LibelleGrille      :: Text                    -- ^ Libellé de la grille (ex. @\"HC-HP\"@)
+  , cal67CodeCalendrier     :: Maybe Text              -- ^ Code du calendrier tarifaire
+  , cal67LibelleCalendrier  :: Text                    -- ^ Libellé du calendrier
+  , cal67ClassesTemporelles :: [ClasseTemporelleR67]   -- ^ Classes temporelles du calendrier
   } deriving (Eq, Show)
 
--- | Grandeur R67
+-- | Grandeur R67 avec ses calendriers tarifaires.
 data GrandeurR67 = GrandeurR67
-  { gr67GrandeurMetier   :: GrandeurMetier
-  , gr67GrandeurPhysique :: Text
-  , gr67Unite            :: Text
-  , gr67Calendriers      :: [CalendrierR67]
+  { gr67GrandeurMetier   :: GrandeurMetier  -- ^ Sens (@CONS@ ou @PROD@)
+  , gr67GrandeurPhysique :: Text            -- ^ Nature physique (texte brut Enedis)
+  , gr67Unite            :: Text            -- ^ Unité (ex. @\"Wh\"@)
+  , gr67Calendriers      :: [CalendrierR67] -- ^ Calendriers tarifaires
   } deriving (Eq, Show)
 
--- | Contexte R67
+-- | Contexte de relevé R67 (étape métier + motif de relevé).
 data ContexteR67 = ContexteR67
-  { ctx67EtapeMetier        :: EtapeMetier
-  , ctx67IdMotifReleve      :: Text
-  , ctx67LibelleMotifReleve :: Text
-  , ctx67Grandeurs          :: [GrandeurR67]
+  { ctx67EtapeMetier        :: EtapeMetier   -- ^ Étape (@FACT@ généralement)
+  , ctx67IdMotifReleve      :: Text          -- ^ Code du motif de relevé (ex. relève périodique)
+  , ctx67LibelleMotifReleve :: Text          -- ^ Libellé du motif de relevé
+  , ctx67Grandeurs          :: [GrandeurR67] -- ^ Grandeurs facturantes
   } deriving (Eq, Show)
 
--- | Mesure R67 pour un PRM
+-- | Mesure R67 pour un PRM (un objet du tableau @mesures@).
 data MesureR67 = MesureR67
-  { mr67IdPrm     :: PrmId
-  , mr67Periode   :: Periode
-  , mr67Contextes :: [ContexteR67]
+  { mr67IdPrm     :: PrmId          -- ^ Identifiant du PRM
+  , mr67Periode   :: Periode        -- ^ Période couverte par le relevé facturant
+  , mr67Contextes :: [ContexteR67]  -- ^ Contextes de relevé
   } deriving (Eq, Show)
 
--- | Flux R67 complet
+-- | Flux R67 complet (ponctuel M023 uniquement).
 data FluxR67 = FluxR67
-  { r67Header  :: Header
-  , r67Mesures :: [MesureR67]
+  { r67Header  :: Header       -- ^ En-tête du fichier
+  , r67Mesures :: [MesureR67]  -- ^ Une entrée par PRM
   } deriving (Show)
 
 -- ---------------------------------------------------------------------------
@@ -112,6 +126,7 @@ instance FromJSON ContexteR67 where
       <*> o .: "libelleMotifReleve"
       <*> o .: "grandeur"
 
+-- | Parse un objet @mesure@ R67 depuis le JSON.
 parseMesureR67 :: Value -> Parser MesureR67
 parseMesureR67 = withObject "MesureR67" $ \o ->
   MesureR67

@@ -1,4 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Storage.Insert
+Description : Insertions SQLite pour tous les types de flux SgeDB
+
+Fournit une fonction d'insertion par type de flux (R63..R67, C68)
+et la fonction 'logIngestion' pour tracer chaque ingestion dans @ingestion_log@.
+
+Stratégies d'insertion :
+
+  * @curve_points@, @daily_energy@, @daily_pmax@ — @INSERT OR REPLACE@ (idempotent)
+  * @index_values@, @billing_measures@, @prm_info@ — @INSERT@ simple (conserve l'historique)
+-}
 module Conso.Fr.Elec.SgeDB.Storage.Insert
   ( insertCurvePoints
   , insertIndexValues
@@ -42,17 +54,18 @@ fmtDay = T.pack . showGregorian
 -- ---------------------------------------------------------------------------
 -- Log d'ingestion
 
+-- | Enregistre une ligne dans @ingestion_log@ et retourne son identifiant.
 logIngestion
-  :: Connection
-  -> CodeFlux
-  -> Text        -- mode publication
-  -> Text        -- id demande
-  -> Maybe Text  -- id publication
-  -> Maybe Int   -- num séquence
-  -> UTCTime     -- date ingestion
-  -> Maybe UTCTime  -- début période
-  -> Maybe UTCTime  -- fin période
-  -> Maybe Text  -- fichier source
+  :: Connection    -- ^ Connexion à la base PRM
+  -> CodeFlux      -- ^ Type de flux ingéré
+  -> Text          -- ^ Mode de publication (@P@, @Q@, @H@ ou @M@)
+  -> Text          -- ^ Identifiant de la demande SGE
+  -> Maybe Text    -- ^ Identifiant de publication (R6X-REC uniquement)
+  -> Maybe Int     -- ^ Numéro de séquence (optionnel)
+  -> UTCTime       -- ^ Horodate d'ingestion (@getCurrentTime@)
+  -> Maybe UTCTime -- ^ Début de la période couverte
+  -> Maybe UTCTime -- ^ Fin de la période couverte
+  -> Maybe Text    -- ^ Nom du fichier source (pour traçabilité)
   -> IO IngestionId
 logIngestion conn cf modePub idDem idPub numSeq dateIng deb fin src = do
   execute conn
@@ -70,6 +83,8 @@ logIngestion conn cf modePub idDem idPub numSeq dateIng deb fin src = do
 -- ---------------------------------------------------------------------------
 -- Insertion courbes de charge (R63)
 
+-- | Insère les points de courbe de charge d'une 'MesureR63' dans @curve_points@.
+-- Utilise @INSERT OR REPLACE@ : idempotent sur la clé @(etape_metier, grandeur_metier, grandeur_physique, horodate, pas)@.
 insertCurvePoints :: Connection -> IngestionId -> MesureR63 -> IO ()
 insertCurvePoints conn ingId m =
   mapM_ (insertGrandeur (etapeMetierToText (mr63EtapeMetier m))) (mr63Grandeurs m)
@@ -98,6 +113,9 @@ insertCurvePoints conn ingId m =
 -- ---------------------------------------------------------------------------
 -- Insertion index (R64) — aplatissement de la hiérarchie
 
+-- | Insère les valeurs d'index d'une 'MesureR64' dans @index_values@.
+-- Aplatit la hiérarchie @contexte → grandeur → calendrier → classeTemporelle → valeur@.
+-- Utilise @INSERT@ simple (pas d'idempotence car plusieurs relevés peuvent coexister).
 insertIndexValues :: Connection -> IngestionId -> MesureR64 -> IO ()
 insertIndexValues conn ingId m =
   mapM_ insertCtx (mr64Contextes m)
@@ -169,6 +187,8 @@ insertIndexValues conn ingId m =
 -- ---------------------------------------------------------------------------
 -- Insertion énergies quotidiennes (R65)
 
+-- | Insère les énergies journalières d'une 'MesureR65' dans @daily_energy@.
+-- Utilise @INSERT OR REPLACE@ : idempotent sur @(grandeur_metier, grandeur_physique, date_mesure)@.
 insertDailyEnergy :: Connection -> IngestionId -> MesureR65 -> IO ()
 insertDailyEnergy conn ingId m =
   mapM_ insertGrandeur (mr65Grandeurs m)
@@ -193,6 +213,8 @@ insertDailyEnergy conn ingId m =
 -- ---------------------------------------------------------------------------
 -- Insertion Pmax quotidiennes (R66)
 
+-- | Insère les Pmax journalières d'une 'MesureR66' dans @daily_pmax@.
+-- Utilise @INSERT OR REPLACE@ : idempotent sur @(grandeur_metier, grandeur_physique, horodate)@.
 insertDailyPmax :: Connection -> IngestionId -> MesureR66 -> IO ()
 insertDailyPmax conn ingId m =
   mapM_ insertGrandeur (mr66Grandeurs m)
@@ -216,6 +238,9 @@ insertDailyPmax conn ingId m =
 -- ---------------------------------------------------------------------------
 -- Insertion mesures facturantes (R67) — INSERT sans REPLACE pour conserver les statuts
 
+-- | Insère les mesures facturantes d'une 'MesureR67' dans @billing_measures@.
+-- Utilise @INSERT@ simple (sans @REPLACE@) pour conserver plusieurs relevés
+-- avec des statuts différents sur la même période.
 insertBillingMeasures :: Connection -> IngestionId -> MesureR67 -> IO ()
 insertBillingMeasures conn ingId m =
   mapM_ insertCtx (mr67Contextes m)
@@ -264,6 +289,9 @@ insertBillingMeasures conn ingId m =
 -- ---------------------------------------------------------------------------
 -- Insertion informations techniques et contractuelles (C68)
 
+-- | Insère les informations techniques d'un C68 dans @prm_info@.
+-- Le JSON brut est sérialisé en texte. Utilise @INSERT@ simple pour conserver
+-- l'historique des changements contractuels (plusieurs lignes possibles par PRM).
 insertPrmInfo :: Connection -> IngestionId -> UTCTime -> InfoTechniqueContractuelle -> IO ()
 insertPrmInfo conn ingId dateIng itc = do
   let rawJsonText = TE.decodeUtf8 . BL.toStrict . encode $ c68RawJson itc

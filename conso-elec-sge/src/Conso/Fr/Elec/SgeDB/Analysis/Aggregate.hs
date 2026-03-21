@@ -1,4 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module      : Conso.Fr.Elec.SgeDB.Analysis.Aggregate
+Description : Agrégation temporelle des mesures SgeDB (par jour, semaine, mois, an)
+
+Fournit 'aggregateCurve' et 'aggregateEnergy' pour calculer somme, moyenne,
+maximum et nombre de points par période d'agrégation.
+
+Le label de la période dans 'AggregateRow' a le format :
+
+  * 'ParJour'    — @YYYY-MM-DD@
+  * 'ParSemaine' — @YYYY-Www@ (semaine ISO)
+  * 'ParMois'    — @YYYY-MM@
+  * 'ParAn'      — @YYYY@
+-}
 module Conso.Fr.Elec.SgeDB.Analysis.Aggregate
   ( AggregationPeriod(..)
   , AggregateRow(..)
@@ -9,30 +23,35 @@ module Conso.Fr.Elec.SgeDB.Analysis.Aggregate
 import           Database.SQLite.Simple
 import           Data.Text              (Text)
 
--- | Granularité d'agrégation temporelle
-data AggregationPeriod = ParJour | ParSemaine | ParMois | ParAn
+-- | Granularité d'agrégation temporelle.
+data AggregationPeriod
+  = ParJour    -- ^ Agrégation par jour — label @YYYY-MM-DD@
+  | ParSemaine -- ^ Agrégation par semaine ISO — label @YYYY-Www@
+  | ParMois    -- ^ Agrégation par mois — label @YYYY-MM@
+  | ParAn      -- ^ Agrégation par année — label @YYYY@
   deriving (Eq, Show)
 
--- | Résultat d'agrégation
+-- | Résultat d'agrégation pour une période.
 data AggregateRow = AggregateRow
-  { agPeriode :: Text    -- label de la période (YYYY-MM-DD, YYYY-Www, YYYY-MM, YYYY)
-  , agSomme   :: Double
-  , agMoyenne :: Double
-  , agMax     :: Double
-  , agNbPoints :: Int
+  { agPeriode  :: Text   -- ^ Label de la période (format dépend de 'AggregationPeriod')
+  , agSomme    :: Double -- ^ Somme des valeurs sur la période
+  , agMoyenne  :: Double -- ^ Moyenne des valeurs
+  , agMax      :: Double -- ^ Maximum des valeurs
+  , agNbPoints :: Int    -- ^ Nombre de points inclus dans l'agrégat
   } deriving (Eq, Show)
 
 instance FromRow AggregateRow where
   fromRow = AggregateRow <$> field <*> field <*> field <*> field <*> field
 
--- | Agrège les courbes de charge sur une période
+-- | Agrège les courbes de charge (@curve_points@) sur une période.
 aggregateCurve
   :: Connection
-  -> Text            -- grandeur_metier
-  -> Text            -- grandeur_physique
-  -> Text            -- etape_metier
-  -> AggregationPeriod
-  -> Text -> Text    -- horodate début/fin
+  -> Text              -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
+  -> Text              -- ^ @grandeur_physique@ (@\"PA\"@, @\"PRI\"@, …)
+  -> Text              -- ^ @etape_metier@ (@\"BRUT\"@ ou @\"BEST\"@)
+  -> AggregationPeriod -- ^ Granularité d'agrégation
+  -> Text              -- ^ Horodate début (ISO 8601)
+  -> Text              -- ^ Horodate fin (ISO 8601)
   -> IO [AggregateRow]
 aggregateCurve conn gm gp em period deb fin =
   query conn
@@ -49,13 +68,14 @@ aggregateCurve conn gm gp em period deb fin =
       \ GROUP BY periode ORDER BY periode")
     (gm, gp, em, deb, fin)
 
--- | Agrège les énergies quotidiennes sur une période
+-- | Agrège les énergies quotidiennes (@daily_energy@) sur une période.
 aggregateEnergy
   :: Connection
-  -> Text
-  -> Text
-  -> AggregationPeriod
-  -> Text -> Text
+  -> Text              -- ^ @grandeur_metier@
+  -> Text              -- ^ @grandeur_physique@ (@\"EA\"@, @\"ERI\"@, @\"ERC\"@)
+  -> AggregationPeriod -- ^ Granularité d'agrégation
+  -> Text              -- ^ Date début (@YYYY-MM-DD@)
+  -> Text              -- ^ Date fin (@YYYY-MM-DD@)
   -> IO [AggregateRow]
 aggregateEnergy conn gm gp period deb fin =
   query conn
