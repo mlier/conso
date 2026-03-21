@@ -270,7 +270,7 @@ comm =
             (info
                 ( Mesures <$> mesuresParser <**> helper )
                 (  fullDesc
-                <> progDesc "ConsulterMesuresV11 : Avoir des mesures mensuelles" 
+                <> progDesc "ConsulterMesuresV11 : Avoir des mesures mensuelles"
                 <> footerDoc (Just aideMesuresDetaillee)
                 )
             )
@@ -437,7 +437,7 @@ aideMesuresDetailDetaillee = vsep
             , pretty ("- courbe de puissance active au pas enregistré." :: String)
             ]
         , pretty ("" :: String)
-        
+
         -- --- SEGMENT P4 ---
         , bullet "Pour les points P4 Linky ouverts aux services (niveau d’ouverture = 2) :"
         , indent 4 $ vsep
@@ -447,7 +447,7 @@ aideMesuresDetailDetaillee = vsep
             , pretty ("- courbe de charge au pas enregistré." :: String)
             ]
         , pretty ("" :: String)
-        
+
         -- --- SEGMENT C1-C4 ---
         , bullet "Pour les points C1-C4 et P1-P3 (selon les mesures disponibles pour chaque point) :"
         , indent 4 $ vsep
@@ -512,15 +512,15 @@ aideServicesDetaillee = vsep
                      , "Il peut faire cette demande sur un point C5 (ancienne ou nouvelle chaîne) ou sur un point C1-C4"
                      , "ou P1-P3, qu’il soit titulaire du point ou non."
                      ]
-    , pretty ("" :: String) 
+    , pretty ("" :: String)
     , para $ unwords [ "Ce service retourne les informations des services de collecte ou transmission récurrente de"
                      , "données de mesures que l’acteur de marché demandeur a lui-même souscrits pour ce point, qu’ils"
-                     , "soient en cours de demande, actifs ou terminés." 
+                     , "soient en cours de demande, actifs ou terminés."
                      ]
     , pretty ("" :: String)
     , para $ unwords [ "Ce service retourne aussi pour le segment C5 le service souscrit d’opposition à l’enregistrement"
                      , "de la courbe de charge s’il a été demandé (visible pour tous les acteurs de marché, que ce soit"
-                     , "le fournisseur titulaire ou non)." 
+                     , "le fournisseur titulaire ou non)."
                      ]
     ]
 
@@ -561,7 +561,7 @@ aideArretDetaillee = vsep
                      ]
     , pretty ("" :: String)
     , para $ unwords [ "Le demandeur peut demander l’arrêt d’un service souscrit sur un point C5 ou P4"
-                     , "ou sur un point C1-C4." 
+                     , "ou sur un point C1-C4."
                      ]
     , pretty ("" :: String)
     , para $ unwords [ "L’objet de la demande (valeur de la balise objetCode dans donneesGenerales) correspondant"
@@ -637,7 +637,7 @@ mesuresDetailComm = subparser
                <> progDesc "Obtenir l'énergie globale quotidienne (EA, ERC, ERI)"
                <> footerDoc (Just aideEnergieDetaillee)
                )
-        )  
+        )
     <> command "index"
         ( info ( MdIndex <$> mdCommonParser "EA|ER|ERC|ERI|DD|DE|DQ|PMA|TF|TOUT" <**> helper )
                (  fullDesc
@@ -697,7 +697,7 @@ aidePmaxDetaillee = vsep
         , bullet "TOUT : récupération de l'ensemble (équivalent monophasé + Pmax par phase)."
         ]
     ]
- 
+
 aideEnergieDetaillee :: Doc
 aideEnergieDetaillee = vsep
     [ pretty ("" :: String)
@@ -762,7 +762,7 @@ aideIndexDetaillee = vsep
         , row3 10 "TOUT" "Ensemble des données disponibles" ""
         ]
     ]
- 
+
 rechercheParser :: Parser RechercheOptions
 rechercheParser = RechercheOptions
     <$> optional (strOption (long "escalier"    <> metavar "TEXTE"          <> help "Escalier/étage/appartement"))
@@ -782,7 +782,7 @@ m023Parser :: Parser M023Command
 m023Parser = subparser
     (  command "fines"
         ( info ( M023Fines <$> mfiParser <**> helper )
-               (    fullDesc 
+               (    fullDesc
                  <> progDesc "DemandePublicationMesuresFinesM23V10 : Flux R63–R66 pour obtenir des mesures fines."
                  <> footerDoc (Just aideFinesVerbatim)
                )
@@ -811,7 +811,7 @@ aideFinesVerbatim = vsep
                      , "à une maille plus fine (infra-journalière). Chaque point de courbe de charge correspond"
                      , "à la puissance moyenne constatée sur un pas de temps précis. Le service restitue des"
                      , "courbes de charge qui peuvent être :" ]
-    , indent 2 $ vsep 
+    , indent 2 $ vsep
         [ pretty ("— En puissance active, dont l’unité est le Watt (W)." :: String)
         , pretty ("— En puissance réactive inductive ou capacitive, dont l’unité est le VoltAmpère Réactif (VAr)" :: String)
         , pretty ("— En tension, dont l’unité est le Volt (V). La courbe de tension est la seule qui soit indépendante de la grandeur métier (CONS/PROD)." :: String)
@@ -819,7 +819,7 @@ aideFinesVerbatim = vsep
     , para "Profondeur maximale de l’historique : 24 derniers mois par rapport à la date du jour, limités à la dernière mise en service"
     , para "Nombre de PRM max par demande JSON : 1500"
     , pretty ("" :: String)
-    
+
     -- BLOC R64
     , para $ unwords [ "Flux R64 INDEX : Sur Linky, Les index totalisateurs permettent de comptabiliser l’énergie"
                      , "durant l’intégralité de la période de fonctionnement du compteur. À l’inverse, les calendriers"
@@ -895,10 +895,10 @@ row3 :: Int -> String -> String -> String -> Doc
 row3 n c1 c2 c3 = fill n (pretty c1) <> fill 30 (pretty c2) <> pretty c3
 
 row4 :: Int -> String -> String -> String -> String -> Doc
-row4 n c1 c2 c3 c4 = 
-    fill n (pretty c1) <> 
-    fill 10 (pretty c2) <> 
-    fill 12 (pretty c3) <> 
+row4 n c1 c2 c3 c4 =
+    fill n (pretty c1) <>
+    fill 10 (pretty c2) <>
+    fill 12 (pretty c3) <>
     pretty c4
 
 mfiParser :: Parser MFIOptions
@@ -1284,7 +1284,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
         myType <- ACCES.initType
                     (accesPoint o)
                     (acesDuree o)
-                    accordType
+                    (Just accordType)
                     (accesType o)
                     (toSensAcces (accesSens o))
         if xml
@@ -1297,11 +1297,11 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
         let accordType = case acsAccesAccord o of
                 AccesPhysique nom -> ACS.AccordPersonnePhysiqueNom nom
                 AccesMorale   den -> ACS.AccordPersonneMoraleDenominationSociale den
-        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) accordType (acsAccesType o)
+        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) (Just accordType) (acsAccesType o) Nothing
         if xml then ACS.xmlRequest myType >>= (putStrLn . prettyXml)
         else ACS.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderServicesAccesDonneesResponseType
-            if raw then pPrint rep' else pPrint rep'
+            pPrint rep'
 
     AcsArret o -> do
         myType <- AARR.initType (acsArretPoint o) (toSensAARR (acsArretSens o)) (acsArretServices o)
@@ -1311,7 +1311,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
             pPrint rep'
 
     AcsModifier o -> do
-        myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o)
+        myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o) [] []
         if xml then MOD.xmlRequest myType >>= (putStrLn . prettyXml)
         else MOD.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType
