@@ -21,14 +21,13 @@ module Conso.Fr.Elec.SgeDB.Export.Consolidate
   ) where
 
 import           Database.SQLite.Simple
-import           Database.SQLite.Simple.FromRow (FromRow)
-import           Data.Text              (Text)
 import qualified Data.Text              as T
+import           Data.Maybe             (catMaybes)
 import           System.FilePath        ((</>), takeBaseName)
-import           System.Directory       (doesFileExist, listDirectory)
+import           System.Directory       (listDirectory)
 import           Control.Exception      (try, SomeException)
 import           Conso.Fr.Elec.SgeDB.Types.Common  (PrmId(..))
-import           Conso.Fr.Elec.SgeDB.Storage.Connection (prmDbPath, openPrmDb)
+import           Conso.Fr.Elec.SgeDB.Storage.Connection (prmDbPath)
 
 -- | Attache plusieurs bases PRM à une connexion @:memory:@ et exécute une requête.
 -- Les bases sont attachées sous des alias @prm0@, @prm1@, …
@@ -69,7 +68,7 @@ consolidateAllPrm
 consolidateAllPrm baseDir extractor = do
   dbPaths <- listAllPrmDbs baseDir
   results <- mapM processOne dbPaths
-  return [r | Just r <- results]
+  return (catMaybes results)
   where
     processOne (prm, path) = do
       result <- try $ do
@@ -89,11 +88,11 @@ consolidateAllPrm baseDir extractor = do
 listAllPrmDbs :: FilePath -> IO [(PrmId, FilePath)]
 listAllPrmDbs baseDir = do
   lvl1 <- safeListDir baseDir
-  fmap concat $ mapM (\d1 -> do
+  concat <$> mapM (\d1 -> do
     lvl2 <- safeListDir (baseDir </> d1)
-    fmap concat $ mapM (\d2 -> do
+    concat <$> mapM (\d2 -> do
       lvl3 <- safeListDir (baseDir </> d1 </> d2)
-      fmap concat $ mapM (\d3 -> do
+      concat <$> mapM (\d3 -> do
         files <- safeListDir (baseDir </> d1 </> d2 </> d3)
         return [ (PrmId (T.pack (takeBaseName f)),
                   baseDir </> d1 </> d2 </> d3 </> f)

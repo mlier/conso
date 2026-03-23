@@ -18,7 +18,6 @@ via @exportPrmInfoJSON@.
 module Conso.Fr.Elec.SgeDB.Types.C68 where
 
 import           Data.Text           (Text)
-import qualified Data.Text           as T
 import           Data.Aeson
 import           Data.Aeson.Types    (Parser)
 import qualified Data.Aeson.Key      as Key
@@ -71,7 +70,7 @@ firstSitContractuelleNested :: Object -> [Text] -> Parser (Maybe Text)
 firstSitContractuelleNested o path = do
   sits <- o .:? "situationsContractuelles" :: Parser (Maybe [Value])
   case sits of
-    Just (x:_) -> withObject "SitContractuelle" (\s -> lookupNested s path) x
+    Just (x:_) -> withObject "SitContractuelle" (`lookupNested` path) x
     _          -> pure Nothing
 
 -- | Extrait un champ de situationAlimentation

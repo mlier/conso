@@ -26,11 +26,8 @@ module Conso.Fr.Elec.SgeDB.Storage.Query
   ) where
 
 import           Database.SQLite.Simple
-import           Database.SQLite.Simple.FromRow
 import           Data.Text                      (Text)
 import qualified Data.Text                      as T
-import           Data.Maybe                     (maybeToList)
-import           Conso.Fr.Elec.SgeDB.Types.Common
 
 -- ---------------------------------------------------------------------------
 -- Types de résultat aplatis (lignes de la base)

@@ -82,8 +82,7 @@ instance FromJSON GrandeurR66 where
 -- | Parse un objet @mesure@ R66 depuis le JSON.
 parseMesureR66 :: Value -> Parser MesureR66
 parseMesureR66 = withObject "MesureR66" $ \o ->
-  MesureR66
-    <$> (PrmId <$> o .: "idPrm")
+  (MesureR66 . PrmId <$> (o .: "idPrm"))
     <*> o .: "etapeMetier"
     <*> parsePeriode o
     <*> o .: "modeCalcul"

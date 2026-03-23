@@ -19,11 +19,9 @@ module Conso.Fr.Elec.SgeDB.Ingestion.Batch
 
 import           Database.SQLite.Simple
 import           Data.ByteString        (ByteString)
-import qualified Data.ByteString        as BS
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Time              (getCurrentTime, UTCTime)
-import           Data.Time.Format       (formatTime, defaultTimeLocale)
 import           Control.Exception      (try, SomeException)
 import           Conso.Fr.Elec.SgeDB.Types.Common
 import           Conso.Fr.Elec.SgeDB.Types.Header
@@ -65,7 +63,7 @@ ingestFlux :: FilePath -> CodeFlux -> Maybe Text -> UTCTime -> FluxRxx -> IO [In
 ingestFlux baseDir cf mSrc now (FluxCourbeCharge f) =
   mapM (ingestMesure baseDir cf mSrc now f) (r63Mesures f)
   where
-    ingestMesure bd _cf src t flux m = do
+    ingestMesure bd _cf src _ flux m = do
       let prm = mr63IdPrm m
           hdr = r63Header flux
       doInsert bd prm $ \conn -> do
