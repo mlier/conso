@@ -1,6 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10
+Description : Webservice M023 CommandeHistoriqueDonneesMesuresFines v1.0 (Enedis.SGE.GUI.0502 v1.4.0)
 
+Demande asynchrone de publication des mesures fines pour un ou plusieurs PRM.
+Les données sont publiées via les flux M023 :
+
+  * Flux R63 (@COURBES@)  — courbes de charge
+  * Flux R64 (@INDEX@)    — index quotidiens
+  * Flux R65 (@ENERGIE@)  — énergies globales quotidiennes
+  * Flux R66 (@PMAX@)     — puissances maximales quotidiennes
+
+La réponse est un identifiant d'affaire (@AffaireId@) ; les données sont
+publiées ultérieurement dans les fichiers M023.
+-}
 module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -125,11 +139,13 @@ initType :: [String]                -- ^ myPointsId : liste des identifiants PRM
          -> IO DemandePublicationMesuresFines
 initType = initType_ True
 
-initTypeTest :: [String] -> MesuresTypeCode -> Maybe MesuresCorrigees -> String -> String 
+-- | Comme 'initType' mais sur le serveur d'homologation.
+initTypeTest :: [String] -> MesuresTypeCode -> Maybe MesuresCorrigees -> String -> String
           -> Sens -> CadreAcces -> IO DemandePublicationMesuresFines
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO()
 myrequest = do 
     env <- getEnv

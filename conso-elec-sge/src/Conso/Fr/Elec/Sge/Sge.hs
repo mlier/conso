@@ -1,5 +1,21 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, MultiParamTypeClasses, AllowAmbiguousTypes #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.Sge
+Description : Infrastructure SOAP commune à tous les webservices SGE Enedis B2B
 
+Fournit :
+
+  * Les types de configuration 'SgeEnv', 'Sge' et 'Test' lus depuis
+    @~\/.conso\/conso-elec-sge-env.yaml@
+  * Les typeclasses 'RequestType' et 'ResponseType' qui relient chaque
+    webservice à son URL, sa SOAPAction et son parseur XML
+  * Les fonctions de haut niveau 'wsRequest' \/ 'wsRequestTest' pour envoyer
+    une requête et obtenir une réponse typée, et 'xmlRequest' \/ 'xmlRequestTest'
+    pour obtenir le XML brut
+
+Le transport utilise HTTPS avec authentification mutuelle TLS (certificat client)
+et authentification HTTP Basic, conformément aux exigences du portail SGE.
+-}
 module Conso.Fr.Elec.Sge.Sge  where
 
 import           Control.Monad ( (>=>) )
@@ -50,27 +66,31 @@ import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                       elementResultat )
 
 
+-- | Environnement SGE complet lu depuis @~\/.conso\/conso-elec-sge-env.yaml@.
+-- Contient les paramètres de connexion production, homologation et les données de test.
 data SgeEnv =
-    SgeEnv { production :: Sge
-        , homologation :: Sge
-        , test :: Test
+    SgeEnv { production  :: Sge  -- ^ Connexion vers le serveur de production SGE
+           , homologation :: Sge  -- ^ Connexion vers le serveur d'homologation SGE
+           , test         :: Test -- ^ Données de test (PRM et informations client)
     } deriving (Show,Generic)
 
+-- | Paramètres de connexion à un environnement SGE (production ou homologation).
 data Sge =
-    Sge { userB2b :: Text
-        , password :: Text
-        , contractId :: Text
-        , key :: Text
-        , cert :: Text
-        , url :: Text
+    Sge { userB2b     :: Text -- ^ Identifiant utilisateur B2B (adresse email)
+        , password    :: Text -- ^ Mot de passe B2B
+        , contractId  :: Text -- ^ Identifiant de contrat SGE
+        , key         :: Text -- ^ Chemin relatif (depuis @~\/.conso\/@) vers la clé privée TLS
+        , cert        :: Text -- ^ Chemin relatif (depuis @~\/.conso\/@) vers le certificat client TLS
+        , url         :: Text -- ^ URL de base du portail SGE (ex. @https:\/\/sge-portail.enedis.fr@)
     } deriving (Show,Generic)
 
+-- | Données de test PRM et informations client pour le serveur d'homologation.
 data Test =
-    Test { pointId :: Text
-        , nomClientFinalOuDenominationSociale :: Text
-        , numeroEtNomVoie :: Text
-        , codePostal :: Text
-        , codeInseeCommune :: Text
+    Test { pointId                            :: Text -- ^ Identifiant PRM de test (14 chiffres)
+         , nomClientFinalOuDenominationSociale :: Text -- ^ Nom ou dénomination sociale du client de test
+         , numeroEtNomVoie                     :: Text -- ^ Adresse postale (numéro et nom de voie)
+         , codePostal                          :: Text -- ^ Code postal
+         , codeInseeCommune                    :: Text -- ^ Code INSEE de la commune
     } deriving (Show,Generic)
 
 instance FromJSON SgeEnv
@@ -83,20 +103,24 @@ instance FromJSON Test
 instance ToJSON Test
 
 
+-- | Configuration de la requête SOAP associée à un type de webservice.
 data ConfigRequest a = ConfigRequest{
-          urlSge :: String
-        , soapAction :: String
-        , elementToXMLRequest :: a -> [Content ()]
+          urlSge               :: String         -- ^ Chemin relatif de l'URL du webservice (ex. @\/ConsultationMesures\/v1.1@)
+        , soapAction           :: String         -- ^ Valeur de l'en-tête HTTP SOAPAction
+        , elementToXMLRequest  :: a -> [Content ()] -- ^ Sérialiseur XML de la requête
 }
 
+-- | Configuration du parseur de réponse SOAP associée à un type de webservice.
 data ConfigResponse b = ConfigResponse{
-          xmlTag :: String
-        , elementResponse :: XMLParser b
+          xmlTag          :: String       -- ^ Tag XML racine de la réponse à extraire
+        , elementResponse :: XMLParser b  -- ^ Parseur HaXml pour désérialiser la réponse
 }
 
+-- | Relie un type de requête à sa 'ConfigRequest' (URL, SOAPAction, sérialiseur XML).
 class RequestType a where
     configReq :: ConfigRequest a
 
+-- | Relie un type de réponse à sa 'ConfigResponse' (tag XML, parseur HaXml).
 class ResponseType b where
     configResp :: ConfigResponse b
 
@@ -115,19 +139,22 @@ xmlRequest :: (RequestType a, Show a)
            -> IO String -- ^ Renvoit la réponse en XML
 xmlRequest = sgeXmlRequest True
 
--- | wsRequestTest est utilisé pour faire des tests sur le serveur d'homologation
+-- | Comme 'wsRequest' mais sur le serveur d'homologation.
 wsRequestTest :: (RequestType a, Show a, ResponseType b, Show b) => a -> IO ( Either (String, String) b )
 wsRequestTest = sgeRequest False
 
--- | xmlRequestTest est utilisé pour faire des tests sur le serveur d'homologation
+-- | Comme 'xmlRequest' mais sur le serveur d'homologation.
 xmlRequestTest :: (RequestType a, Show a) => a -> IO String
 xmlRequestTest = sgeXmlRequest False
 
 
+-- | Lit l'environnement SGE complet depuis @~\/.conso\/conso-elec-sge-env.yaml@.
 getEnv :: IO SgeEnv
 getEnv = readEnv
 
-getEnvSge :: Bool -> IO Sge
+-- | Lit les paramètres de connexion pour l'environnement souhaité.
+getEnvSge :: Bool  -- ^ @True@ pour la production, @False@ pour l'homologation
+          -> IO Sge
 getEnvSge prod = do
             env <- readEnv
             if prod then

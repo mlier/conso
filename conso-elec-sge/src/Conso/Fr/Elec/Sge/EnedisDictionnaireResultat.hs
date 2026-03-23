@@ -1,6 +1,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
+Description : Type résultat SGE — généré depuis le WSDL Enedis
 
+Dictionnaire du type résultat commun à tous les webservices SGE.
+Le code @SGT200@ indique le succès ; tout autre code est retourné
+comme @Left (code, libellé)@ par 'Conso.Fr.Elec.Sge.Sge.wsRequest'.
+
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
   ( module Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
   ) where

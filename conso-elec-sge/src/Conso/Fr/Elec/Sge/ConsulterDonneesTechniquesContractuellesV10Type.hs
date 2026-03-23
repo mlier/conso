@@ -1,5 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
+Description : Types Haskell générés depuis le WSDL ConsultationDonneesTechniquesContractuelles v1.0
+
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
   ( module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10Type
   ) where

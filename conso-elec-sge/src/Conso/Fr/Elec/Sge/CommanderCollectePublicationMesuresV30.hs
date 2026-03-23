@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30
+Description : Webservice CommandeCollectePublicationMesures v3.0 — OBSOLÈTE depuis SGE v26.1
 
+@deprecated@
+
+Ce webservice a été supprimé en SGE v26.1 (Enedis.SGE.GUI.0469).
+Utiliser 'CommanderAccesDonneesMesuresV10' à la place.
+
+Conservé pour compatibilité avec les environnements antérieurs à v26.1.
+-}
 module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where

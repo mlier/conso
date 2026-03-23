@@ -1,7 +1,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
+Description : Types Haskell générés depuis le WSDL RechercheServicesAccesDonnees v1.0
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
   ( module Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
   ) where

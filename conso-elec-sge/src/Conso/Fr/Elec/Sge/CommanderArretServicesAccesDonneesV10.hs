@@ -1,6 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10
+Description : Webservice B2B CommandeArretServicesAccesDonnees v1.0 (Enedis.SGE.GUI.0531 v1.1.0)
 
+Permet d'arrêter un ou plusieurs services d'accès aux données (SAD) actifs sur un PRM.
+Les identifiants de services (@serviceIds@) sont obtenus via
+'RechercherServicesAccesDonneesV10'.
+-}
 module Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, Sens(..)
 ) where
@@ -78,10 +85,12 @@ initType :: String    -- ^ myPointId : identifiant PRM du point sur lequel porte
          -> IO CommanderArretServicesAccesDonneesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Sens -> [String] -> IO CommanderArretServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO ()
 myrequest = do
     env <- getEnv
@@ -92,7 +101,8 @@ myrequest = do
     rep <- wsRequest myType :: IO (Either (String, String) CommanderArretServicesAccesDonneesResponseType)
     pPrint rep
 
+-- | Sens de circulation de l'énergie par rapport au réseau Enedis.
 data Sens
-    = SensSOUTIRAGE
-    | SensINJECTION
+    = SensSOUTIRAGE  -- ^ Énergie soutirée du réseau (consommation)
+    | SensINJECTION  -- ^ Énergie injectée dans le réseau (production)
     deriving (Eq,Show,Enum)

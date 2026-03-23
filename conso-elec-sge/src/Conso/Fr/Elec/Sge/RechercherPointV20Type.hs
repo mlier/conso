@@ -1,6 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.RechercherPointV20Type
+Description : Types Haskell générés depuis le WSDL RecherchePoint v2.0
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.RechercherPointV20Type
   ( module Conso.Fr.Elec.Sge.RechercherPointV20Type
   ) where

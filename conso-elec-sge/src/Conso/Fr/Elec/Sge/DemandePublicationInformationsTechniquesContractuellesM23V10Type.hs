@@ -2,7 +2,13 @@
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
+Description : Types Haskell générés depuis le WSDL CommandeInformationsTechniquesEtContractuelles v1.0
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
   ( module Conso.Fr.Elec.Sge.DemandePublicationInformationsTechniquesContractuellesM23V10Type
   ) where

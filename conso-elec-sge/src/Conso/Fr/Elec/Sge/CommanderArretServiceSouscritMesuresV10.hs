@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10
+Description : Webservice CommandeArretServiceSouscritMesures v1.0 — OBSOLÈTE depuis SGE v26.1
 
+@deprecated@
+
+Ce webservice a été supprimé en SGE v26.1 (Enedis.SGE.GUI.0474).
+Utiliser 'CommanderArretServicesAccesDonneesV10' à la place.
+
+Conservé pour compatibilité avec les environnements antérieurs à v26.1.
+-}
 module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where

@@ -1,6 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10
+Description : Webservice B2B CommandeRenouvellementServicesAccesDonnees v1.0 (Enedis.SGE.GUI.0531 v1.1.0)
 
+Permet de renouveler un ou plusieurs services d'accès aux données (SAD) existants
+sur un PRM, en prolongeant leur durée à partir de la date courante.
+Les identifiants de services (@serviceIds@) sont obtenus via
+'RechercherServicesAccesDonneesV10'.
+-}
 module Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where
@@ -119,10 +127,12 @@ initType :: String              -- ^ myPointId : identifiant PRM du point sur le
          -> IO RenouvelerServicesAccesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Sens -> AccordPersonneType -> [String] -> IO RenouvelerServicesAccesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO ()
 myrequest = do
     env <- getEnv
@@ -134,12 +144,14 @@ myrequest = do
     rep <- wsRequest myType :: IO (Either (String, String) RenouvelerServicesAccesResponseType)
     pPrint rep
 
+-- | Sens de circulation de l'énergie par rapport au réseau Enedis.
 data Sens
-    = SensSOUTIRAGE
-    | SensINJECTION
+    = SensSOUTIRAGE  -- ^ Énergie soutirée du réseau (consommation)
+    | SensINJECTION  -- ^ Énergie injectée dans le réseau (production)
     deriving (Eq,Show,Enum)
 
+-- | Identité de la personne ayant donné son accord pour l'accès aux données.
 data AccordPersonneType
-    = AccordPersonnePhysiqueNom String
-    | AccordPersonneMoraleDenominationSociale String
+    = AccordPersonnePhysiqueNom String                 -- ^ Nom de la personne physique ayant donné accord
+    | AccordPersonneMoraleDenominationSociale String   -- ^ Dénomination sociale de la personne morale
     deriving (Eq,Show)

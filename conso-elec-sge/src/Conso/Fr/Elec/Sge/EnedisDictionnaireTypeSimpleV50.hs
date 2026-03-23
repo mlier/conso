@@ -1,7 +1,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+Description : Types XSD simples Enedis v5.0 — généré depuis le dictionnaire WSDL
 
+Dictionnaire des types primitifs utilisés dans tous les webservices SGE :
+@PointIdType@ (PRM 14 chiffres), @AdresseEmailType@ (login B2B),
+@ContratIdType@, @BooleenType@, @DateType@, etc.
+
+Généré automatiquement depuis le dictionnaire WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
   ( module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
   ) where

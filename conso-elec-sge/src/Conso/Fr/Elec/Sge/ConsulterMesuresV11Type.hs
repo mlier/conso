@@ -1,6 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
+Description : Types Haskell générés depuis le WSDL ConsultationMesures v1.1
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
   ( module Conso.Fr.Elec.Sge.ConsulterMesuresV11Type
   ) where

@@ -1,7 +1,16 @@
 {-# LANGUAGE OverloadedStrings, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE BlockArguments #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
+Description : Webservice B2B ConsultationDonneesTechniquesContractuelles v1.0 (Enedis.SGE.GUI.0464 v1.4.0)
 
+Permet de consulter les données techniques et contractuelles d'un point de livraison
+(PRM) : puissance souscrite, tarif, segment, adresse, etc.
+
+Disponible pour tous les segments C1–C5 et P1–P4.
+L'accord du client (@autorisationClient@) est requis pour les Tiers.
+-}
 module Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10 (
    initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -66,10 +75,12 @@ initType :: String    -- ^ myPointId : point de référence sur lequel on souhai
          -> IO ConsulterDonneesTechniquesContractuellesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Bool -> IO ConsulterDonneesTechniquesContractuellesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: Maybe String -> IO()
 myrequest mPointId = do
     env <- getEnv

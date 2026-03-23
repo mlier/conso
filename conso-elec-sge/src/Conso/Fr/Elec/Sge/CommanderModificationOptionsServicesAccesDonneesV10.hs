@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10
+Description : Webservice B2B CommandeModificationOptionsServicesAccesDonnees v1.0 (Enedis.SGE.GUI.0531 v1.1.0)
 
+Permet d'ajouter ou de supprimer des options de publication sur un service d'accès
+aux données (SAD) existant.
+
+Chaque option est un couple @(mesuresCorrigees, periodiciteTransmission)@ où
+@periodiciteTransmission@ vaut @P1D@ (quotidien), @P7D@ (hebdomadaire)
+ou @P1M@ (mensuel).
+-}
 module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, Sens(..)
 ) where
@@ -117,11 +127,13 @@ initType :: String               -- ^ myPointId : identifiant PRM du point sur l
          -> IO CommanderModificationOptionsServicesAccesDonneesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Sens -> String -> [(Maybe Bool, String)] -> [(Maybe Bool, String)]
              -> IO CommanderModificationOptionsServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO ()
 myrequest = do
     env <- getEnv
@@ -132,7 +144,8 @@ myrequest = do
     rep <- wsRequest myType :: IO (Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType)
     pPrint rep
 
+-- | Sens de circulation de l'énergie par rapport au réseau Enedis.
 data Sens
-    = SensSOUTIRAGE
-    | SensINJECTION
+    = SensSOUTIRAGE  -- ^ Énergie soutirée du réseau (consommation)
+    | SensINJECTION  -- ^ Énergie injectée dans le réseau (production)
     deriving (Eq,Show,Enum)

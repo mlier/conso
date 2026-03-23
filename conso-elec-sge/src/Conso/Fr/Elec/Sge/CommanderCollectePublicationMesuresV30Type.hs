@@ -1,6 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
+Description : Types Haskell générés depuis le WSDL CommandeCollectePublicationMesures v3.0 (OBSOLÈTE)
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
   ( module Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type
   ) where

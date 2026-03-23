@@ -1,5 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
+Description : Types XSD complexes Enedis v5.0 — généré depuis le dictionnaire WSDL
+
+Dictionnaire des types complexes utilisés dans les webservices SGE :
+structures d'adresse, de personnes, de contrats, etc.
+
+Généré automatiquement depuis le dictionnaire WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
   ( module Conso.Fr.Elec.Sge.EnedisDictionnaireTypeComplexeV50
   ) where

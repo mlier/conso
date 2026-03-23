@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
+Description : Webservice B2B CommandeServicesAccesDonnees v1.0 (Enedis.SGE.GUI.0531 v1.1.0)
 
+Permet de souscrire un service d'accès aux données de mesures (SAD) sur un PRM.
+Un SAD actif autorise la consultation des données via 'ConsulterMesuresDetailleesV3'
+avec @cadreAcces = SERVICE_ACCES@.
+
+@typeDonnees@ accepte : @CDC@ (courbe), @IDX@ (index), @PMAX@ (Pmax), @ENERGIE@.
+@duree = Nothing@ crée un SAD ouvert (SAD-NR2 → SGT509 si durée > 3 ans).
+-}
 module Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where
@@ -143,10 +153,12 @@ initType :: String                  -- ^ myPointId : identifiant PRM du point su
          -> IO CommanderServicesAccesDonneesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> IO CommanderServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO ()
 myrequest = do
     env <- getEnv
@@ -158,12 +170,14 @@ myrequest = do
     rep <- wsRequest myType :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     pPrint rep
 
+-- | Sens de circulation de l'énergie par rapport au réseau Enedis.
 data Sens
-    = SensSOUTIRAGE
-    | SensINJECTION
+    = SensSOUTIRAGE  -- ^ Énergie soutirée du réseau (consommation)
+    | SensINJECTION  -- ^ Énergie injectée dans le réseau (production)
     deriving (Eq,Show,Enum)
 
+-- | Identité de la personne ayant donné son accord pour l'accès aux données.
 data AccordPersonneType
-    = AccordPersonnePhysiqueNom String
-    | AccordPersonneMoraleDenominationSociale String
+    = AccordPersonnePhysiqueNom String                 -- ^ Nom de la personne physique ayant donné accord
+    | AccordPersonneMoraleDenominationSociale String   -- ^ Dénomination sociale de la personne morale
     deriving (Eq,Show)

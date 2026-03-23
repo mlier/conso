@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10
+Description : Webservice M023 CommandeHistoriqueDonneesMesuresFacturantes v1.0 (Enedis.SGE.GUI.0502 v1.4.0)
 
+Demande asynchrone de publication des mesures facturantes (énergie active par
+classe temporelle et calendrier) pour un ou plusieurs PRM.
+Les données sont publiées via le flux M023 R67.
+
+La réponse est un identifiant d'affaire (@AffaireId@) ; les données sont
+publiées ultérieurement dans les fichiers M023.
+-}
 module Conso.Fr.Elec.Sge.DemandePublicationMesuresFacturantesM23V10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -105,10 +115,12 @@ initType :: [String]    -- ^ myPointsId : liste des identifiants PRM des points 
          -> IO DemandePublicationMesuresFacturantes
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: [String] -> String -> String -> Sens -> CadreAcces -> IO DemandePublicationMesuresFacturantes
-initTypeTest = initType_ False 
+initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO()
 myrequest = do 
     env <- getEnv

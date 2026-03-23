@@ -1,6 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10
+Description : Webservice B2B RechercheServicesAccesDonnees v1.0 (Enedis.SGE.GUI.0537 v1.0.2)
 
+Permet de lister les services d'accès aux données (SAD) actifs sur un PRM.
+Les identifiants retournés sont utilisés par 'CommanderArretServicesAccesDonneesV10'
+et 'CommanderRenouvellementServicesAccesDonneesV10'.
+-}
 module Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -72,10 +79,12 @@ initType :: String  -- ^ myPointId : identifiant PRM du point sur lequel porte l
          -> IO RechercherServicesAccesDonneesType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> IO RechercherServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO ()
 myrequest = do
     env <- getEnv

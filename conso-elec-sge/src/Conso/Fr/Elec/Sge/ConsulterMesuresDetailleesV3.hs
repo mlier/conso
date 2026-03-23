@@ -1,6 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3
+Description : Webservice B2B ConsultationMesuresDetaillees v3.0 (Enedis.SGE.GUI.0497 v1.5.0)
 
+Permet de consulter les données de mesure détaillées d'un point C1–C4, P1–P3,
+C5 ou P4 Linky ouvert aux services (niveau d'ouverture = 2).
+
+Types de mesures disponibles (@mesuresTypeCode@) :
+
+  * @ENERGIE@ — énergies globales quotidiennes (36 mois max)
+  * @PMAX@    — puissances maximales quotidiennes\/mensuelles (36 mois max)
+  * @COURBE@  — courbe de puissance au pas enregistré (7 jours sur 24 derniers mois)
+  * @INDEX@   — index quotidiens (36 mois max)
+
+Limite : 40 demandes\/seconde sur l'ensemble des acteurs.
+-}
 module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -156,11 +171,13 @@ initType :: String                -- ^ myPointId : point de référence sur lequ
          -> IO ConsulterMesuresDetailleesV3Type
 initType = initType_ True
 
-initTypeTest :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType -> 
+-- | Comme 'initType' mais sur le serveur d'homologation.
+initTypeTest :: String -> MesuresTypeCodeType -> String -> String -> String -> Maybe MesuresPasType ->
             Bool -> SensMesureType -> CadreAccesType -> IO ConsulterMesuresDetailleesV3Type
-initTypeTest = initType_ False 
+initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en homologation avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO()
 myrequest = do 
     env <- getEnv

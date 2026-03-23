@@ -2,7 +2,13 @@
 --{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 --{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
+Description : Types Haskell générés depuis le WSDL CommandeAccesDonneesMesures v1.0
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
   ( module Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
   ) where

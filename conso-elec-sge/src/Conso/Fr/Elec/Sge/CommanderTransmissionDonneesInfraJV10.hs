@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10
+Description : Webservice B2B CommandeTransmissionDonneesInfraJ v1.0 (Enedis.SGE.GUI.0481 v1.2.0)
 
+Permet de demander la transmission des données infra-journalières (flux F375A)
+pour un PRM C1–C4 ou P1–P3 :
+
+  * Courbes de charge et courbe de tension (@getCDC = True@)
+  * Index quotidiens (@getIDX = True@)
+  * Données de tarification dynamique (@getPTD = True@)
+-}
 module Conso.Fr.Elec.Sge.CommanderTransmissionDonneesInfraJV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where
@@ -120,10 +130,12 @@ initType :: String              -- ^ myPointId : point de référence sur lequel
          -> IO CommanderTransmissionDonneesInfraJType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Maybe AccordPersonneType -> Sens -> Bool -> Bool -> Bool  -> IO CommanderTransmissionDonneesInfraJType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO()
 myrequest = do
     env <- getEnv
@@ -134,12 +146,14 @@ myrequest = do
     rep <- wsRequest myType :: IO (Either (String, String) CommanderTransmissionDonneesInfraJResponseType)
     pPrint rep 
 
+-- | Sens de circulation de l'énergie par rapport au réseau Enedis.
 data Sens
-    = SensSOUTIRAGE
-    | SensINJECTION
+    = SensSOUTIRAGE  -- ^ Énergie soutirée du réseau (consommation)
+    | SensINJECTION  -- ^ Énergie injectée dans le réseau (production)
     deriving (Eq,Show,Enum)
 
+-- | Identité de la personne ayant donné son accord pour l'accès aux données.
 data AccordPersonneType
-    = AccordPersonnePhysiqueNom String
-    | AccordPersonneMoraleDenominationSociale String
+    = AccordPersonnePhysiqueNom String                 -- ^ Nom de la personne physique ayant donné accord
+    | AccordPersonneMoraleDenominationSociale String   -- ^ Dénomination sociale de la personne morale
     deriving (Eq,Show)

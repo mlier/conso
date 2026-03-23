@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.RechercherPointV20
+Description : Webservice B2B RecherchePoint v2.0 (Enedis.SGE.GUI.0427 v1.2.0)
 
+Permet de rechercher un point de livraison (PRM) à partir de critères d'adresse,
+de SIRET, de matricule compteur, ou de tension d'alimentation.
+
+Par défaut la recherche est limitée au périmètre fournisseur.
+@rechercheHorsPerimetre = Just True@ permet de chercher hors périmètre
+en fournissant obligatoirement l'adresse exacte et le nom du client.
+-}
 module Conso.Fr.Elec.Sge.RechercherPointV20 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -129,13 +139,15 @@ initType :: Maybe String   -- ^ myEscEtaAppart : Escalier, étage et numéro d�
          -> IO RechercherPointType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String -> Maybe String
-          -> Maybe String -> Maybe String -> Maybe DomaineTensionCodeType 
+          -> Maybe String -> Maybe String -> Maybe DomaineTensionCodeType
           -> Maybe String -> Maybe ClientFinalCategorieCodeType -> Maybe Bool
           -> IO RechercherPointType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec l'adresse de test configurée dans le fichier YAML.
 myrequest :: IO()
 myrequest = do
     env <- getEnv

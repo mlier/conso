@@ -1,6 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
+Description : Types Haskell générés depuis le WSDL CommandeArretServiceSouscritMesures v1.0 (OBSOLÈTE)
 
+Généré automatiquement depuis le fichier WSDL Enedis par HaXml.
+Ne pas modifier manuellement.
+-}
 module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
   ( module Conso.Fr.Elec.Sge.CommanderArretServiceSouscritMesuresV10Type
   ) where

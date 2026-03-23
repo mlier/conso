@@ -1,6 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.ConsulterMesuresV11
+Description : Webservice B2B ConsultationMesures v1.1 (Enedis.SGE.GUI.0455 v1.3.0)
 
+Permet de consulter l'historique des consommations d'un point (PRM) sur une
+profondeur maximale de 36 mois.
+
+Disponible pour tous les segments C1–C5 (hors C1 HTA).
+Requiert l'accord du client (@autorisationClient = True@) pour les Tiers.
+
+Retourne des séries d'énergie active (EA, kWh) par classe temporelle et
+calendrier, sur les grilles Distributeur et\/ou Fournisseur selon le segment.
+
+Usage :
+
+> myType <- initType "12345678901234" True
+> rep    <- wsRequest myType :: IO (Either (String, String) ConsulterMesuresResponseType)
+
+-}
 module Conso.Fr.Elec.Sge.ConsulterMesuresV11 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest
 ) where
@@ -70,10 +88,12 @@ initType :: String  -- ^ myPointId : identifiant PRM du point sur lequel porte l
          -> IO ConsulterMesuresType
 initType = initType_ True
 
+-- | Comme 'initType' mais sur le serveur d'homologation.
 initTypeTest :: String -> Bool -> IO ConsulterMesuresType
 initTypeTest = initType_ False
 
 
+-- | Exemple d'appel en production avec le PRM de test configuré dans le fichier YAML.
 myrequest :: IO()
 myrequest = do 
     env <- getEnv
