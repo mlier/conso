@@ -1,6 +1,6 @@
 {-|
 Module      : Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
-Description : Déchiffrement AES des fichiers R50 Enedis (AES-128-CBC et AES-256-CBC)
+Description : Déchiffrement AES des fichiers Rxx Enedis (AES-128-CBC et AES-256-CBC)
 
 Déchiffre les fichiers @.zip@ téléchargés depuis le serveur SFTP Enedis.
 
@@ -49,7 +49,7 @@ import           System.Process      (readProcessWithExitCode)
 -- Types publics
 -- ---------------------------------------------------------------------------
 
--- | Paramètres cryptographiques pour le déchiffrement des fichiers R50.
+-- | Paramètres cryptographiques pour le déchiffrement des fichiers Rxx.
 data DecryptConfig = DecryptConfig
     { dc128Key     :: Maybe BS.ByteString
     -- ^ Clé AES-128 (16 octets), convertie depuis la représentation hexadécimale de 'zipAes128Key'.

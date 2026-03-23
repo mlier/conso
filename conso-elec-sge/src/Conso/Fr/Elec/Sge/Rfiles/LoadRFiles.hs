@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 {-|
 Module      : Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
-Description : Téléchargement SFTP des fichiers R50 depuis le serveur Enedis
+Description : Téléchargement SFTP des fichiers Rxx depuis le serveur Enedis
 
-Fournit les fonctions pour lister et télécharger les fichiers R50 (flux de
-mesures C5) déposés par Enedis sur un serveur SFTP.
+Fournit les fonctions pour lister et télécharger les fichiers Rxx
+déposés par Enedis sur un serveur SFTP.
 
 La configuration est lue depuis @~\/.conso\/rfiles.yaml@, qui contient les
 identifiants SFTP, la clé AES-128 et la clé AES-256 (encodées en hexadécimal).
