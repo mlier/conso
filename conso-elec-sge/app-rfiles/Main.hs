@@ -7,8 +7,8 @@ import Control.Exception      (try, SomeException)
 import Data.Maybe (fromMaybe)
 import qualified Data.ByteString     as BS
 import           Data.ByteArray.Encoding (convertFromBase, Base(..))
-import Conso.Fr.Elec.Rfiles.LoadRFiles
-import Conso.Fr.Elec.Rfiles.DecryptRFiles
+import Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
+import Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
 
 
 -- ---------------------------------------------------------------------------

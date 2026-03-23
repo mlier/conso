@@ -1,4 +1,31 @@
-module Conso.Fr.Elec.Rfiles.DecryptRFiles
+{-|
+Module      : Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
+Description : Déchiffrement AES des fichiers R50 Enedis (AES-128-CBC et AES-256-CBC)
+
+Déchiffre les fichiers @.zip@ téléchargés depuis le serveur SFTP Enedis.
+
+Enedis utilise deux algorithmes selon la date du fichier :
+
+  * Avant 'dcSwitchDate' — AES-128-CBC avec IV statique fourni dans la config
+  * À partir de 'dcSwitchDate' — AES-256-CBC avec IV embarqué dans les 16 premiers
+    octets du fichier chiffré
+
+La date est extraite du nom de fichier (format @YYYYMMDD@). Le déchiffrement
+se fait en place : le fichier @.zip@ chiffré est remplacé par le @.zip@ en
+clair, puis décompressé via @unzip@.
+
+Usage :
+
+> cfg  <- getConfig   -- 'RFilesConfig' depuis rfiles.yaml
+> let dcfg = DecryptConfig
+>               { dc128Key     = hexToBytes <$> zipAes128Key cfg
+>               , dc128IV      = hexToBytes <$> zipAes128IV  cfg
+>               , dc256Key     = hexToBytes <$> zipAes256Key cfg
+>               , dcSwitchDate = zipAesSwitchDate cfg
+>               }
+> decryptDir dcfg "/tmp/rfiles"
+-}
+module Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
   ( DecryptConfig(..)
   , decryptZipFile
   , decryptDir
@@ -22,11 +49,19 @@ import           System.Process      (readProcessWithExitCode)
 -- Types publics
 -- ---------------------------------------------------------------------------
 
+-- | Paramètres cryptographiques pour le déchiffrement des fichiers R50.
 data DecryptConfig = DecryptConfig
-    { dc128Key     :: Maybe BS.ByteString   -- clé AES-128 (16 bytes)
-    , dc128IV      :: Maybe BS.ByteString   -- IV statique  (16 bytes)
-    , dc256Key     :: Maybe BS.ByteString   -- clé AES-256 (32 bytes)
-    , dcSwitchDate :: Maybe String          -- YYYYMMDD
+    { dc128Key     :: Maybe BS.ByteString
+    -- ^ Clé AES-128 (16 octets), convertie depuis la représentation hexadécimale de 'zipAes128Key'.
+    , dc128IV      :: Maybe BS.ByteString
+    -- ^ IV statique AES-128 (16 octets), converti depuis 'zipAes128IV'.
+    , dc256Key     :: Maybe BS.ByteString
+    -- ^ Clé AES-256 (32 octets), convertie depuis la représentation hexadécimale de 'zipAes256Key'.
+    , dcSwitchDate :: Maybe String
+    -- ^ Date de bascule AES-128 → AES-256, format @YYYYMMDD@.
+    --   Les fichiers dont la date (dans le nom) est antérieure à cette valeur
+    --   sont déchiffrés en AES-128 ; les autres en AES-256.
+    --   @Nothing@ = tout AES-128.
     }
 
 -- ---------------------------------------------------------------------------
@@ -109,8 +144,11 @@ removePadding bs
 -- API publique
 -- ---------------------------------------------------------------------------
 
--- | Déchiffre un fichier .zip sur disque (écrase avec le contenu déchiffré)
-decryptZipFile :: DecryptMode -> FilePath -> IO (Either String ())
+-- | Déchiffre un fichier @.zip@ sur disque en place (écrase avec le contenu déchiffré).
+-- Le mode de déchiffrement est déterminé par 'modeForFile' avant l'appel.
+decryptZipFile :: DecryptMode -- ^ Mode et clé(s) de déchiffrement.
+               -> FilePath    -- ^ Chemin absolu vers le fichier à déchiffrer.
+               -> IO (Either String ())
 decryptZipFile mode path = do
     raw <- BS.readFile path
     case mode of
@@ -123,8 +161,11 @@ decryptZipFile mode path = do
                 Left err -> return (Left err)
                 Right pt -> BS.writeFile path pt >> return (Right ())
 
--- | Déchiffre tous les .zip d'un répertoire (récursif)
-decryptDir :: DecryptConfig -> FilePath -> IO ()
+-- | Déchiffre tous les @.zip@ d'un répertoire local (récursif).
+-- Après déchiffrement réussi, décompresse via @unzip@ et supprime le @.zip@ chiffré.
+decryptDir :: DecryptConfig -- ^ Paramètres cryptographiques.
+           -> FilePath      -- ^ Répertoire racine à parcourir.
+           -> IO ()
 decryptDir cfg dir = do
     putStrLn $ "Répertoire : " <> dir
     entries <- listDirectory dir

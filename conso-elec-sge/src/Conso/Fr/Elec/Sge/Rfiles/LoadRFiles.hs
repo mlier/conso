@@ -1,6 +1,27 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-|
+Module      : Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
+Description : Téléchargement SFTP des fichiers R50 depuis le serveur Enedis
 
-module Conso.Fr.Elec.Rfiles.LoadRFiles
+Fournit les fonctions pour lister et télécharger les fichiers R50 (flux de
+mesures C5) déposés par Enedis sur un serveur SFTP.
+
+La configuration est lue depuis @~\/.conso\/rfiles.yaml@, qui contient les
+identifiants SFTP, la clé AES-128 et la clé AES-256 (encodées en hexadécimal).
+
+Authentification supportée :
+
+  * Clé SSH — renseigner @keyFile@ (et @passphrase@ si la clé en a une)
+  * Mot de passe — renseigner @password@, laisser @keyFile@ à @Nothing@
+  * Agent SSH — laisser @keyFile@ et @password@ à @Nothing@
+
+Usage :
+
+> cfg   <- getConfig
+> files <- listRFiles cfg True (Days 7)
+> loadRFiles cfg Keep (Days 7)
+-}
+module Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
   ( RFilesConfig(..)
   , RFileInfo(..)
   , PostDownload(..)
@@ -31,27 +52,36 @@ import           Network.SSH.Client.LibSSH2.Foreign (saFileSize, saMtime, saPerm
 -- Config
 -- ---------------------------------------------------------------------------
 
--- | Configuration lue depuis ~/.conso/rfiles.yaml
---
--- Authentification :
---   - avec clé SSH  : renseigner keyFile (et passphrase si la clé en a une)
---   - avec mot de passe : renseigner password, laisser keyFile à null
---   - via agent SSH : laisser keyFile et password à null
+-- | Configuration SFTP et cryptographique lue depuis @~\/.conso\/rfiles.yaml@.
 data RFilesConfig = RFilesConfig
     { server     :: String
+    -- ^ Nom d'hôte ou adresse IP du serveur SFTP.
     , port       :: Int
+    -- ^ Port SFTP (généralement 22).
     , login      :: String
-    , keyFile    :: Maybe FilePath   -- clé privée SSH
-    , passphrase :: String           -- passphrase de la clé (vide = aucune)
-    , password   :: Maybe String     -- mot de passe (si pas de clé)
-    , knownHosts :: FilePath         -- ex: /home/user/.ssh/known_hosts
-    , remoteDir  :: Maybe FilePath    -- répertoire source sur le serveur (Nothing = racine "/")
-    , archiveDir :: FilePath         -- répertoire d'archive sur le serveur
-    , localDir   :: FilePath         -- répertoire local de destination
-    , zipAes128Key     :: Maybe String   -- clé AES-128 (32 hex = 16 bytes)
-    , zipAes128IV      :: Maybe String   -- IV statique  (32 hex = 16 bytes)
-    , zipAes256Key     :: Maybe String   -- clé AES-256  (64 hex = 32 bytes)
-    , zipAesSwitchDate :: Maybe String   -- bascule YYYYMMDD (Nothing = tout AES-128)
+    -- ^ Nom d'utilisateur SFTP.
+    , keyFile    :: Maybe FilePath
+    -- ^ Chemin vers la clé privée SSH (@Nothing@ = authentification par mot de passe ou agent).
+    , passphrase :: String
+    -- ^ Passphrase de la clé SSH (chaîne vide si aucune).
+    , password   :: Maybe String
+    -- ^ Mot de passe SFTP (@Nothing@ si authentification par clé ou agent).
+    , knownHosts :: FilePath
+    -- ^ Chemin vers le fichier @known_hosts@, ex. : @\/home\/user\/.ssh\/known_hosts@.
+    , remoteDir  :: Maybe FilePath
+    -- ^ Répertoire source sur le serveur (@Nothing@ = racine @"."@).
+    , archiveDir :: FilePath
+    -- ^ Répertoire d'archive sur le serveur (utilisé par 'loadRFiles' avec 'Archive').
+    , localDir   :: FilePath
+    -- ^ Répertoire local de destination pour les fichiers téléchargés.
+    , zipAes128Key     :: Maybe String
+    -- ^ Clé AES-128 encodée en hexadécimal (32 caractères = 16 octets).
+    , zipAes128IV      :: Maybe String
+    -- ^ IV statique AES-128 encodé en hexadécimal (32 caractères = 16 octets).
+    , zipAes256Key     :: Maybe String
+    -- ^ Clé AES-256 encodée en hexadécimal (64 caractères = 32 octets).
+    , zipAesSwitchDate :: Maybe String
+    -- ^ Date de bascule AES-128 → AES-256, format @YYYYMMDD@ (@Nothing@ = tout AES-128).
     } deriving (Show, Generic)
 
 instance FromJSON RFilesConfig
@@ -61,10 +91,14 @@ instance FromJSON RFilesConfig
 -- Informations sur un fichier distant
 -- ---------------------------------------------------------------------------
 
+-- | Métadonnées d'un fichier présent sur le serveur SFTP.
 data RFileInfo = RFileInfo
-    { rfiRelPath :: FilePath   -- relatif à remoteDir, ex: "2024/01/file.zip"
-    , rfiSize    :: Integer    -- octets
-    , rfiMtime   :: Integer    -- timestamp Unix
+    { rfiRelPath :: FilePath
+    -- ^ Chemin relatif à @remoteDir@, ex. : @"2024\/01\/file.zip"@.
+    , rfiSize    :: Integer
+    -- ^ Taille du fichier en octets.
+    , rfiMtime   :: Integer
+    -- ^ Date de dernière modification (timestamp Unix).
     } deriving (Show)
 
 
@@ -78,6 +112,8 @@ myHomeDirectory = do
     entry <- getUserEntryForName name
     return $ homeDirectory entry
 
+-- | Lit la configuration depuis @~\/.conso\/rfiles.yaml@.
+-- Lève une exception si le fichier est absent ou mal formé.
 getConfig :: IO RFilesConfig
 getConfig = do
     home <- myHomeDirectory
@@ -167,7 +203,10 @@ listTree sftp baseDir dir = do
 -- Commande ls : liste le répertoire racine SFTP (1 niveau, sans récursion)
 -- ---------------------------------------------------------------------------
 
-lsRFiles :: RFilesConfig -> IO ()
+-- | Liste le contenu du répertoire racine SFTP (1 niveau, sans récursion).
+-- Les entrées @.@ et @..@ sont masquées.
+lsRFiles :: RFilesConfig -- ^ Configuration SFTP.
+         -> IO ()
 lsRFiles cfg = withRFilesSFTP cfg $ \sftp -> do
     entries <- sftpListDir sftp "."
     let visible = filter (\(n,_) -> BS.unpack n `notElem` [".",".."]) entries
@@ -184,7 +223,12 @@ lsRFiles cfg = withRFilesSFTP cfg $ \sftp -> do
 -- Commande list : liste les fichiers sans y toucher
 -- ---------------------------------------------------------------------------
 
-listRFiles :: RFilesConfig -> Bool -> DayLimit -> IO [RFileInfo]
+-- | Liste les fichiers @.zip@ disponibles sur le serveur, sans les télécharger.
+-- Retourne aussi la liste pour usage programmatique.
+listRFiles :: RFilesConfig -- ^ Configuration SFTP.
+           -> Bool         -- ^ @True@ = affiche taille et date de modification.
+           -> DayLimit     -- ^ Filtre par ancienneté.
+           -> IO [RFileInfo]
 listRFiles cfg verbose dayLimit = withRFilesSFTP cfg $ \sftp -> do
     let root = startDir cfg
     now   <- round <$> getPOSIXTime
@@ -206,16 +250,29 @@ listRFiles cfg verbose dayLimit = withRFilesSFTP cfg $ \sftp -> do
 -- Commande load : télécharge (et éventuellement archive ou supprime)
 -- ---------------------------------------------------------------------------
 
-data PostDownload = Keep | Archive | Remove
-        deriving (Show)
+-- | Action à effectuer sur le fichier distant après téléchargement réussi.
+data PostDownload
+    = Keep    -- ^ Conserver le fichier sur le serveur.
+    | Archive -- ^ Déplacer le fichier dans 'archiveDir'.
+    | Remove  -- ^ Supprimer le fichier du serveur (après vérification de taille).
+    deriving (Show)
 
-data DayLimit = Days Int | AllDays
+-- | Limite d'ancienneté pour filtrer les fichiers à télécharger.
+data DayLimit
+    = Days Int -- ^ Ne traiter que les fichiers modifiés dans les N derniers jours.
+    | AllDays  -- ^ Traiter tous les fichiers sans limite d'ancienneté.
 
 isRecentEnough :: DayLimit -> Integer -> RFileInfo -> Bool
 isRecentEnough AllDays   _   _    = True
 isRecentEnough (Days n) now info  = now - rfiMtime info <= fromIntegral n * 86400
 
-loadRFiles :: RFilesConfig -> PostDownload -> DayLimit -> IO [FilePath]
+-- | Télécharge les fichiers @.zip@ depuis le serveur SFTP dans 'localDir'.
+-- Après chaque téléchargement, applique l'action 'PostDownload' sur le fichier distant.
+-- Retourne la liste des chemins locaux créés.
+loadRFiles :: RFilesConfig -- ^ Configuration SFTP.
+           -> PostDownload -- ^ Action post-téléchargement.
+           -> DayLimit     -- ^ Filtre par ancienneté.
+           -> IO [FilePath]
 loadRFiles cfg postDl dayLimit =
     withRFilesSFTP cfg $ \sftp -> do
         putStrLn $ "Début chargement, option " <> show postDl

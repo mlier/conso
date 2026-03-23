@@ -100,8 +100,8 @@ library
         Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
         Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
 
-        Conso.Fr.Elec.Rfiles.LoadRFiles
-        Conso.Fr.Elec.Rfiles.DecryptRFiles
+        Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
+        Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
 
         Conso.Fr.Elec.SgeDB
         Conso.Fr.Elec.SgeDB.Types.Common
