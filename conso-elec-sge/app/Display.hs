@@ -5,6 +5,8 @@ module Display
   , field
   , maybeField
   , section
+  , sectionActif
+  , sectionTermine
   , renderError
   , errorAttr
   , sectionAttr
@@ -83,6 +85,24 @@ section :: String -> [Widget ()] -> Widget ()
 section title rows =
     borderWithLabel (withAttr sectionAttr $ ustr (" " ++ title ++ " ")) $
     vBox rows
+
+-- | Bloc encadré avec couleur personnalisée (cadre + titre), contenu étendu à pleine largeur.
+sectionColored :: V.Color -> String -> [Widget ()] -> Widget ()
+sectionColored color title rows =
+    updateAttrMap (applyAttrMappings
+        [ (attrName "border", V.withForeColor V.defAttr color `V.withStyle` V.bold)
+        , (sectionAttr,       V.withForeColor V.defAttr color `V.withStyle` V.bold)
+        ]) $
+    borderWithLabel (withAttr sectionAttr $ ustr (" " ++ title ++ " ")) $
+    padRight Max $ vBox rows
+
+-- | Cadre vert — service actif.
+sectionActif :: String -> [Widget ()] -> Widget ()
+sectionActif = sectionColored V.green
+
+-- | Cadre rouge — service terminé ou résilié.
+sectionTermine :: String -> [Widget ()] -> Widget ()
+sectionTermine = sectionColored V.red
 
 -- | Affichage d'erreur SGT
 renderError :: String -> String -> Widget ()

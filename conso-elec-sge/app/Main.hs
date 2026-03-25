@@ -56,6 +56,7 @@ import           Display.ArretDisplay                                           
 import qualified Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30      as CCPM
 import           Conso.Fr.Elec.Sge.CommanderCollectePublicationMesuresV30Type  (CommanderCollectePublicationMesuresResponseType)
 import           Display.CollecteDisplay                                         ()   -- instance Renderable
+import           Display.AcsServicesDisplay                                      ()   -- instance Renderable
 
 import qualified Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10                        as ACS
 import           Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type                    (CommanderServicesAccesDonneesResponseType)
@@ -1332,7 +1333,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
         if xml then RSAD.xmlRequest myType >>= (putStrLn . prettyXml)
         else RSAD.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) RechercherServicesAccesDonneesReponseType
-            pPrint rep'
+            if raw then pPrint rep' else renderApp rep'
 
 
 main :: IO ()
