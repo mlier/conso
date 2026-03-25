@@ -105,7 +105,10 @@ initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
             SensINJECTION -> SensTypeINJECTION
 
     let accordDecl = case accordPersonneType of
-            Nothing -> Nothing
+            Nothing -> Just $ DeclarationAccordClientType
+              { declarationAccordClientType_accord = BooleenType False
+              , declarationAccordClientType_choice1 = Nothing
+              }
             Just ap -> Just $ DeclarationAccordClientType
               { declarationAccordClientType_accord = BooleenType True
               , declarationAccordClientType_choice1 = case ap of

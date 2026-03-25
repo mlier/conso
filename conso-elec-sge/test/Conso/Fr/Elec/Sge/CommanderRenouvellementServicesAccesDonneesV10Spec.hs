@@ -36,7 +36,7 @@ extractServiceId resp = do
 createService :: String -> IO (Maybe String)
 createService prm = do
     sadType <- SAD.initTypeTest prm SAD.SensSOUTIRAGE
-                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIES" Nothing
+                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIE" (Just 500)
     rep     <- wsRequestTest sadType
                  :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     case rep of

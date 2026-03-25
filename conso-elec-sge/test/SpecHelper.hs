@@ -73,7 +73,7 @@ col c s = c ++ s ++ "\ESC[0m"
 
 -- | Vérifie le code d'erreur d'une réponse Left.
 --   En cas d'échec, affiche aussi le libellé SGE pour faciliter le diagnostic.
-shouldHaveCode :: Either (String, String) a -> String -> Expectation
+shouldHaveCode ::  Show a => Either (String, String) a -> String -> Expectation
 shouldHaveCode (Right _) _ =
     expectationFailure "Expected Left (code d'erreur), got Right (succès inattendu)"
 shouldHaveCode (Left (code, label)) expected

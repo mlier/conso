@@ -33,15 +33,15 @@ shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
 
 shouldRefuserHomo :: String -> String -> String -> Expectation
 shouldRefuserHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
-    myType <- initTypeTest prm SensSOUTIRAGE Nothing typeDonnees Nothing
+    myType <- initTypeTest prm SensSOUTIRAGE Nothing typeDonnees (Just 500)
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldHaveCode` expectedCode
 
 shouldRefuserDateFinHomo :: String -> String -> String -> Expectation
 shouldRefuserDateFinHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
-    -- dateFin > 3 ans = 1097 jours → SGT509
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1097)
+    -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT509
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1200)
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldHaveCode` expectedCode
@@ -51,14 +51,14 @@ spec :: Spec
 spec = do
     describe homologationC $ do
         describe recevablesC $ do
-            it "SAD-R1 C5    - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderC5Homo sadPrmC5R1 "ENERGIES" (Just 500)
-            it "SAD-R1 C2-C4 - Accès aux données d'ENERGIES globales quotidiennes" $
-                shouldDemanderC2C4Homo sadPrmC2C4 "ENERGIES" (Just 500)
+            it "SAD-R1 C5    - Accès aux données d'ENERGIE globales quotidiennes" $
+                shouldDemanderC5Homo sadPrmC5R1 "ENERGIE" (Just 500)
+            it "SAD-R1 C2-C4 - Accès aux données d'ENERGIE globales quotidiennes" $
+                shouldDemanderC2C4Homo sadPrmC2C4 "ENERGIE" (Just 500)
             it "SAD-R2 C5    - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderC5Homo sadPrmC5R2 "COURBE" (Just 500)
+                shouldDemanderC5Homo sadPrmC5R2 "CDC" (Just 500)
             it "SAD-R2 C2-C4 - Accès aux données de CDC (Courbe de charge)" $
-                shouldDemanderC2C4Homo sadPrmC2C4 "COURBE" (Just 500)
+                shouldDemanderC2C4Homo sadPrmC2C4 "CDC" (Just 500)
             it "SAD-R3 C5    - Accès aux données d'INDEX" $
                 shouldDemanderC5Homo sadPrmC5R3 "IDX" (Just 500)
             it "SAD-R3 C2-C4 - Accès aux données d'INDEX" $
@@ -70,9 +70,9 @@ spec = do
 
         describe nonRecevablesC $ do
             it "SAD-NR1 C5 - Sans accord client (SGT566)" $
-                shouldRefuserHomo sadPrmC5R1 "ENERGIES" "SGT566"
-            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT5O9)" $
-                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIES" "SGT5O9"
+                shouldRefuserHomo sadPrmC5R1 "ENERGIE" "SGT566"
+            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT509)" $
+                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIE" "SGT509"
 
 
 main :: IO ()
