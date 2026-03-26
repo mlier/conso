@@ -8,7 +8,7 @@ Description : Point d'entrée de la bibliothèque SGE Enedis B2B
 Ce module re-exporte l'infrastructure SOAP commune :
 
   * 'SgeEnv', 'Sge', 'Test' — configuration lue depuis
-    @~\/.conso\/conso-elec-sge-env.yaml@
+    @~\/.conso\/conso-env.yaml@
   * 'wsRequest' \/ 'wsRequestTest' — envoi d'une requête typée,
     retourne @Either (code, libellé) réponse@
   * 'xmlRequest' \/ 'xmlRequestTest' — variantes retournant le XML brut

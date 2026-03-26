@@ -6,7 +6,7 @@ Description : Infrastructure SOAP commune à tous les webservices SGE Enedis B2B
 Fournit :
 
   * Les types de configuration 'SgeEnv', 'Sge' et 'Test' lus depuis
-    @~\/.conso\/conso-elec-sge-env.yaml@
+    @~\/.conso\/conso-env.yaml@
   * Les typeclasses 'RequestType' et 'ResponseType' qui relient chaque
     webservice à son URL, sa SOAPAction et son parseur XML
   * Les fonctions de haut niveau 'wsRequest' \/ 'wsRequestTest' pour envoyer
@@ -67,7 +67,7 @@ import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                       elementResultat )
 
 
--- | Environnement SGE complet lu depuis @~\/.conso\/conso-elec-sge-env.yaml@.
+-- | Environnement SGE complet lu depuis @~\/.conso\/conso-env.yaml@.
 -- Contient les paramètres de connexion production, homologation et les données de test.
 data SgeEnv =
     SgeEnv { production  :: Sge  -- ^ Connexion vers le serveur de production SGE
@@ -149,7 +149,7 @@ xmlRequestTest :: (RequestType a, Show a) => a -> IO String
 xmlRequestTest = sgeXmlRequest False
 
 
--- | Lit l'environnement SGE complet depuis @~\/.conso\/conso-elec-sge-env.yaml@.
+-- | Lit l'environnement SGE complet depuis @~\/.conso\/conso-env.yaml@.
 getEnv :: IO SgeEnv
 getEnv = readEnv
 
@@ -182,7 +182,7 @@ readEnv :: IO SgeEnv
 readEnv = do
     myHD <- myHomeDirectory
     wrapper <- either (error . show) id <$>
-        decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
+        decodeFileEither ( myHD <> "/.conso/conso-env.yaml")
     return (getSgeEnv wrapper)
 
 

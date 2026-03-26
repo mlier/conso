@@ -6,7 +6,7 @@ Description : Téléchargement SFTP des fichiers Rxx depuis le serveur Enedis
 Fournit les fonctions pour lister et télécharger les fichiers Rxx
 déposés par Enedis sur un serveur SFTP.
 
-La configuration est lue depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@,
+La configuration est lue depuis @~\/.conso\/conso-env.yaml@, nœud @rfiles:@,
 qui contient les identifiants SFTP, la clé AES-128 et la clé AES-256 (encodées en hexadécimal).
 
 Authentification supportée :
@@ -53,7 +53,7 @@ import           Network.SSH.Client.LibSSH2.Foreign (saFileSize, saMtime, saPerm
 -- Config
 -- ---------------------------------------------------------------------------
 
--- | Configuration SFTP et cryptographique lue depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@.
+-- | Configuration SFTP et cryptographique lue depuis @~\/.conso\/conso-env.yaml@, nœud @rfiles:@.
 data RFilesConfig = RFilesConfig
     { server     :: String
     -- ^ Nom d'hôte ou adresse IP du serveur SFTP.
@@ -141,13 +141,13 @@ myHomeDirectory = do
     entry <- getUserEntryForName name
     return $ homeDirectory entry
 
--- | Lit la configuration depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@.
+-- | Lit la configuration depuis @~\/.conso\/conso-env.yaml@, nœud @rfiles:@.
 -- Lève une exception si le fichier est absent ou mal formé.
 getConfig :: IO RFilesConfig
 getConfig = do
     home <- myHomeDirectory
     wrapper <- either (error . show) id <$>
-        decodeFileEither (home </> ".conso" </> "conso-elec-sge-env.yaml")
+        decodeFileEither (home </> ".conso" </> "conso-env.yaml")
     return (getRFilesConfig wrapper)
 
 

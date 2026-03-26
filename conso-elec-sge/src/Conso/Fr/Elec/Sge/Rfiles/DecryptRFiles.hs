@@ -16,7 +16,7 @@ clair, puis décompressé via @unzip@.
 
 Usage :
 
-> cfg  <- getConfig   -- 'RFilesConfig' depuis rfiles.yaml
+> cfg  <- getConfig 
 > let dcfg = DecryptConfig
 >               { dc128Key     = hexToBytes <$> zipAes128Key cfg
 >               , dc128IV      = hexToBytes <$> zipAes128IV  cfg
