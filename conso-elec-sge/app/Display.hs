@@ -84,7 +84,7 @@ maybeField lbl = maybe emptyWidget (field lbl)
 section :: String -> [Widget ()] -> Widget ()
 section title rows =
     borderWithLabel (withAttr sectionAttr $ ustr (" " ++ title ++ " ")) $
-    vBox rows
+    padRight Max $ vBox rows
 
 -- | Bloc encadré avec couleur personnalisée (cadre + titre), contenu étendu à pleine largeur.
 sectionColored :: V.Color -> String -> [Widget ()] -> Widget ()
