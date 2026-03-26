@@ -6,8 +6,8 @@ Description : Téléchargement SFTP des fichiers Rxx depuis le serveur Enedis
 Fournit les fonctions pour lister et télécharger les fichiers Rxx
 déposés par Enedis sur un serveur SFTP.
 
-La configuration est lue depuis @~\/.conso\/rfiles.yaml@, qui contient les
-identifiants SFTP, la clé AES-128 et la clé AES-256 (encodées en hexadécimal).
+La configuration est lue depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@,
+qui contient les identifiants SFTP, la clé AES-128 et la clé AES-256 (encodées en hexadécimal).
 
 Authentification supportée :
 
@@ -33,7 +33,8 @@ module Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
   ) where
 
 import           GHC.Generics
-import           Data.Yaml              (FromJSON, decodeFileEither)
+import           Data.Yaml              (decodeFileEither)
+import           Data.Aeson             (FromJSON(..), withObject, (.:), (.:?))
 import qualified Data.ByteString.Char8  as BS
 import           Data.Bits              ((.&.))
 import           Data.List              (isSuffixOf)
@@ -52,7 +53,7 @@ import           Network.SSH.Client.LibSSH2.Foreign (saFileSize, saMtime, saPerm
 -- Config
 -- ---------------------------------------------------------------------------
 
--- | Configuration SFTP et cryptographique lue depuis @~\/.conso\/rfiles.yaml@.
+-- | Configuration SFTP et cryptographique lue depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@.
 data RFilesConfig = RFilesConfig
     { server     :: String
     -- ^ Nom d'hôte ou adresse IP du serveur SFTP.
@@ -84,7 +85,35 @@ data RFilesConfig = RFilesConfig
     -- ^ Date de bascule AES-128 → AES-256, format @YYYYMMDD@ (@Nothing@ = tout AES-128).
     } deriving (Show, Generic)
 
-instance FromJSON RFilesConfig
+-- | Instance manuelle : lit la config depuis les nœuds @server@, @local@ et @decrypt@.
+instance FromJSON RFilesConfig where
+    parseJSON = withObject "rfiles" $ \rfObj -> do
+        srv <- rfObj .: "server"  >>= withObject "server"  pure
+        loc <- rfObj .: "local"   >>= withObject "local"   pure
+        dec <- rfObj .: "decrypt" >>= withObject "decrypt" pure
+        RFilesConfig
+            <$> srv .:  "server"
+            <*> srv .:  "port"
+            <*> srv .:  "login"
+            <*> srv .:? "keyFile"
+            <*> srv .:  "passphrase"
+            <*> srv .:? "password"
+            <*> srv .:  "knownHosts"
+            <*> srv .:? "remoteDir"
+            <*> srv .:  "archiveDir"
+            <*> loc .:  "dir"
+            <*> dec .:? "zipAes128Key"
+            <*> dec .:? "zipAes128IV"
+            <*> dec .:? "zipAes256Key"
+            <*> dec .:? "zipAesSwitchDate"
+
+-- | Wrapper interne : lit @sge.rfiles@ depuis le fichier YAML fusionné.
+newtype ConsoRFilesFile = ConsoRFilesFile { getRFilesConfig :: RFilesConfig }
+
+instance FromJSON ConsoRFilesFile where
+    parseJSON = withObject "top" $ \topObj -> do
+        sgeVal <- topObj .: "sge"
+        withObject "sge" (\sgeObj -> ConsoRFilesFile <$> sgeObj .: "rfiles") sgeVal
 
 
 -- ---------------------------------------------------------------------------
@@ -112,13 +141,14 @@ myHomeDirectory = do
     entry <- getUserEntryForName name
     return $ homeDirectory entry
 
--- | Lit la configuration depuis @~\/.conso\/rfiles.yaml@.
+-- | Lit la configuration depuis @~\/.conso\/conso-elec-sge-env.yaml@, nœud @rfiles:@.
 -- Lève une exception si le fichier est absent ou mal formé.
 getConfig :: IO RFilesConfig
 getConfig = do
     home <- myHomeDirectory
-    either (error . show) id <$>
-        decodeFileEither (home </> ".conso" </> "rfiles.yaml")
+    wrapper <- either (error . show) id <$>
+        decodeFileEither (home </> ".conso" </> "conso-elec-sge-env.yaml")
+    return (getRFilesConfig wrapper)
 
 
 -- ---------------------------------------------------------------------------

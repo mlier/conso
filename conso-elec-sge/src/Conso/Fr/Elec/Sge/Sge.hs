@@ -50,7 +50,8 @@ import           Text.XML.HaXml.Schema.PrimitiveTypes ( runParser, XsdString(Xsd
 import           Text.XML.HaXml.Schema.Schema ( XMLParser )
 import qualified Text.XML.HaXml.Pretty as P
 import qualified Text.PrettyPrint.HughesPJ as PP
-import           Data.Yaml (FromJSON, ToJSON, decodeFileEither)
+import           Data.Yaml  (ToJSON, decodeFileEither)
+import           Data.Aeson (FromJSON(..), withObject, (.:))
 import           GHC.Generics ( Generic )
 import           System.Posix.User
                     ( homeDirectory,
@@ -169,11 +170,20 @@ myHomeDirectory = do
     entry <- getUserEntryForName name
     return $ homeDirectory entry
 
+-- | Wrapper interne : lit @sge.enedis@ depuis le fichier YAML fusionné.
+newtype ConsoEnvFile = ConsoEnvFile { getSgeEnv :: SgeEnv }
+
+instance FromJSON ConsoEnvFile where
+    parseJSON = withObject "top" $ \topObj -> do
+        sgeVal <- topObj .: "sge"
+        withObject "sge" (\sgeObj -> ConsoEnvFile <$> sgeObj .: "enedis") sgeVal
+
 readEnv :: IO SgeEnv
 readEnv = do
     myHD <- myHomeDirectory
-    either (error . show) id <$>
+    wrapper <- either (error . show) id <$>
         decodeFileEither ( myHD <> "/.conso/conso-elec-sge-env.yaml")
+    return (getSgeEnv wrapper)
 
 
 getLoginContrat :: Bool -> IO (String, String)
