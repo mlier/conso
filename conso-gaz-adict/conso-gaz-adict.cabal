@@ -1,0 +1,103 @@
+cabal-version:      3.0
+name:               conso-gaz-adict
+version:            0.1.0.0
+license:            LGPL-3.0-or-later
+license-file:       LICENSE
+author:             mlier
+maintainer:         mlier@free.fr
+category:           api
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:
+        Conso.Fr.Gaz.Adict
+        Conso.Fr.Gaz.Adict.Adict
+        Conso.Fr.Gaz.Adict.Types
+        Conso.Fr.Gaz.Adict.Api
+        Conso.Fr.Gaz.Adict.ConsosPubliees
+        Conso.Fr.Gaz.Adict.ConsosInfos
+        Conso.Fr.Gaz.Adict.DonneesContractuelles
+        Conso.Fr.Gaz.Adict.DonneesTechniques
+        Conso.Fr.Gaz.Adict.InjectionsPubliees
+        Conso.Fr.Gaz.Adict.DroitsAcces
+        Conso.Fr.Gaz.Adict.DroitAcces
+        Conso.Fr.Gaz.Adict.Preuves
+    build-depends:
+          base ^>=4.18.3.0
+        , aeson >= 2.0
+        , bytestring
+        , case-insensitive
+        , conduit >= 1.3
+        , containers
+        , filepath
+        , hoauth2 >= 2.15
+        , http-client
+        , http-client-tls
+        , http-media
+        , http-types
+        , pretty-simple
+        , servant >= 0.20
+        , servant-client >= 0.20
+        , servant-client-core >= 0.20
+        , text
+        , time
+        , transformers
+        , unix
+        , uri-bytestring
+        , yaml
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable conso-gaz-adict
+    import:           warnings
+    main-is:          Main.hs
+    other-modules:
+        Display
+        Display.ConsoDisplay
+        Display.DroitsAccesDisplay
+        Display.DonneesDisplay
+    build-depends:
+          base ^>=4.18.3.0
+        , conso-gaz-adict
+        , text
+        , bytestring
+        , optparse-applicative
+        , aeson
+        , yaml
+        , unix
+        , pretty-simple
+        , brick >= 2.0
+        , vty
+        , vty-unix
+    ghc-options:      -threaded
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+test-suite conso-gaz-adict-test
+    import:           warnings
+    default-language: Haskell2010
+    other-modules:
+        Conso.Fr.Gaz.Adict.ConsosPublieesSpec
+        Conso.Fr.Gaz.Adict.ConsosInfosSpec
+        Conso.Fr.Gaz.Adict.DonneesContractuellesSpec
+        Conso.Fr.Gaz.Adict.DonneesTechniquesSpec
+        Conso.Fr.Gaz.Adict.DroitsAccesSpec
+        SpecHelper
+        TestData
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    build-depends:
+          base ^>=4.18.3.0
+        , conso-gaz-adict
+        , hspec
+        , hspec-discover
+        , hspec-expectations
+        , text
+    build-tool-depends:
+        hspec-discover:hspec-discover == 2.*
