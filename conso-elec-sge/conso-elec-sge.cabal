@@ -104,9 +104,6 @@ library
         Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
         Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
 
-        -- Re-export shim : SgeDB maintenant dans conso-site-db
-        Conso.Fr.Elec.SgeDB
-
     -- Modules included in this library but not exported.
     --other-modules:
 
