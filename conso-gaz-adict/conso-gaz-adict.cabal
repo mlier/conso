@@ -27,8 +27,10 @@ library
         Conso.Fr.Gaz.Adict.DroitsAcces
         Conso.Fr.Gaz.Adict.DroitAcces
         Conso.Fr.Gaz.Adict.Preuves
+        Conso.Fr.Gaz.Adict.Storage
     build-depends:
           base ^>=4.18.3.0
+        , conso-site-db
         , aeson >= 2.0
         , bytestring
         , case-insensitive

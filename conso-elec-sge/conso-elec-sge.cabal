@@ -104,30 +104,8 @@ library
         Conso.Fr.Elec.Sge.Rfiles.LoadRFiles
         Conso.Fr.Elec.Sge.Rfiles.DecryptRFiles
 
+        -- Re-export shim : SgeDB maintenant dans conso-site-db
         Conso.Fr.Elec.SgeDB
-        Conso.Fr.Elec.SgeDB.Types.Common
-        Conso.Fr.Elec.SgeDB.Types.Header
-        Conso.Fr.Elec.SgeDB.Types.R63
-        Conso.Fr.Elec.SgeDB.Types.R64
-        Conso.Fr.Elec.SgeDB.Types.R65
-        Conso.Fr.Elec.SgeDB.Types.R66
-        Conso.Fr.Elec.SgeDB.Types.R67
-        Conso.Fr.Elec.SgeDB.Types.C68
-        Conso.Fr.Elec.SgeDB.Storage.Migration
-        Conso.Fr.Elec.SgeDB.Storage.Schema
-        Conso.Fr.Elec.SgeDB.Storage.Connection
-        Conso.Fr.Elec.SgeDB.Storage.Insert
-        Conso.Fr.Elec.SgeDB.Storage.Query
-        Conso.Fr.Elec.SgeDB.Storage.Gaps
-        Conso.Fr.Elec.SgeDB.Ingestion.Parser
-        Conso.Fr.Elec.SgeDB.Ingestion.Versioning
-        Conso.Fr.Elec.SgeDB.Ingestion.Batch
-        Conso.Fr.Elec.SgeDB.Analysis.Aggregate
-        Conso.Fr.Elec.SgeDB.Analysis.Compare
-        Conso.Fr.Elec.SgeDB.Analysis.Anomaly
-        Conso.Fr.Elec.SgeDB.Export.CSV
-        Conso.Fr.Elec.SgeDB.Export.JSON
-        Conso.Fr.Elec.SgeDB.Export.Consolidate
 
     -- Modules included in this library but not exported.
     --other-modules:
@@ -139,6 +117,7 @@ library
     -- Other library packages from which modules are imported.
     build-depends:
           base >=4.17.2.1
+        , conso-site-db
         , time
         , soap
         , soap-tls
