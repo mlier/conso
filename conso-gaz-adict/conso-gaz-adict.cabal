@@ -87,6 +87,9 @@ test-suite conso-gaz-adict-test
         Conso.Fr.Gaz.Adict.DonneesContractuellesSpec
         Conso.Fr.Gaz.Adict.DonneesTechniquesSpec
         Conso.Fr.Gaz.Adict.DroitsAccesSpec
+        Conso.Fr.Gaz.Adict.DroitAccesSpec
+        Conso.Fr.Gaz.Adict.InjectionsPublieesSpec
+        Conso.Fr.Gaz.Adict.PreuvesSpec
         SpecHelper
         TestData
     type:             exitcode-stdio-1.0
@@ -95,6 +98,7 @@ test-suite conso-gaz-adict-test
     build-depends:
           base ^>=4.18.3.0
         , conso-gaz-adict
+        , bytestring
         , hspec
         , hspec-discover
         , hspec-expectations

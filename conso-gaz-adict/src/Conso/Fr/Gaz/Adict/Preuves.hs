@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Conso.Fr.Gaz.Adict.Preuves
-Description : Webservice GRDF ADICT — POST \/pce\/{id_pce}\/preuves
+Description : Webservice GRDF ADICT — POST \/droit_acces\/{id_droit_acces}\/preuves
 
 Permet de soumettre une preuve d'accord client pour un droit d'accès en
 attente de justificatif.  Le fichier (PDF ou image JPEG\/PNG) est envoyé
@@ -12,7 +12,7 @@ Limite : 4 Mo maximum par fichier.
 Usage :
 
 > session <- initSession False
-> rep     <- soumettrePrevue session "12345678901234" "/tmp/accord_client.pdf"
+> rep     <- soumettrePrevue session "3044b042-2f6a-4172-9a75-b7e1bbbb0cfd" "/tmp/accord_client.pdf"
 > case rep of
 >     Left  err -> print err
 >     Right ()  -> putStrLn "Preuve soumise avec succès"
@@ -36,18 +36,18 @@ import           System.FilePath                ( takeFileName )
 import           Conso.Fr.Gaz.Adict.Adict
 
 
--- | Soumet une preuve d'accord client pour un PCE
---   (@POST \/pce\/{id_pce}\/preuves@).
+-- | Soumet une preuve d'accord client pour un droit d'accès
+--   (@POST \/droit_acces\/{id_droit_acces}\/preuves@).
 --
 -- Envoie le fichier désigné par 'FilePath' en @multipart\/form-data@.
 -- Retourne @Right ()@ en cas de succès (HTTP 200\/201\/204) ou une
 -- 'AdictError' sinon.
 soumettrePrevue
     :: AdictSession
-    -> Text      -- ^ Identifiant du PCE (14 chiffres ou GI + 6 chiffres)
+    -> Text      -- ^ UUID du droit d'accès
     -> FilePath  -- ^ Chemin vers le fichier de preuve (PDF\/image, max 4 Mo)
     -> IO (Either AdictError ())
-soumettrePrevue session pce filePath = do
+soumettrePrevue session idDroitAcces filePath = do
     tokResult <- getBearerToken session
     case tokResult of
         Left e -> return $ Left e
@@ -57,7 +57,7 @@ soumettrePrevue session pce filePath = do
             let body        = buildMultipartBody boundary (takeFileName filePath) fileBytes
             let contentType = "multipart/form-data; boundary=" <> boundary
             let url         = buildUrl (sessionConfig session)
-                                ("/pce/" <> T.unpack pce <> "/preuves")
+                                ("/droit_acces/" <> T.unpack idDroitAcces <> "/preuves")
             initReq <- parseRequest url
             let req = initReq
                     { method         = "POST"
@@ -82,9 +82,9 @@ soumettrePrevue session pce filePath = do
 
 -- | Comme 'soumettrePrevue' avec une session bac à sable auto-initialisée.
 soumettrePrevueSandbox :: Text -> FilePath -> IO (Either AdictError ())
-soumettrePrevueSandbox pce filePath = do
+soumettrePrevueSandbox idDroitAcces filePath = do
     session <- initSession False False
-    soumettrePrevue session pce filePath
+    soumettrePrevue session idDroitAcces filePath
 
 
 -- ---------------------------------------------------------------------------

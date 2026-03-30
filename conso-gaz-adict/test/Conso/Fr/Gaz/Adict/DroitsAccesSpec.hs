@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Conso.Fr.Gaz.Adict.DroitsAccesSpec where
 
 import SpecHelper
@@ -34,6 +35,24 @@ spec = do
                 session <- sandboxSession
                 pce     <- getTestPce
                 rep     <- rechercherDroitsAcces session emptyFiltre { fa_id_pce = Just pce }
+                rep `shouldSatisfy` isRight
+
+            it "Droits-R4 - Rechercher droits d'accès filtre etat ACTIVE" $ pendingOnAdictError $ do
+                session <- sandboxSession
+                rep     <- rechercherDroitsAcces session emptyFiltre { fa_etat_droit_acces = Just "ACTIVE" }
+                rep `shouldSatisfy` isRight
+
+            it "Droits-R5 - Rechercher droits d'accès filtre statut_controle_preuve" $ pendingOnAdictError $ do
+                session <- sandboxSession
+                rep     <- rechercherDroitsAcces session emptyFiltre { fa_statut_controle_preuve = Just "VALIDE" }
+                rep `shouldSatisfy` isRight
+
+            it "Droits-R6 - Rechercher droits d'accès filtres cumulatifs (role + etat)" $ pendingOnAdictError $ do
+                session <- sandboxSession
+                rep     <- rechercherDroitsAcces session emptyFiltre
+                                { fa_role_tiers       = Just "AUTORISE_CONTRAT_FOURNITURE"
+                                , fa_etat_droit_acces = Just "ACTIVE"
+                                }
                 rep `shouldSatisfy` isRight
 
 

@@ -21,7 +21,7 @@ import Conso.Fr.Gaz.Adict.Adict
 sandboxSession :: IO AdictSession
 sandboxSession = do
     env <- getEnv
-    initSessionWith (sandbox env)
+    initSessionWith True (sandbox env)
 
 -- | Identifiant PCE de test lu depuis la configuration.
 getTestPce :: IO Text
