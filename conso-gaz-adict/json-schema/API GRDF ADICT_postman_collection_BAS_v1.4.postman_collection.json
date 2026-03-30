@@ -1,0 +1,782 @@
+{
+	"info": {
+		"_postman_id": "9ce2d8d1-d097-4b16-bbda-dbbbd1b10a4c",
+		"name": "API GRDF ADICT_postman_collection_BAS_v1.3",
+		"description": "Le Bac A Sable (BAS) est une copie statique (avec des Jeux De Données prédéfinis) des APIs ADICT.\n\nUn Swagger BAS, description technique détaillée du bac à sable, est disponible sur le portail API – https://site.grdf.fr/web/grdf-adict/technique.\n\nL’ensemble des Jeux De Données (JDDs) disponibles pour ce BAS sont décris dans l'excel présent dans le dossier. Tous les JDDs sont fictifs. \n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28355565"
+	},
+	"item": [
+		{
+			"name": "Identification",
+			"item": [
+				{
+					"name": "Récupérer un access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseData = pm.response.json();\r",
+									"pm.globals.set(\"token BAS\", responseData.access_token);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "",
+									"description": "Renseigner le Client ID envoyé par mail",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "",
+									"description": "Renseigner le Client Secret envoyé par SMS",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "/adict/bas/v6",
+									"description": "Scope BAS",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://adict-connexion.grdf.fr/oauth2/aus5y2ta2uEHjCWIR417/v1/token",
+							"protocol": "https",
+							"host": [
+								"adict-connexion",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"oauth2",
+								"aus5y2ta2uEHjCWIR417",
+								"v1",
+								"token"
+							]
+						},
+						"description": "Protocole d'autorisation EndPoint Oath2 (client_credentials)"
+					},
+					"response": []
+				}
+			],
+			"description": "Récupération de l'access token"
+		},
+		{
+			"name": "Gestion des droits d'accès",
+			"item": [
+				{
+					"name": "Déclarer un droit d'accès aux données d'un PCE",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"role_tiers\": \"xxxxxxxxxxxxxxxx\",\r\n  \"raison_sociale\": \"xxxxxxxxxxxxxxxx\",\r\n  \"nom_titulaire\": \"xxxxxxxxxxxxxxxx\",\r\n  \"code_postal\": \"xxxxx\",\r\n  \"courriel_titulaire\": \"xxxxxxxxxxxxxxxx\",\r\n  \"numero_telephone_mobile_titulaire\": \"xxxxxxxxxx\",\r\n  \"date_debut_droit_acces\": \"AAAA-MM-JJ\",\r\n  \"date_fin_droit_acces\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_conso_debut\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_conso_fin\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_contractuelles\": \"xxxx\",\r\n  \"perim_donnees_techniques\": \"xxxx\",\r\n  \"perim_donnees_informatives\": \"xxxx\",\r\n  \"perim_donnees_publiees\": \"xxxx\"\r\n}\r\n"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/droit_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"droit_acces"
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "En tant que Tiers Autorisé ou que Tiers Détenteur ce service vous permet de demander un droit d'accès préalablement à la consultation des données d'un PCE."
+					},
+					"response": []
+				},
+				{
+					"name": "Transmettre preuve(s)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "preuves",
+									"description": "Insérer la première preuve à transmettre",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "preuves",
+									"description": "Insérer la seconde preuve à transmettre",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								},
+								{
+									"key": "preuves",
+									"description": "Insérer la troisème preuve à transmettre",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/droit_acces/:id_droit_acces/preuves",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"droit_acces",
+								":id_droit_acces",
+								"preuves"
+							],
+							"variable": [
+								{
+									"key": "id_droit_acces",
+									"value": "",
+									"description": "Renseigner l'identifiant du droit d'accès pour lequel la preuve doit être transmise"
+								}
+							]
+						},
+						"description": "Ce service vous permet de transmettre une ou plusieurs preuves de consentement liées à un droit d'accès.\r\nLe nombre maximal de preuve est de 3.\r\nLa taille maximale de chaque preuve ne doit pas dépasser 4Mo."
+					},
+					"response": []
+				},
+				{
+					"name": "Consulter mes droits d'accès",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true,
+						"disabledSystemHeaders": {
+							"accept": true,
+							"accept-encoding": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/droits_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"droits_acces"
+							]
+						},
+						"description": "Ce service vous permet de consulter l'ensemble de vos droits d'accès aux données des PCE."
+					},
+					"response": []
+				},
+				{
+					"name": "Consulter des droits d'accès spécifiques",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"accept-encoding": true,
+							"accept": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/droits_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"droits_acces"
+							]
+						},
+						"description": "Ce service vous permet de consulter des droits d'accès particuliers via l'utilisation de filtres simples et/ou cumulatifs (champs : \"id_pce\", \"role_tiers\", \"etat_droit_acces\" et \"statut_controle_preuve\"). Le formalisme attendu est décrit dans les Jeux de Données du Bac A Sable."
+					},
+					"response": []
+				},
+				{
+					"name": "Révoquer un droit d'accès en tant qu'Autorisé",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/droit_acces/:id_droit_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"droit_acces",
+								":id_droit_acces"
+							],
+							"variable": [
+								{
+									"key": "id_droit_acces",
+									"value": "",
+									"description": "Renseigner l'identifiant du droit d'accès à révoquer"
+								}
+							]
+						},
+						"description": "En tant que Tiers Autorisé ce service vous permet de révoquer un droit d'accès."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données de consommation",
+			"item": [
+				{
+					"name": "Consulter Consommations publiées",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/donnees_consos_publiees?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"donnees_consos_publiees"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "Consultation des consommations publiées."
+					},
+					"response": []
+				},
+				{
+					"name": "Consulter Consommations informatives",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/donnees_consos_informatives?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"donnees_consos_informatives"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "Consultation des consommations informatives."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données d'injection",
+			"item": [
+				{
+					"name": "Consulter Injections publiées",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/donnees_injections_publiees?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"donnees_injections_publiees"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "Consultation des consommations publiées."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données contractuelles",
+			"item": [
+				{
+					"name": "Consulter Données Contractuelles",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/donnees_contractuelles",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"donnees_contractuelles"
+							],
+							"query": [
+								{
+									"key": "filtre",
+									"value": "car",
+									"description": "Filtre optionnel sur le champ CAR",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "Consultation des données contractuelles."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données techniques",
+			"item": [
+				{
+					"name": "Consulter Données Techniques",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oath2)"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/bas/v6/pce/:id_pce/donnees_techniques",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"bas",
+								"v6",
+								"pce",
+								":id_pce",
+								"donnees_techniques"
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du pce"
+								}
+							]
+						},
+						"description": "Consultation des données techniques."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://mock.api-digiconnect.grdf.fr:8008/adict/bas/v1",
+			"type": "string"
+		}
+	]
+}

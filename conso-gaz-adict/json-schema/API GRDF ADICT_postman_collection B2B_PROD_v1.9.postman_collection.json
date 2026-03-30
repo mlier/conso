@@ -1,0 +1,1802 @@
+{
+	"info": {
+		"_postman_id": "5216c00d-2ced-47e0-b983-5297d8afcda6",
+		"name": "API GRDF ADICT_postman_collection B2B_PROD_v1.9",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28355565"
+	},
+	"item": [
+		{
+			"name": "Identification",
+			"item": [
+				{
+					"name": "SOFIT - Récupérer un Access Token (EndPoint Oauth2)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic cG9jX2FwaTpwb2NfYXBp",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "scope",
+									"value": "/adict/v2",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "",
+									"description": "Renseigner le Client ID envoyé par mail",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "",
+									"description": "Renseigner le Client Secret envoyé par SMS",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://sofit-sso-oidc.grdf.fr/openam/oauth2/realms/externeGrdf/access_token",
+							"protocol": "https",
+							"host": [
+								"sofit-sso-oidc",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"openam",
+								"oauth2",
+								"realms",
+								"externeGrdf",
+								"access_token"
+							]
+						},
+						"description": "Protocole d'autorisation EndPoint Oauth2 (client_credentials)"
+					},
+					"response": []
+				},
+				{
+					"name": "OKTA  - Récupérer un Access Token",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"accept": true,
+							"accept-encoding": true,
+							"connection": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "scope",
+									"value": "/adict/v2",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "",
+									"description": "Renseigner le Client ID envoyé par mail",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "",
+									"description": "Renseigner le Client Secret envoyé par SMS",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://adict-connexion.grdf.fr/oauth2/aus5y2ta2uEHjCWIR417/v1/token",
+							"protocol": "https",
+							"host": [
+								"adict-connexion",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"oauth2",
+								"aus5y2ta2uEHjCWIR417",
+								"v1",
+								"token"
+							]
+						},
+						"description": "Protocole d'autorisation EndPoint Oauth2 (client_credentials)"
+					},
+					"response": []
+				},
+				{
+					"name": "OKTA Client Connect - Récupérer un Access Token (EndPoint OpenID)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "authorization_code",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "",
+									"description": "Renseigner le Client ID envoyé par mail",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "",
+									"description": "Renseigner le Client Secret envoyé par SMS",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://adict-connexion.grdf.fr/oauth2/aus5y2ta2uEHjCWIR417/v1/token",
+							"protocol": "https",
+							"host": [
+								"adict-connexion",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"oauth2",
+								"aus5y2ta2uEHjCWIR417",
+								"v1",
+								"token"
+							]
+						},
+						"description": "Protocole d'autorisation EndPoint Oauth2 (client_credentials)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gestion des Droits d'accès",
+			"item": [
+				{
+					"name": "Déclarer un Droit d'accès aux données d'un PCE",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"role_tiers\": \"xxxxxxxxxxxxxxxx\",\r\n  \"raison_sociale\": \"xxxxxxxxxxxxxxxx\",\r\n  \"nom_titulaire\": \"xxxxxxxxxxxxxxxx\",\r\n  \"code_postal\": \"xxxxx\",\r\n  \"courriel_titulaire\": \"xxxxxxxxxxxxxxxx\",\r\n  \"numero_telephone_mobile_titulaire\": \"xxxxxxxxxx\",\r\n  \"date_debut_droit_acces\": \"AAAA-MM-JJ\",\r\n  \"date_fin_droit_acces\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_conso_debut\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_conso_fin\": \"AAAA-MM-JJ\",\r\n  \"perim_donnees_contractuelles\": \"xxxx\",\r\n  \"perim_donnees_techniques\": \"xxxx\",\r\n  \"perim_donnees_informatives\": \"xxxx\",\r\n  \"perim_donnees_publiees\": \"xxxx\"\r\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/droit_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"droit_acces"
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "En tant que Tiers Autorisé ou que Tiers Détenteur ce service vous permet de demander un droit d'accès préalablement à la consultation des données d'un PCE. \nRemplacer les XXXX par de réelles valeurs."
+					},
+					"response": [
+						{
+							"name": "CONFLICT : La demande d’accès est incohérente. / Un droit d'accès existe déjà. / Le contrat de fourniture de gaz est échu. / Le code postal ne correspond pas à l’adresse du PCE. / Une erreur technique est survenue. / La demande d'accès est en attente de l",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "CREATED : L'opération s'est déroulée avec succès. / La demande d'accès est en attente de la validation du titulaire du PCE.",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\",\n \"id_pce\": \"<string>\",\n \"role_tiers\": \"<string>\",\n \"id_droit_acces\": \"<string>\",\n \"etat_accreditation\": \"<string>\",\n \"date_creation_droit_acces\": \"<dateTime>\",\n \"nom_titulaire\": \"<string>\",\n \"raison_sociale_du_titulaire\": \"<string>\",\n \"courriel_titulaire\": \"<string>\",\n \"code_postal\": \"<string>\",\n \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n \"perim_historique_de_donnees\": \"<boolean>\",\n \"perim_flux_de_donnees\": \"<boolean>\",\n \"perim_donnees_informatives\": \"<boolean>\",\n \"perim_donnees_publiees\": \"<boolean>\",\n \"date_debut_autorisation\": \"<dateTime>\",\n \"date_fin_autorisation\": \"<dateTime>\",\n \"parcours\": \"<string>\"\n}"
+						},
+						{
+							"name": "BAD REQUEST : Le PCE n'est pas renseigné. / Le format du PCE est incorrect. / Le code postal n'est pas renseigné. / Le format du code postal est incorrect. / Le nom ou la raison sociale doivent être renseignés. / Le courriel du titulaire n'est pas renseig",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "NOT FOUND : Le PCE est inconnu.",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "INTERNAL SERVER ERROR : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "Internal Server Error",
+							"code": 500,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Transmettre preuves",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "preuves",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "preuves",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								},
+								{
+									"key": "preuves",
+									"type": "file",
+									"src": [],
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/droit_acces/:id_droit_acces/preuves",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"droit_acces",
+								":id_droit_acces",
+								"preuves"
+							],
+							"variable": [
+								{
+									"key": "id_droit_acces",
+									"value": ""
+								}
+							]
+						},
+						"description": "En tant que Tiers Autorisé ou que Tiers Détenteur ce service vous permet de demander un droit d'accès préalablement à la consultation des données d'un PCE. \nRemplacer les XXXX par de réelles valeurs."
+					},
+					"response": [
+						{
+							"name": "OK : L'opération s'est déroulée avec succès.",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "CONFLICT :",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									},
+									{
+										"key": "environnement",
+										"value": "<string>",
+										"description": "environnement d'appel au référent"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role_tiers\": \"<string>\",\n    \"code_postal\": \"<string>\",\n    \"raison_sociale\": \"<string>\",\n    \"nom_titulaire\": \"<string>\",\n    \"id_pce\": \"<string>\",\n    \"courriel_titulaire\": \"<email>\",\n    \"date_consentement_declaree\": \"<dateTime>\",\n    \"date_fin_autorisation_demandee\": \"<date>\",\n    \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n    \"perim_historique_de_donnees\": \"<boolean>\",\n    \"perim_flux_de_donnees\": \"<boolean>\",\n    \"perim_donnees_informatives\": \"<boolean>\",\n    \"perim_donnees_publiees\": \"<boolean>\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/pce/<string>/droit_acces",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"pce",
+										"<string>",
+										"droit_acces"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Consulter mes Droits d'accès",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true,
+						"disabledSystemHeaders": {
+							"accept-encoding": true,
+							"accept": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/droits_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"droits_acces"
+							]
+						},
+						"description": "Ce service vous permet de consulter l'ensemble de vos droits d'accès aux données des PCE."
+					},
+					"response": [
+						{
+							"name": "OK : L'opération s'est déroulée avec succès. / Aucun droit d'accès trouvé. / Trop de droits d'accès remontés.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\",\n \"id_traitement_asynchrone\": \"<string>\",\n \"liste_acces\": [\n  {\n   \"id_droit_acces\": \"<string>\",\n   \"id_pce\": \"<string>\",\n   \"role_tiers\": \"<string>\",\n   \"raison_sociale_du_tiers\": \"<string>\",\n   \"nom_titulaire\": \"<string>\",\n   \"raison_sociale_du_titulaire\": \"<string>\",\n   \"courriel_titulaire\": \"<string>\",\n   \"code_postal\": \"<string>\",\n   \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n   \"perim_historique_de_donnees\": \"<boolean>\",\n   \"perim_flux_de_donnees\": \"<boolean>\",\n   \"perim_donnees_informatives\": \"<boolean>\",\n   \"perim_donnees_publiees\": \"<boolean>\",\n   \"date_creation\": \"<dateTime>\",\n   \"etat_droit_acces\": \"<string>\",\n   \"date_revocation\": \"<dateTime>\",\n   \"source_revocation\": \"<string>\",\n   \"date_passage_a_obsolete\": \"<dateTime>\",\n   \"source_passage_a_obsolete\": \"<string>\",\n   \"date_debut_autorisation\": \"<dateTime>\",\n   \"date_fin_autorisation\": \"<dateTime>\",\n   \"date_passage_a_refuse\": \"<dateTime>\",\n   \"source_passage_a_refuse\": \"<string>\",\n   \"parcours\": \"<string>\"\n  },\n  {\n   \"id_droit_acces\": \"<string>\",\n   \"id_pce\": \"<string>\",\n   \"role_tiers\": \"<string>\",\n   \"raison_sociale_du_tiers\": \"<string>\",\n   \"nom_titulaire\": \"<string>\",\n   \"raison_sociale_du_titulaire\": \"<string>\",\n   \"courriel_titulaire\": \"<string>\",\n   \"code_postal\": \"<string>\",\n   \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n   \"perim_historique_de_donnees\": \"<boolean>\",\n   \"perim_flux_de_donnees\": \"<boolean>\",\n   \"perim_donnees_informatives\": \"<boolean>\",\n   \"perim_donnees_publiees\": \"<boolean>\",\n   \"date_creation\": \"<dateTime>\",\n   \"etat_droit_acces\": \"<string>\",\n   \"date_revocation\": \"<dateTime>\",\n   \"source_revocation\": \"<string>\",\n   \"date_passage_a_obsolete\": \"<dateTime>\",\n   \"source_passage_a_obsolete\": \"<string>\",\n   \"date_debut_autorisation\": \"<dateTime>\",\n   \"date_fin_autorisation\": \"<dateTime>\",\n   \"date_passage_a_refuse\": \"<dateTime>\",\n   \"source_passage_a_refuse\": \"<string>\",\n   \"parcours\": \"<string>\"\n  }\n ]\n}"
+						},
+						{
+							"name": "BAD REQUEST : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "UNAUTHORIZED : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "INTERNAL SERVER ERROR : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Internal Server Error",
+							"code": 500,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "CONFLICT : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Consulter des Droits d'accès spécifiques",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"accept": true,
+							"accept-encoding": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"role_tiers\": [\"AUTORISE_CONTRAT_FOURNITURE\", \"DETENTEUR_CONTRAT_FOURNITURE\"],\r\n    \"etat_droit_acces\": [\"Active\", \"A valider\", \"Révoquée\", \"A revérifier\", \"Obsolète\", \"Refusée\"],\r\n    \"statut_controle_preuve\": [\"Preuve en attente\", \"Preuve en cours de vérification\", \"Preuve Vérifiée OK\", \"Preuve Vérifiée KO\"],\r\n    \"id_pce\": [\"xxxxxxxxxxxxxx\", \"xxxxxxxxxxxxxx\", \"xxxxxxxxxxxxxx\"]\r\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/droits_acces",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"droits_acces"
+							]
+						},
+						"description": "Ce service vous permet de consulter des droits d'accès particuliers via l'utilisation de filtres simples et/ou cumulatifs (champs : \"id_pce\", \"role_tiers\", \"etat_droit_acces\" et \"statut_controle_preuve\"). Le formalisme attendu est décrit dans les Jeux de Données du Bac A Sable ainsi que dans la documentation. Remplacer les XXXX par de réelles valeurs."
+					},
+					"response": [
+						{
+							"name": "UNAUTHORIZED : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "OK : L'opération s'est déroulée avec succès. / Aucun droit d'accès trouvé. / Trop de droits d'accès remontés.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\",\n \"id_traitement_asynchrone\": \"<string>\",\n \"liste_acces\": [\n  {\n   \"id_droit_acces\": \"<string>\",\n   \"id_pce\": \"<string>\",\n   \"role_tiers\": \"<string>\",\n   \"raison_sociale_du_tiers\": \"<string>\",\n   \"nom_titulaire\": \"<string>\",\n   \"raison_sociale_du_titulaire\": \"<string>\",\n   \"courriel_titulaire\": \"<string>\",\n   \"code_postal\": \"<string>\",\n   \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n   \"perim_historique_de_donnees\": \"<boolean>\",\n   \"perim_flux_de_donnees\": \"<boolean>\",\n   \"perim_donnees_informatives\": \"<boolean>\",\n   \"perim_donnees_publiees\": \"<boolean>\",\n   \"date_creation\": \"<dateTime>\",\n   \"etat_droit_acces\": \"<string>\",\n   \"date_revocation\": \"<dateTime>\",\n   \"source_revocation\": \"<string>\",\n   \"date_passage_a_obsolete\": \"<dateTime>\",\n   \"source_passage_a_obsolete\": \"<string>\",\n   \"date_debut_autorisation\": \"<dateTime>\",\n   \"date_fin_autorisation\": \"<dateTime>\",\n   \"date_passage_a_refuse\": \"<dateTime>\",\n   \"source_passage_a_refuse\": \"<string>\",\n   \"parcours\": \"<string>\"\n  },\n  {\n   \"id_droit_acces\": \"<string>\",\n   \"id_pce\": \"<string>\",\n   \"role_tiers\": \"<string>\",\n   \"raison_sociale_du_tiers\": \"<string>\",\n   \"nom_titulaire\": \"<string>\",\n   \"raison_sociale_du_titulaire\": \"<string>\",\n   \"courriel_titulaire\": \"<string>\",\n   \"code_postal\": \"<string>\",\n   \"perim_donnees_techniques_et_contractuelles\": \"<boolean>\",\n   \"perim_historique_de_donnees\": \"<boolean>\",\n   \"perim_flux_de_donnees\": \"<boolean>\",\n   \"perim_donnees_informatives\": \"<boolean>\",\n   \"perim_donnees_publiees\": \"<boolean>\",\n   \"date_creation\": \"<dateTime>\",\n   \"etat_droit_acces\": \"<string>\",\n   \"date_revocation\": \"<dateTime>\",\n   \"source_revocation\": \"<string>\",\n   \"date_passage_a_obsolete\": \"<dateTime>\",\n   \"source_passage_a_obsolete\": \"<string>\",\n   \"date_debut_autorisation\": \"<dateTime>\",\n   \"date_fin_autorisation\": \"<dateTime>\",\n   \"date_passage_a_refuse\": \"<dateTime>\",\n   \"source_passage_a_refuse\": \"<string>\",\n   \"parcours\": \"<string>\"\n  }\n ]\n}"
+						},
+						{
+							"name": "CONFLICT : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Conflict",
+							"code": 409,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "BAD REQUEST : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						},
+						{
+							"name": "INTERNAL SERVER ERROR : Une erreur technique est survenue.",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "U_EM",
+										"value": "<string>",
+										"description": "identifiant internaute du tiers"
+									},
+									{
+										"key": "RS",
+										"value": "<string>",
+										"description": "raison sociale du tiers"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/droits_acces?object=<string>&statut_controle=<integer>",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"droits_acces"
+									],
+									"query": [
+										{
+											"key": "object",
+											"value": "<string>"
+										},
+										{
+											"key": "statut_controle",
+											"value": "<integer>"
+										}
+									]
+								}
+							},
+							"status": "Internal Server Error",
+							"code": 500,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n \"code_statut_traitement\": \"<string>\",\n \"message_retour_traitement\": \"<string>\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Révoquer un Droit d'accès en tant qu'Autorisé",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Cache-Control",
+								"value": "no-cache"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n}"
+						},
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v1/droit_acces/:id_accreditation",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v1",
+								"droit_acces",
+								":id_accreditation"
+							],
+							"variable": [
+								{
+									"key": "id_accreditation",
+									"value": "",
+									"description": "Renseigner l'identifiant du droit d'accès à révoquer"
+								}
+							]
+						},
+						"description": "En tant que Tiers Autorisé ce service vous permet de révoquer un droit d'accès."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données de Consommation",
+			"item": [
+				{
+					"name": "Consulter Consommations Publiées",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/donnees_consos_publiees?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"donnees_consos_publiees"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "Consultation des consommations publiées."
+					},
+					"response": []
+				},
+				{
+					"name": "Consulter Consommations Informatives",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/donnees_consos_informatives?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"donnees_consos_informatives"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "Consultation des consommations informatives."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données d'Injection",
+			"item": [
+				{
+					"name": "Consulter Injections Publiées",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-ndjson",
+								"description": "Format de Sortie (xndjson)",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/donnees_injections_publiees?periode=",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"donnees_injections_publiees"
+							],
+							"query": [
+								{
+									"key": "periode",
+									"value": "",
+									"description": "Période de consultation des consommations"
+								},
+								{
+									"key": "date_debut",
+									"value": "",
+									"description": "Date de début de consultation des consommations",
+									"disabled": true
+								},
+								{
+									"key": "date_fin",
+									"value": "",
+									"description": "Date de fin de consultation des consommations",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "Consultation des consommations publiées."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données Contractuelles",
+			"item": [
+				{
+					"name": "Consulter Données Contractuelles",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/donnees_contractuelles",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"donnees_contractuelles"
+							],
+							"query": [
+								{
+									"key": "filtre",
+									"value": "car",
+									"description": "Filtre optionnel sur le champ CAR",
+									"disabled": true
+								},
+								{
+									"key": "filtre",
+									"value": "cja",
+									"description": "Filtre optionnel sur le champ CJA",
+									"disabled": true
+								},
+								{
+									"key": "filtre",
+									"value": "profil_type_actuel",
+									"description": "Filtre optionnel sur le champ Profil",
+									"disabled": true
+								},
+								{
+									"key": "filtre",
+									"value": "tarif_acheminement",
+									"description": "Filtre optionnel sur le champ Tarif",
+									"disabled": true
+								},
+								{
+									"key": "filtre",
+									"value": "date_mes",
+									"description": "Filtre optionnel sur le champ Date de MES",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "Consultation des données contractuelles."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Données Techniques",
+			"item": [
+				{
+					"name": "Consulter Données Techniques",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer ",
+								"description": "Renseigner le Bearer associé à votre access token (protocole d'autorisation EndPoint Oauth2)",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.grdf.fr/adict/v2/pce/:id_pce/donnees_techniques",
+							"protocol": "https",
+							"host": [
+								"api",
+								"grdf",
+								"fr"
+							],
+							"path": [
+								"adict",
+								"v2",
+								"pce",
+								":id_pce",
+								"donnees_techniques"
+							],
+							"variable": [
+								{
+									"key": "id_pce",
+									"value": "",
+									"description": "Renseigner l'identifiant du PCE"
+								}
+							]
+						},
+						"description": "Consultation des données techniques."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
