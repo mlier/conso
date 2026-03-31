@@ -67,6 +67,7 @@ library
 
     build-depends:
           base >=4.17 && <5
+        , conso-gaz-adict
         , uuid >= 1.3
         , text
         , time
