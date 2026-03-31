@@ -16,54 +16,54 @@ library
     import:           warnings
     exposed-modules:
         -- Registre central (UUID ↔ PRM ↔ PCE)
-        Conso.Fr.Site.Types
-        Conso.Fr.Site.Registry
-        Conso.Fr.Site.Registry.Schema
-        Conso.Fr.Site.Registry.Operations
+        Conso.Fr.SiteDB.Types
+        Conso.Fr.SiteDB.Registry
+        Conso.Fr.SiteDB.Registry.Schema
+        Conso.Fr.SiteDB.Registry.Operations
 
         -- SgeDB : stockage électricité (façade)
-        Conso.Fr.Site.SiteDB.Elec
+        Conso.Fr.SiteDB.Elec
 
         -- SgeDB : types
-        Conso.Fr.Site.SiteDB.Elec.Types.Common
-        Conso.Fr.Site.SiteDB.Elec.Types.Header
-        Conso.Fr.Site.SiteDB.Elec.Types.R63
-        Conso.Fr.Site.SiteDB.Elec.Types.R64
-        Conso.Fr.Site.SiteDB.Elec.Types.R65
-        Conso.Fr.Site.SiteDB.Elec.Types.R66
-        Conso.Fr.Site.SiteDB.Elec.Types.R67
-        Conso.Fr.Site.SiteDB.Elec.Types.C68
+        Conso.Fr.SiteDB.Elec.Types.Common
+        Conso.Fr.SiteDB.Elec.Types.Header
+        Conso.Fr.SiteDB.Elec.Types.R63
+        Conso.Fr.SiteDB.Elec.Types.R64
+        Conso.Fr.SiteDB.Elec.Types.R65
+        Conso.Fr.SiteDB.Elec.Types.R66
+        Conso.Fr.SiteDB.Elec.Types.R67
+        Conso.Fr.SiteDB.Elec.Types.C68
 
         -- SgeDB : stockage SQLite
-        Conso.Fr.Site.SiteDB.Elec.Storage.Connection
-        Conso.Fr.Site.SiteDB.Elec.Storage.Migration
-        Conso.Fr.Site.SiteDB.Elec.Storage.Schema
-        Conso.Fr.Site.SiteDB.Elec.Storage.Insert
-        Conso.Fr.Site.SiteDB.Elec.Storage.Query
-        Conso.Fr.Site.SiteDB.Elec.Storage.Gaps
+        Conso.Fr.SiteDB.Elec.Storage.Connection
+        Conso.Fr.SiteDB.Elec.Storage.Migration
+        Conso.Fr.SiteDB.Elec.Storage.Schema
+        Conso.Fr.SiteDB.Elec.Storage.Insert
+        Conso.Fr.SiteDB.Elec.Storage.Query
+        Conso.Fr.SiteDB.Elec.Storage.Gaps
 
         -- SgeDB : ingestion JSON
-        Conso.Fr.Site.SiteDB.Elec.Ingestion.Parser
-        Conso.Fr.Site.SiteDB.Elec.Ingestion.Versioning
-        Conso.Fr.Site.SiteDB.Elec.Ingestion.Batch
-        Conso.Fr.Site.SiteDB.Elec.Ingestion.FromRfiles
-        Conso.Fr.Site.SiteDB.Elec.Ingestion.GapFill
+        Conso.Fr.SiteDB.Elec.Ingestion.Parser
+        Conso.Fr.SiteDB.Elec.Ingestion.Versioning
+        Conso.Fr.SiteDB.Elec.Ingestion.Batch
+        Conso.Fr.SiteDB.Elec.Ingestion.FromRfiles
+        Conso.Fr.SiteDB.Elec.Ingestion.GapFill
 
         -- AdictDB : stockage gaz
-        Conso.Fr.Site.SiteDB.Gaz.Types
-        Conso.Fr.Site.SiteDB.Gaz.Storage.Migration
-        Conso.Fr.Site.SiteDB.Gaz.Storage.Insert
-        Conso.Fr.Site.SiteDB.Gaz.Ingestion.FromApi
+        Conso.Fr.SiteDB.Gaz.Types
+        Conso.Fr.SiteDB.Gaz.Storage.Migration
+        Conso.Fr.SiteDB.Gaz.Storage.Insert
+        Conso.Fr.SiteDB.Gaz.Ingestion.FromApi
 
         -- SgeDB : analyse
-        Conso.Fr.Site.SiteDB.Elec.Analysis.Aggregate
-        Conso.Fr.Site.SiteDB.Elec.Analysis.Compare
-        Conso.Fr.Site.SiteDB.Elec.Analysis.Anomaly
+        Conso.Fr.SiteDB.Elec.Analysis.Aggregate
+        Conso.Fr.SiteDB.Elec.Analysis.Compare
+        Conso.Fr.SiteDB.Elec.Analysis.Anomaly
 
         -- SgeDB : export
-        Conso.Fr.Site.SiteDB.Elec.Export.CSV
-        Conso.Fr.Site.SiteDB.Elec.Export.JSON
-        Conso.Fr.Site.SiteDB.Elec.Export.Consolidate
+        Conso.Fr.SiteDB.Elec.Export.CSV
+        Conso.Fr.SiteDB.Elec.Export.JSON
+        Conso.Fr.SiteDB.Elec.Export.Consolidate
 
     build-depends:
           base >=4.17 && <5

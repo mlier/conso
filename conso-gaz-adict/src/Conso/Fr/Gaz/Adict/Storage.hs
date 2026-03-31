@@ -46,10 +46,10 @@ import           Conso.Fr.Gaz.Adict.InjectionsPubliees
     ( consulterInjectionsPubliees )
 import           Conso.Fr.Gaz.Adict.Types
 
-import           Conso.Fr.Site.SiteDB.Gaz.Ingestion.FromApi
+import           Conso.Fr.SiteDB.Gaz.Ingestion.FromApi
     ( AdictFetchCallbacks(..) )
-import           Conso.Fr.Site.SiteDB.Gaz.Types
-import           Conso.Fr.Site.Types
+import           Conso.Fr.SiteDB.Gaz.Types
+import           Conso.Fr.SiteDB.Types
     ( Pce(..) )
 
 
