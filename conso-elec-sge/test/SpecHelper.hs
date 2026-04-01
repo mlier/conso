@@ -5,12 +5,16 @@ module SpecHelper (
   testPointId, testNomClient,
   productionC, homologationC, recevablesC, nonRecevablesC,
   pendingOnNetworkError,
-  shouldHaveCode
+  shouldHaveCode,
+  cleanupServices
 ) where
 
-import Test.Hspec
 import Control.Exception (try)
+import Control.Monad (unless)
 import Network.HTTP.Client (HttpException)
+import Test.Hspec
+import qualified Data.Text as T
+import Text.XML.HaXml.Schema.Schema (SimpleType(simpleTypeText))
 
 import Conso.Fr.Elec.Sge.Sge
     ( getEnv,
@@ -19,7 +23,19 @@ import Conso.Fr.Elec.Sge.Sge
       SgeEnv(test),
       Test(nomClientFinalOuDenominationSociale, pointId) )
 
-import qualified Data.Text as T
+import qualified Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10 as RSA
+import           Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
+    ( RechercherServicesAccesDonneesReponseType
+    , rechercherServicesAccesDonneesReponseType_servicesSouscrits
+    , servicesSouscritsType_serviceSouscrit
+    , serviceSouscritType_serviceSouscritId
+    , serviceSouscritType_etatCode
+    , serviceSouscritType_soutirage
+    , serviceSouscritType_injection )
+import qualified Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10 as ASAD
+import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10 ( Sens(..) )
+import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
+    ( CommanderArretServicesAccesDonneesResponseType )
 
 
 testPointId :: IO String
@@ -40,6 +56,38 @@ pendingOnNetworkError action = do
     case res of
         Left e   -> pendingWith $ "Serveur d'homologation inaccessible (réseau/TLS) : " ++ show e
         Right () -> return ()
+
+
+-- | Arrête tous les services actifs sur le PRM avant un test.
+--   Effectue une recherche RSA, filtre les services ACTIF, et les arrête via ASAD
+--   en séparant les sens SOUTIRAGE et INJECTION.
+cleanupServices :: String -> IO ()
+cleanupServices prm = do
+    rsaType <- RSA.initTypeTest prm
+    rep     <- wsRequestTest rsaType
+                   :: IO (Either (String, String) RechercherServicesAccesDonneesReponseType)
+    case rep of
+        Left  _    -> return ()
+        Right resp -> do
+            let services = maybe [] servicesSouscritsType_serviceSouscrit
+                               (rechercherServicesAccesDonneesReponseType_servicesSouscrits resp)
+            let actifs   = filter isActif services
+            let sidsSOUT = map getSid $ filter isSoutirage actifs
+            let sidsINJ  = map getSid $ filter isInjection actifs
+            unless (null sidsSOUT) $ stopBySens prm SensSOUTIRAGE sidsSOUT
+            unless (null sidsINJ)  $ stopBySens prm SensINJECTION sidsINJ
+  where
+    isActif s   = "ACTIF" `elem` map simpleTypeText (serviceSouscritType_etatCode s)
+    getSid      = simpleTypeText . serviceSouscritType_serviceSouscritId
+    isSoutirage = not . null . serviceSouscritType_soutirage
+    isInjection = not . null . serviceSouscritType_injection
+
+stopBySens :: String -> Sens -> [String] -> IO ()
+stopBySens prm sens sids = do
+    asadType <- ASAD.initTypeTest prm sens sids
+    _        <- wsRequestTest asadType
+                    :: IO (Either (String, String) CommanderArretServicesAccesDonneesResponseType)
+    return ()
 
 
 productionC :: String

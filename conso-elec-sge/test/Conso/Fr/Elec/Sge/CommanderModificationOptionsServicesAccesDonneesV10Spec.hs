@@ -60,6 +60,7 @@ stopService prm sid = do
 
 shouldAjouterOptionsHomo :: String -> Expectation
 shouldAjouterOptionsHomo prm = pendingOnNetworkError $ do
+    cleanupServices prm
     msid <- createService prm
     case msid of
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
@@ -73,6 +74,7 @@ shouldAjouterOptionsHomo prm = pendingOnNetworkError $ do
 
 shouldSupprimerOptionsHomo :: String -> Expectation
 shouldSupprimerOptionsHomo prm = pendingOnNetworkError $ do
+    cleanupServices prm
     msid <- createService prm
     case msid of
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"

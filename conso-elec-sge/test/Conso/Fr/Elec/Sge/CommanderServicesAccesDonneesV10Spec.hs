@@ -19,6 +19,7 @@ isRightOrSgt570 (Left (code, _)) = code == "SGT570"
 
 shouldDemanderC5Homo :: String -> String -> Maybe Integer -> Expectation
 shouldDemanderC5Homo prm typeDonnees duree = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees duree
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
@@ -26,6 +27,7 @@ shouldDemanderC5Homo prm typeDonnees duree = pendingOnNetworkError $ do
 
 shouldDemanderC2C4Homo :: String -> String -> Maybe Integer -> Expectation
 shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees duree
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
@@ -33,6 +35,7 @@ shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
 
 shouldRefuserHomo :: String -> String -> String -> Expectation
 shouldRefuserHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm SensSOUTIRAGE Nothing typeDonnees (Just 500)
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
@@ -40,6 +43,7 @@ shouldRefuserHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
 
 shouldRefuserDateFinHomo :: String -> String -> String -> Expectation
 shouldRefuserDateFinHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
+    cleanupServices prm
     -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT509
     myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1200)
     rep    <- wsRequestTest myType

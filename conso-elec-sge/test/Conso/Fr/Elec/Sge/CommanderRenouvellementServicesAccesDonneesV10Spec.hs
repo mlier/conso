@@ -47,6 +47,7 @@ createService prm = do
 
 shouldRenouvelerHomo :: String -> Expectation
 shouldRenouvelerHomo prm = pendingOnNetworkError $ do
+    cleanupServices prm
     msid <- createService prm
     case msid of
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
@@ -59,6 +60,7 @@ shouldRenouvelerHomo prm = pendingOnNetworkError $ do
 
 shouldRefuserRenouvelerHomo :: String -> Expectation
 shouldRefuserRenouvelerHomo prm = pendingOnNetworkError $ do
+    cleanupServices prm
     -- Crée un service SOUTIRAGE, tente de le renouveler en INJECTION → SGT566
     msid <- createService prm
     case msid of

@@ -45,6 +45,7 @@ createService prm = do
 
 shouldArretHomo :: String -> Expectation
 shouldArretHomo prm = pendingOnNetworkError $ do
+    cleanupServices prm
     msid <- createService prm
     case msid of
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
