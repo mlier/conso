@@ -28,8 +28,9 @@ import qualified Data.Text.Lazy.Encoding as LE
 
 import           Network.SOAP ( invokeWS, ResponseParser(RawParser) )
 import           Network.SOAP.Transport.HTTP ( initTransportWithM, RequestProc,
-                 printRequest, printBody 
+                 printRequest
                  )
+import qualified Data.ByteString.Lazy as LBS  -- pour prettyBody
 import           Network.SOAP.Transport.HTTP.TLS ( makeSettings )
 import           Data.X509.Validation ( validateDefault )
 import           System.X509 ( getSystemCertificateStore )
@@ -230,6 +231,13 @@ tagLocal n = tagWith (\pn -> localPart pn == n)
 prettyXml :: String -> String
 prettyXml = PP.render . P.document . xmlParse "(response)"
 
+-- | Comme 'printBody' mais indente le XML avant affichage.
+prettyBody :: LBS.ByteString -> IO LBS.ByteString
+prettyBody bs = do
+    putStrLn "Response :"
+    putStrLn $ prettyXml $ L.unpack $ LE.decodeUtf8 bs
+    return bs
+
 
 getHaskellType :: (ResponseType a) => String -> XMLParser a -> Element Posn -> a
 getHaskellType myXmlTag myElementResponse root = plans
@@ -259,7 +267,7 @@ soapRequest envSge myUrlSge mySoapAction body = do
         settings
         fullUrlSge
         ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> printRequest  ) -- pure or printRequest
-        printBody -- pure -- or printBody
+        prettyBody -- pure or printBody or prettyBody
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
     return $ L.unpack (LE.decodeUtf8 xml)
