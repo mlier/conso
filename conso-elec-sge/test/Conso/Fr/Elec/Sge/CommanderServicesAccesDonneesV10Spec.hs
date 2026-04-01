@@ -44,7 +44,7 @@ shouldRefuserHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
 shouldRefuserDateFinHomo :: String -> String -> String -> Expectation
 shouldRefuserDateFinHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
     cleanupServices prm
-    -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT509
+    -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT5O9
     myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1200)
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
@@ -75,8 +75,8 @@ spec = do
         describe nonRecevablesC $ do
             it "SAD-NR1 C5 - Sans accord client (SGT566)" $
                 shouldRefuserHomo sadPrmC5R1 "ENERGIE" "SGT566"
-            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT509)" $
-                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIE" "SGT509"
+            it "SAD-NR2 C5 - Date de fin > 3 ans (SGT5O9)" $
+                shouldRefuserDateFinHomo sadPrmC5R1 "ENERGIE" "SGT5O9"
 
 
 main :: IO ()

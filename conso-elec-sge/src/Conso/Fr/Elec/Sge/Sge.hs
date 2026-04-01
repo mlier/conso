@@ -289,25 +289,25 @@ checkXMLerror xmlResp = do
     let faultXml    = deep (tagLocal "faultstring") $ CElem root noPos
     let resultatXml = deep (tagLocal "resultat")    $ CElem root noPos
     let resultat    = runParser elementResultat resultatXml
-    case faultXml of
-        (c:_) -> Left ("SOAP_FAULT", PP.render (P.content c))
-        []    -> case resultat of
-            (Right ( ResultatType
-                      ( ResultatLibelleType ( XsdString _ ) )
-                      ( ResultatTypeAttributes{ 
-                            resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) 
-                        } 
-                      )
-                  ), _)
-                            -> Right root
-            (Right ( ResultatType
-                      ( ResultatLibelleType ( XsdString l ) )
-                      ( ResultatTypeAttributes{ 
-                            resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) 
-                        } 
-                      )
-                  ), _)
-                            -> Left (a, l)
-            _               -> Right root
+    case resultat of
+        (Right ( ResultatType
+                  ( ResultatLibelleType ( XsdString _ ) )
+                  ( ResultatTypeAttributes{
+                        resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) )
+                    }
+                  )
+              ), _)
+                        -> Right root
+        (Right ( ResultatType
+                  ( ResultatLibelleType ( XsdString l ) )
+                  ( ResultatTypeAttributes{
+                        resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) )
+                    }
+                  )
+              ), _)
+                        -> Left (a, l)
+        _               -> case faultXml of
+                               (c:_) -> Left ("SOAP_FAULT", PP.render (P.content c))
+                               []    -> Right root
 
 
