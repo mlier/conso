@@ -14,7 +14,7 @@ module Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 (
 ) where
 
 import qualified Data.Text as T
-import           Data.Time ( getCurrentTime, addDays, formatTime, defaultTimeLocale, utctDay )
+import           Data.Time ( getZonedTime, zonedTimeToLocalTime, localDay, addDays, formatTime, defaultTimeLocale )
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
@@ -86,11 +86,12 @@ instance ResponseType RenouvelerServicesAccesResponseType where
 initType_ :: Bool -> String -> Sens -> AccordPersonneType -> [String] -> Maybe Integer -> IO RenouvelerServicesAccesType
 initType_ prod myPointId sens accordPersonneType serviceIds duree = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
-    currentTime <- getCurrentTime
+    zonedTime <- getZonedTime
+    let today = localDay (zonedTimeToLocalTime zonedTime)
     let dateFin = case duree of
             Just d  -> Just $ DateType $ Xsd.Date
                          $ formatTime defaultTimeLocale "%Y-%m-%d"
-                         $ addDays d (utctDay currentTime)
+                         $ addDays d today
             Nothing -> Nothing
 
     let sensType = case sens of

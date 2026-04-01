@@ -20,9 +20,7 @@ module Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10 (
   initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
 ) where
 
-import           Data.Time.Clock (getCurrentTime, utctDay)
-import           Data.Time.Calendar (addDays)
-import           Data.Time.Format (formatTime, defaultTimeLocale)
+import           Data.Time ( getZonedTime, zonedTimeToLocalTime, localDay, addDays, formatTime, defaultTimeLocale )
 import qualified Data.Text as T
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) ) 
@@ -97,11 +95,12 @@ initType_ :: Bool -> String -> Maybe Integer -> Maybe AccordPersonneType -> Stri
 initType_ prod myPointId duree accordPersonneType typeDonnees sens = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
-    currentTime <- getCurrentTime
-    let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" currentTime
+    zonedTime <- getZonedTime
+    let today = localDay (zonedTimeToLocalTime zonedTime)
+    let dateDebut = formatTime defaultTimeLocale "%Y-%m-%d" today
 
     let dateFin = case duree of
-            Just d -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" $ addDays d (utctDay currentTime)
+            Just d -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d" $ addDays d today
             Nothing -> Nothing
 
     let soutirage = case sens of

@@ -115,6 +115,7 @@ library
     build-depends:
           base >=4.17.2.1
         , time
+        , time-locale-compat
         , soap
         , soap-tls
         , crypton-x509-validation

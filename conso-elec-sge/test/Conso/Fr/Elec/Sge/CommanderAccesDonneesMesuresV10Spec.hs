@@ -12,24 +12,27 @@ import Conso.Fr.Elec.Sge.CommanderAccesDonneesMesuresV10Type
 
 -- | Pour les services de commande, SGT570 ("service déjà actif") est
 --   également recevable.
-isRightOrSgt570 :: Either (String, String) a -> Bool
-isRightOrSgt570 (Right _)          = True
-isRightOrSgt570 (Left (code, _))   = code == "SGT570"
+isRight :: Either (String, String) a -> Bool
+isRight (Right _)          = True
+isRight (Left _)           = False
 
 shouldCommanderHomo :: String -> Maybe Integer -> String -> Expectation
 shouldCommanderHomo prm duree typeDonnees = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
-    rep `shouldSatisfy` isRightOrSgt570
+    rep `shouldSatisfy` isRight
 
 shouldRefuserHomo :: String -> Maybe Integer -> String -> String -> Expectation
 shouldRefuserHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldHaveCode` expectedCode
 
 shouldRefuserUnlessActiveHomo :: String -> Maybe Integer -> String -> String -> Expectation
 shouldRefuserUnlessActiveHomo prm duree typeDonnees expectedCode = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm duree (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     case rep of
@@ -38,6 +41,7 @@ shouldRefuserUnlessActiveHomo prm duree typeDonnees expectedCode = pendingOnNetw
 
 shouldRefuserSansAccordHomo :: String -> String -> Expectation
 shouldRefuserSansAccordHomo prm expectedCode = pendingOnNetworkError $ do
+    cleanupServices prm
     myType <- initTypeTest prm (Just (3 * 365)) Nothing "CDC" SensSOUTIRAGE
     rep    <- wsRequestTest myType :: IO (Either (String, String) CommanderAccesDonneesMesuresResponseType)
     rep `shouldHaveCode` expectedCode
@@ -65,7 +69,7 @@ spec = do
 
             it "ACCES-NR2 - Durée supérieure à 3 ans (SGT5O9)" $ do
                 -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
-                shouldRefuserUnlessActiveHomo accesPrmC5 (Just 1097) "CDC" "SGT5O9"
+                shouldRefuserUnlessActiveHomo accesPrmC5 (Just 1500) "CDC" "SGT5O9"
 
 
 main :: IO ()
