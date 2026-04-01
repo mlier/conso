@@ -259,7 +259,7 @@ soapRequest envSge myUrlSge mySoapAction body = do
         settings
         fullUrlSge
         ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> printRequest  ) -- pure or printRequest
-        pure -- or printBody
+        printBody -- pure -- or printBody
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
     return $ L.unpack (LE.decodeUtf8 xml)
@@ -276,24 +276,30 @@ xml2hsType myXmlTag myElementResponse xml = do
 
 
 checkXMLerror :: String -> Either (String, String) (Element Posn)
-checkXMLerror xmlResp =  do
+checkXMLerror xmlResp = do
     let (Document _ _ root _) = xmlParse "(No Document)" xmlResp
-    let resultatXml = deep (tagLocal "resultat") $ CElem root noPos
-    let resultat = runParser elementResultat resultatXml
-
-    case resultat of
-        (Right ( ResultatType
-                  ( ResultatLibelleType ( XsdString _ ) )
-                  ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) } )
-              ), _)
-                        -> Right root
-
-
-        (Right ( ResultatType
-                  ( ResultatLibelleType ( XsdString l ) )
-                  ( ResultatTypeAttributes{ resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) } )
-              ), _)
-                        -> Left (a, l)
-        _               -> Right root
+    let faultXml    = deep (tagLocal "faultstring") $ CElem root noPos
+    let resultatXml = deep (tagLocal "resultat")    $ CElem root noPos
+    let resultat    = runParser elementResultat resultatXml
+    case faultXml of
+        (c:_) -> Left ("SOAP_FAULT", PP.render (P.content c))
+        []    -> case resultat of
+            (Right ( ResultatType
+                      ( ResultatLibelleType ( XsdString _ ) )
+                      ( ResultatTypeAttributes{ 
+                            resultatTypeAttributes_code = ( ResultatCodeType ( XsdString "SGT200" ) ) 
+                        } 
+                      )
+                  ), _)
+                            -> Right root
+            (Right ( ResultatType
+                      ( ResultatLibelleType ( XsdString l ) )
+                      ( ResultatTypeAttributes{ 
+                            resultatTypeAttributes_code = ( ResultatCodeType ( XsdString a ) ) 
+                        } 
+                      )
+                  ), _)
+                            -> Left (a, l)
+            _               -> Right root
 
 
