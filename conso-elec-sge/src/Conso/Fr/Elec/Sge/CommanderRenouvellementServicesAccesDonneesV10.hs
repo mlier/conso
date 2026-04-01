@@ -14,6 +14,7 @@ module Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 (
 ) where
 
 import qualified Data.Text as T
+import           Data.Time ( getCurrentTime, addDays, formatTime, defaultTimeLocale, utctDay )
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
@@ -23,6 +24,7 @@ import Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
       BooleenType(BooleenType),
       Chaine255Type(Chaine255Type),
       ContratIdType(ContratIdType),
+      DateType(DateType),
       DeclarationAccordClientType(DeclarationAccordClientType,
                                   declarationAccordClientType_accord,
                                   declarationAccordClientType_choice1),
@@ -81,9 +83,15 @@ instance ResponseType RenouvelerServicesAccesResponseType where
                    }
 
 
-initType_ :: Bool -> String -> Sens -> AccordPersonneType -> [String] -> IO RenouvelerServicesAccesType
-initType_ prod myPointId sens accordPersonneType serviceIds = do
+initType_ :: Bool -> String -> Sens -> AccordPersonneType -> [String] -> Maybe Integer -> IO RenouvelerServicesAccesType
+initType_ prod myPointId sens accordPersonneType serviceIds duree = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
+    currentTime <- getCurrentTime
+    let dateFin = case duree of
+            Just d  -> Just $ DateType $ Xsd.Date
+                         $ formatTime defaultTimeLocale "%Y-%m-%d"
+                         $ addDays d (utctDay currentTime)
+            Nothing -> Nothing
 
     let sensType = case sens of
             SensSOUTIRAGE -> SensTypeSOUTIRAGE
@@ -110,7 +118,7 @@ initType_ prod myPointId sens accordPersonneType serviceIds = do
               { declarationAccordClientType_accord = BooleenType True
               , declarationAccordClientType_choice1 = personTypeChoice
               }
-            , donneesGeneralesType_dateFin = Nothing
+            , donneesGeneralesType_dateFin = dateFin
             }
           , demandeType_servicesSouscrits = ServicesSouscritsType
             { servicesSouscritsType_serviceSouscritId = map (ServiceIdType . Xsd.XsdString) serviceIds
@@ -124,11 +132,12 @@ initType :: String              -- ^ myPointId : identifiant PRM du point sur le
          -> Sens                -- ^ sens : indique le sens de l'énergie.
          -> AccordPersonneType  -- ^ accordPersonneType : certifie l'accord du client.
          -> [String]            -- ^ serviceIds : liste des identifiants de services à renouveler.
+         -> Maybe Integer       -- ^ duree : durée en jours depuis aujourd'hui, ou Nothing (pas de date de fin).
          -> IO RenouvelerServicesAccesType
 initType = initType_ True
 
 -- | Comme 'initType' mais sur le serveur d'homologation.
-initTypeTest :: String -> Sens -> AccordPersonneType -> [String] -> IO RenouvelerServicesAccesType
+initTypeTest :: String -> Sens -> AccordPersonneType -> [String] -> Maybe Integer -> IO RenouvelerServicesAccesType
 initTypeTest = initType_ False
 
 
@@ -141,6 +150,7 @@ myrequest = do
                        SensSOUTIRAGE
                        (AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv))
                        []
+                       Nothing
     rep <- wsRequest myType :: IO (Either (String, String) RenouvelerServicesAccesResponseType)
     pPrint rep
 

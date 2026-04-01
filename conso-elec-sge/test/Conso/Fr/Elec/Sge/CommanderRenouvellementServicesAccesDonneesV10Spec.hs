@@ -1,7 +1,7 @@
 module Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Spec where
 
 import SpecHelper
-import TestData (sadPrmC5R1)
+import TestData (sadPrmC5R1, sadPrmC2C4)
 import Data.Maybe (listToMaybe)
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
@@ -36,7 +36,7 @@ extractServiceId resp = do
 createService :: String -> IO (Maybe String)
 createService prm = do
     sadType <- SAD.initTypeTest prm SAD.SensSOUTIRAGE
-                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIE" (Just 500)
+                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIE" (Just 10)
     rep     <- wsRequestTest sadType
                  :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     case rep of
@@ -53,7 +53,7 @@ shouldRenouvelerHomo prm = pendingOnNetworkError $ do
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
         Just sid -> do
             myType <- initTypeTest prm SensSOUTIRAGE
-                         (AccordPersonnePhysiqueNom "Toto") [sid]
+                         (AccordPersonnePhysiqueNom "Toto") [sid] (Just 500)
             rep    <- wsRequestTest myType
                          :: IO (Either (String, String) RenouvelerServicesAccesResponseType)
             rep `shouldSatisfy` isRight
@@ -61,16 +61,16 @@ shouldRenouvelerHomo prm = pendingOnNetworkError $ do
 shouldRefuserRenouvelerHomo :: String -> Expectation
 shouldRefuserRenouvelerHomo prm = pendingOnNetworkError $ do
     cleanupServices prm
-    -- Crée un service SOUTIRAGE, tente de le renouveler en INJECTION → SGT566
+    -- Crée un service SOUTIRAGE, tente de le renouveler en INJECTION → SGT4O3
     msid <- createService prm
     case msid of
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
         Just sid -> do
             myType <- initTypeTest prm SensINJECTION
-                         (AccordPersonnePhysiqueNom "Toto") [sid]
+                         (AccordPersonnePhysiqueNom "Toto") [sid] (Just 500)
             rep    <- wsRequestTest myType
                          :: IO (Either (String, String) RenouvelerServicesAccesResponseType)
-            rep `shouldHaveCode` "SGT566"
+            rep `shouldHaveCode` "SGT4O3"
 
 
 spec :: Spec
@@ -79,10 +79,14 @@ spec = do
         describe recevablesC $ do
             it "RSAD-R1 C5 - Renouvellement d'un service d'accès en soutirage" $
                 shouldRenouvelerHomo sadPrmC5R1
+            it "RSAD-R1 C2-C4 - Renouvellement d'un service d'accès en soutirage" $
+                shouldRenouvelerHomo sadPrmC2C4
 
         describe nonRecevablesC $ do
             it "RSAD-NR1 C5 - Renouvellement en injection sur un service d'accès en soutirage (SGT566)" $
                 shouldRefuserRenouvelerHomo sadPrmC5R1
+            it "RSAD-NR1 C2-C4 - Renouvellement en injection sur un service d'accès en soutirage (SGT566)" $
+                shouldRefuserRenouvelerHomo sadPrmC2C4
 
 
 main :: IO ()
