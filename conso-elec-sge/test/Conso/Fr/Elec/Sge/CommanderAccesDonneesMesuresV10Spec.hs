@@ -64,12 +64,17 @@ spec = do
                 shouldCommanderHomo accesPrmC5 (Just (3 * 365)) "ENERGIE"
 
         describe nonRecevablesC $ do
-            it "ACCES-NR1 - Sans accord client (SGT566)" $ do
+            it "ACCES-NR1 C5 - Sans accord client (SGT566)" $ do
                 shouldRefuserSansAccordHomo accesPrmC5 "SGT566"
+            it "ACCES-NR1 C2C4 - Sans accord client (SGT566)" $ do
+                shouldRefuserSansAccordHomo accesPrmC2C4 "SGT566"
 
-            it "ACCES-NR2 - Durée supérieure à 3 ans (SGT5O9)" $ do
+            it "ACCES-NR2 C5 - Durée supérieure à 3 ans (SGT5O9)" $ do
                 -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
                 shouldRefuserUnlessActiveHomo accesPrmC5 (Just 1500) "CDC" "SGT5O9"
+            it "ACCES-NR2 C2C4 - Durée supérieure à 3 ans (SGT5O9)" $ do
+                -- La durée dépasse la limite autorisée de 3 ans (1096 jours).
+                shouldRefuserUnlessActiveHomo accesPrmC2C4 (Just 1500) "CDC" "SGT5O9"
 
 
 main :: IO ()
