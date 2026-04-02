@@ -112,11 +112,6 @@ sadPrmC5R4 = "25852098337945"
 sadPrmC2C4 :: String  -- Segment C2-C4 commun SAD-R1..R4
 sadPrmC2C4 = "98800003605600"
 
--- | Periodicité de transmission pour les options MOSAD (ex : "J" = journalier).
---   À ajuster selon le catalogue en vigueur.
-mosadPeriodicite :: String
-mosadPeriodicite = "J"
-
 
 -- ---------------------------------------------------------------------------
 -- CommanderTransmissionDonneesInfraJV10 (F375A)

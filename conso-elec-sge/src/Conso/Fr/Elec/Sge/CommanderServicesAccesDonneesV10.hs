@@ -16,9 +16,7 @@ module Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10 (
 ) where
 
 import qualified Data.Text as T
-import           Data.Time.Clock (getCurrentTime, utctDay)
-import           Data.Time.Calendar (addDays)
-import           Data.Time.Format (formatTime, defaultTimeLocale)
+import           Data.Time ( getZonedTime, zonedTimeToLocalTime, localDay, addDays, formatTime, defaultTimeLocale )
 import Text.XML.HaXml.OneOfN ( OneOf2(OneOf2, TwoOf2) )
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import           Text.Pretty.Simple (pPrint)
@@ -94,10 +92,11 @@ initType_ :: Bool -> String -> Sens -> Maybe AccordPersonneType -> String -> May
 initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
-    currentTime <- getCurrentTime
+    zonedTime <- getZonedTime
+    let today = localDay (zonedTimeToLocalTime zonedTime)
     let dateFin = case duree of
             Just d  -> Just $ DateType $ Xsd.Date $ formatTime defaultTimeLocale "%Y-%m-%d"
-                         $ addDays d (utctDay currentTime)
+                         $ addDays d today
             Nothing -> Nothing
 
     let sensType = case sens of

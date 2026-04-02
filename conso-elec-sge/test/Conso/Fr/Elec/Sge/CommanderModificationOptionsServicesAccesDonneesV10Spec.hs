@@ -1,7 +1,7 @@
 module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Spec where
 
 import SpecHelper
-import TestData (sadPrmC5R2, mosadPeriodicite)
+import TestData (sadPrmC5R2)
 import Data.Maybe (listToMaybe)
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
@@ -18,7 +18,7 @@ import Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
     ( CommanderArretServicesAccesDonneesResponseType )
 
 import Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10
-    ( initTypeTest, Sens(SensSOUTIRAGE) )
+    ( initTypeTest, Sens(SensSOUTIRAGE), Periodicite(P1D) )
 import Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type
     ( CommanderModificationOptionsServicesAccesDonneesResponseType )
 import Data.Either (isRight)
@@ -38,7 +38,7 @@ extractServiceId resp = do
 createService :: String -> IO (Maybe String)
 createService prm = do
     sadType <- SAD.initTypeTest prm SAD.SensSOUTIRAGE
-                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "ENERGIE" Nothing
+                 (Just (SAD.AccordPersonnePhysiqueNom "Toto")) "IDX" (Just 500)
     rep     <- wsRequestTest sadType
                  :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     case rep of
@@ -66,7 +66,7 @@ shouldAjouterOptionsHomo prm = pendingOnNetworkError $ do
         Nothing  -> pendingWith "Service déjà actif (SGT570) : serviceId inconnu"
         Just sid -> do
             myType <- initTypeTest prm SensSOUTIRAGE sid
-                         [(Nothing, mosadPeriodicite)] []
+                         [(Nothing, P1D)] []
             rep    <- wsRequestTest myType
                          :: IO (Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType)
             rep `shouldSatisfy` isRight
@@ -81,12 +81,12 @@ shouldSupprimerOptionsHomo prm = pendingOnNetworkError $ do
         Just sid -> do
             -- D'abord ajouter une option, puis la supprimer
             addType <- initTypeTest prm SensSOUTIRAGE sid
-                          [(Nothing, mosadPeriodicite)] []
+                          [(Nothing, P1D)] []
             addRep  <- wsRequestTest addType
                           :: IO (Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType)
             addRep `shouldSatisfy` isRight
             delType <- initTypeTest prm SensSOUTIRAGE sid
-                          [] [(Nothing, mosadPeriodicite)]
+                          [] [(Nothing, P1D)]
             delRep  <- wsRequestTest delType
                           :: IO (Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType)
             delRep `shouldSatisfy` isRight

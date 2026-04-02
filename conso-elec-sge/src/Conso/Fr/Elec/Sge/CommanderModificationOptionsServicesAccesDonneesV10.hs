@@ -12,7 +12,7 @@ Chaque option est un couple @(mesuresCorrigees, periodiciteTransmission)@ où
 ou @P1M@ (mensuel).
 -}
 module Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10 (
-  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, Sens(..)
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, Sens(..), Periodicite(..)
 ) where
 
 import qualified Data.Text as T
@@ -78,19 +78,31 @@ instance ResponseType CommanderModificationOptionsServicesAccesDonneesResponseTy
                    }
 
 
+-- | Périodicité de transmission ISO 8601 pour les options de publication MOSAD.
+data Periodicite
+    = P1D  -- ^ Quotidien
+    | P7D  -- ^ Hebdomadaire
+    | P1M  -- ^ Mensuel
+    deriving (Eq, Show, Enum)
+
+periodiciteStr :: Periodicite -> String
+periodiciteStr P1D = "P1D"
+periodiciteStr P7D = "P7D"
+periodiciteStr P1M = "P1M"
+
 -- | Convertit une liste de (mesuresCorrigees, periodiciteTransmission) en OptionsPublicationType.
 --   Liste vide → Nothing.
-toOptionsType :: [(Maybe Bool, String)] -> Maybe OptionsPublicationType
+toOptionsType :: [(Maybe Bool, Periodicite)] -> Maybe OptionsPublicationType
 toOptionsType [] = Nothing
 toOptionsType opts = Just $ OptionsPublicationType
     [ OptionPublicationType
       { optionPublicationType_mesuresCorrigees = fmap BooleenType mc
-      , optionPublicationType_periodiciteTransmission = PeriodiciteTransmissionType $ Xsd.XsdString p
+      , optionPublicationType_periodiciteTransmission = PeriodiciteTransmissionType $ Xsd.XsdString (periodiciteStr p)
       }
     | (mc, p) <- opts
     ]
 
-initType_ :: Bool -> String -> Sens -> String -> [(Maybe Bool, String)] -> [(Maybe Bool, String)]
+initType_ :: Bool -> String -> Sens -> String -> [(Maybe Bool, Periodicite)] -> [(Maybe Bool, Periodicite)]
           -> IO CommanderModificationOptionsServicesAccesDonneesType
 initType_ prod myPointId sens serviceId ajouterOptions supprimerOptions = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
@@ -122,13 +134,13 @@ initType_ prod myPointId sens serviceId ajouterOptions supprimerOptions = do
 initType :: String               -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
          -> Sens                 -- ^ sens : indique le sens de l'énergie.
          -> String               -- ^ serviceId : identifiant du service à modifier.
-         -> [(Maybe Bool, String)] -- ^ ajouterOptions : options à ajouter [(mesuresCorrigees, periodiciteTransmission)].
-         -> [(Maybe Bool, String)] -- ^ supprimerOptions : options à supprimer [(mesuresCorrigees, periodiciteTransmission)].
+         -> [(Maybe Bool, Periodicite)] -- ^ ajouterOptions : options à ajouter [(mesuresCorrigees, periodiciteTransmission)].
+         -> [(Maybe Bool, Periodicite)] -- ^ supprimerOptions : options à supprimer [(mesuresCorrigees, periodiciteTransmission)].
          -> IO CommanderModificationOptionsServicesAccesDonneesType
 initType = initType_ True
 
 -- | Comme 'initType' mais sur le serveur d'homologation.
-initTypeTest :: String -> Sens -> String -> [(Maybe Bool, String)] -> [(Maybe Bool, String)]
+initTypeTest :: String -> Sens -> String -> [(Maybe Bool, Periodicite)] -> [(Maybe Bool, Periodicite)]
              -> IO CommanderModificationOptionsServicesAccesDonneesType
 initTypeTest = initType_ False
 
