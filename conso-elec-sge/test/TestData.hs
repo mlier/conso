@@ -3,7 +3,10 @@
 --   facilement entre deux versions du catalogue.
 module TestData where
 
-
+import Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+    ( DomaineTensionCodeType(DomaineTensionCodeTypeBTINF) 
+    , ClientFinalCategorieCodeType(ClientFinalCategorieCodeTypeRES)
+    )
 -- ---------------------------------------------------------------------------
 -- ConsulterDonneesTechniquesContractuellesV10 (ADP)
 
@@ -56,10 +59,13 @@ cmd3DateFinLong = "2025-04-01"
 
 -- | RP-R1 : recherche par code postal + commune INSEE seuls.
 rpCodePostalR1 :: String
-rpCodePostalR1 = "84160"
+rpCodePostalR1 = "34650"
 
 rpInseeR1 :: String
-rpInseeR1 = "84042"
+rpInseeR1 = "34231"
+
+rpDomaineTensionR1 :: DomaineTensionCodeType
+rpDomaineTensionR1 = DomaineTensionCodeTypeBTINF
 
 -- | RP-R2 : recherche par code postal + commune + nom client.
 rpCodePostalR2 :: String
@@ -71,6 +77,9 @@ rpInseeR2 = "84042"
 rpNomClientR2 :: String
 rpNomClientR2 = "TEST"
 
+rpVoieR2 :: String
+rpVoieR2 = "1 RUE DE LA MER"
+
 -- | RP-R3 : recherche par code postal + commune + voie.
 rpCodePostalR3 :: String
 rpCodePostalR3 = "84160"
@@ -81,6 +90,8 @@ rpInseeR3 = "84042"
 rpVoieR3 :: String
 rpVoieR3 = "1 RUE DE LA MER"
 
+rpTypeClienR3 :: ClientFinalCategorieCodeType
+rpTypeClienR3 = ClientFinalCategorieCodeTypeRES
 
 -- ---------------------------------------------------------------------------
 -- CommanderAccesDonneesMesuresV10 (ACCES)

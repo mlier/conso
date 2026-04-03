@@ -19,6 +19,7 @@ et authentification HTTP Basic, conformément aux exigences du portail SGE.
 module Conso.Fr.Elec.Sge.Sge  where
 
 import           Control.Monad ( (>=>) )
+import           Control.Exception ( try, evaluate, catch, SomeException )
 import qualified Data.Text as T
 import           Data.Text.Encoding as T ( encodeUtf8 )
 import           Data.Text ( Text )
@@ -235,7 +236,8 @@ prettyXml = PP.render . P.document . xmlParse "(response)"
 prettyBody :: LBS.ByteString -> IO LBS.ByteString
 prettyBody bs = do
     putStrLn "Response :"
-    putStrLn $ prettyXml $ L.unpack $ LE.decodeUtf8 bs
+    let s = L.unpack $ LE.decodeUtf8 bs
+    putStrLn (prettyXml s) `catch` (\e -> putStrLn s >> putStrLn ("[XML parse error] " ++ show (e :: SomeException)))
     return bs
 
 
@@ -278,9 +280,11 @@ soapRequest envSge myUrlSge mySoapAction body = do
 
 xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either (String, String) a)
 xml2hsType myXmlTag myElementResponse xml = do
-    return $ case checkXMLerror xml of
-        (Right root ) -> Right $ getHaskellType myXmlTag myElementResponse root
-        (Left (c, l) ) -> Left (c, l)
+    checked <- try (evaluate (checkXMLerror xml)) :: IO (Either SomeException (Either (String, String) (Element Posn)))
+    case checked of
+        Left ex             -> return $ Left ("PARSE_ERROR", show ex)
+        Right (Right root)  -> return $ Right $ getHaskellType myXmlTag myElementResponse root
+        Right (Left (c, l)) -> return $ Left (c, l)
 
 
 checkXMLerror :: String -> Either (String, String) (Element Posn)
