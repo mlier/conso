@@ -1,7 +1,7 @@
 module Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Spec where
 
 import SpecHelper
-import TestData (sadPrmC5R3)
+import TestData (sadPrmC5R3, sadPrmC2C4)
 import Data.Maybe (listToMaybe)
 import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 
@@ -60,8 +60,11 @@ spec :: Spec
 spec = do
     describe homologationC $ do
         describe recevablesC $ do
-            it "ASAD-R1 C5 - Arrêt d'un service d'accès souscrit en soutirage" $
+            it "ASAD-R1 C5 - Arrêt d'un service d'accès souscrit pour un fournisseur titulaire" $
                 shouldArretHomo sadPrmC5R3
+
+            it "ASAD-R1 C2C4 - Arrêt d'un service d'accès souscrit pour un fournisseur titulaire" $
+                shouldArretHomo sadPrmC2C4
 
 
 main :: IO ()
