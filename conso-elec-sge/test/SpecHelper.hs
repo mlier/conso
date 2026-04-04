@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module SpecHelper (
-  module Test.Hspec, it,
+  module Test.Hspec,
   wsRequest, wsRequestTest,
   testPointId, testNomClient,
   productionC, homologationC, recevablesC, nonRecevablesC,
@@ -13,8 +13,7 @@ module SpecHelper (
 import Control.Exception (try)
 import Control.Monad (unless)
 import Network.HTTP.Client (HttpException)
-import Test.Hspec hiding (it)
-import qualified Test.Hspec as H
+import Test.Hspec
 import Data.Time (formatTime, defaultTimeLocale)
 import Data.Time.LocalTime (getZonedTime)
 import qualified Data.Text as T
@@ -42,14 +41,6 @@ import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
     ( CommanderArretServicesAccesDonneesResponseType )
 
 
--- | Redéfinition de 'it' : ajoute la date/heure d'exécution après l'intitulé.
-it :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-it label action = do
-    t <- runIO getZonedTime
-    let tStr = formatTime defaultTimeLocale "(%d/%m/%Y %H:%M:%S)" t
-    H.it (label ++ "  " ++ tStr) action
-
-
 testPointId :: IO String
 testPointId = do
     T.unpack . pointId . test <$> getEnv
@@ -64,10 +55,12 @@ testNomClient = do
 --   shouldSatisfy, etc.) restent des vraies erreurs et ne sont pas masqués.
 pendingOnNetworkError :: Expectation -> Expectation
 pendingOnNetworkError action = do
+    t <- getZonedTime
+    let tStr = formatTime defaultTimeLocale "(%d/%m/%Y %H:%M:%S)" t
     res <- try @HttpException action
     case res of
-        Left e   -> pendingWith $ "Serveur d'homologation inaccessible (réseau/TLS) : " ++ show e
-        Right () -> return ()
+        Left e   -> pendingWith $ tStr ++ " Serveur d'homologation inaccessible (réseau/TLS) : " ++ show e
+        Right () -> putStrLn $ "    " ++ tStr
 
 
 -- | Arrête tous les services actifs sur le PRM avant un test.

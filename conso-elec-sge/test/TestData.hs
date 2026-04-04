@@ -136,6 +136,14 @@ f375aPrmC2C4 = "98800000000246"
 
 
 -- ---------------------------------------------------------------------------
+-- CommanderArretServiceSouscritMesuresV10 (ASS)
+
+assPrmC5 :: String
+assPrmC5 = "25884515170669"
+-- C2-C4 : réutiliser f375aPrmC2C4 = "98800000000246"
+
+
+-- ---------------------------------------------------------------------------
 -- DemandePublicationMesuresFinesM23V10 (MFI-GK)
 
 mfiPrmsC5 :: [String]
