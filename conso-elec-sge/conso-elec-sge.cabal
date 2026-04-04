@@ -244,6 +244,7 @@ test-suite conso-elec-sge-test
         , text
         , http-client
         , HaXml
+        , time
 
     build-tool-depends:
         hspec-discover:hspec-discover == 2.*

@@ -1,7 +1,8 @@
 {-# LANGUAGE TypeApplications #-}
 
 module SpecHelper (
-  module Test.Hspec, wsRequest, wsRequestTest,
+  module Test.Hspec, it,
+  wsRequest, wsRequestTest,
   testPointId, testNomClient,
   productionC, homologationC, recevablesC, nonRecevablesC,
   pendingOnNetworkError,
@@ -12,7 +13,10 @@ module SpecHelper (
 import Control.Exception (try)
 import Control.Monad (unless)
 import Network.HTTP.Client (HttpException)
-import Test.Hspec
+import Test.Hspec hiding (it)
+import qualified Test.Hspec as H
+import Data.Time (formatTime, defaultTimeLocale)
+import Data.Time.LocalTime (getZonedTime)
 import qualified Data.Text as T
 import Text.XML.HaXml.Schema.Schema (SimpleType(simpleTypeText))
 
@@ -36,6 +40,14 @@ import qualified Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10 as ASAD
 import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10 ( Sens(..) )
 import           Conso.Fr.Elec.Sge.CommanderArretServicesAccesDonneesV10Type
     ( CommanderArretServicesAccesDonneesResponseType )
+
+
+-- | Redéfinition de 'it' : ajoute la date/heure d'exécution après l'intitulé.
+it :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+it label action = do
+    t <- runIO getZonedTime
+    let tStr = formatTime defaultTimeLocale "(%d/%m/%Y %H:%M:%S)" t
+    H.it (label ++ "  " ++ tStr) action
 
 
 testPointId :: IO String
