@@ -4,7 +4,7 @@ import SpecHelper
 import TestData
     ( rpCodePostalR1, rpInseeR1, rpDomaineTensionR1
     , rpCodePostalR2, rpInseeR2, rpNomClientR2, rpVoieR2
-    , rpCodePostalR3, rpInseeR3, rpVoieR3, rpTypeClienR3 )
+    , rpCodePostalR3, rpInseeR3, rpVoieR3 )
 
 import Conso.Fr.Elec.Sge.RechercherPointV20
     ( initTypeTest )
@@ -68,7 +68,7 @@ spec = do
                 shouldRefuserHomo
                     Nothing Nothing
                     (Just rpCodePostalR3) (Just rpInseeR3)
-                    Nothing (Just rpDomaineTensionR1) Nothing (Just rpTypeClienR3)
+                    Nothing Nothing Nothing Nothing
                     Nothing "SGT4F8"
             it "RP-NR2 - Recherche avec des critères insuffisants (SGT4F7)" $ do
                 shouldRefuserHomo

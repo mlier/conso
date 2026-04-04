@@ -83,9 +83,9 @@ spec = do
                 shouldRenouvelerHomo sadPrmC2C4
 
         describe nonRecevablesC $ do
-            it "RSAD-NR1 C5 - Renouvellement en injection sur un service d'accès en soutirage (SGT566)" $
+            it "RSAD-NR1 C5 - Renouvellement en injection sur un service d'accès en soutirage (SGT4O3)" $
                 shouldRefuserRenouvelerHomo sadPrmC5R1
-            it "RSAD-NR1 C2-C4 - Renouvellement en injection sur un service d'accès en soutirage (SGT566)" $
+            it "RSAD-NR1 C2-C4 - Renouvellement en injection sur un service d'accès en soutirage (SGT4O3)" $
                 shouldRefuserRenouvelerHomo sadPrmC2C4
 
 

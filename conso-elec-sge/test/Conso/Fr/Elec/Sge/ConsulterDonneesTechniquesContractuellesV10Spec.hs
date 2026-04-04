@@ -16,6 +16,7 @@ import SpecHelper
       nonRecevablesC,
       pendingOnNetworkError,
       shouldHaveCode )
+import TestData (adpPrmC5)
 
 
 import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
@@ -40,7 +41,6 @@ shouldConsulterHomo myPointId auth = pendingOnNetworkError $ do
 
 spec :: Spec
 spec = do
-    let pointIdC5 =     "25946599093143" :: String
     --let pointIdC1C4 =   "98800007059999" -- ne fonctionne pas
     let pointIdUnkown = "99999999999999"
 
@@ -66,13 +66,13 @@ spec = do
         
         describe recevablesC $ do
             it "ADP-R1 C5 - Accès aux données d’un point pour un acteur tiers avec une autorisation client" $ do
-                shouldConsulterHomo pointIdC5 True
+                shouldConsulterHomo adpPrmC5 True
 
             --it "ADP-R1 C1C4 - Accès aux données d’un point pour un acteur tiers avec une autorisation client" $ do
             --    shouldConsulter pointIdC1C4 True
 
             it "ADP-R2 C5 - Accès aux données d’un point en service pour un acteur tiers sans autorisation client" $ do
-                shouldConsulterHomo pointIdC5 False
+                shouldConsulterHomo adpPrmC5 False
 
             --it "ADP-R2 C1C4 - Accès aux données d’un point en service pour un acteur tiers sans autorisation client" $ do
             --    shouldConsulter pointIdC1C4 False

@@ -2,7 +2,7 @@ module Conso.Fr.Elec.Sge.ConsulterMesuresDetailleesV3Spec where
 
 import SpecHelper
 import TestData
-    ( cmd3PrmC5, cmd3PrmC1C4a
+    ( cmd3PrmC5, cmd3PrmC1C4a, cmd3PrmC1C4b
     , cmd3DateDebut, cmd3DateFin
     , cmd3DateDebutLong, cmd3DateFinLong )
 
@@ -72,6 +72,24 @@ spec = do
                     cmd3DateDebut cmd3DateFin
                     Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
 
+            it "CMD3-R1 C1-C4 - Courbe de puissance (PA) C1-C4 avec autorisation client" $ do
+                shouldConsulterHomo
+                    cmd3PrmC1C4b MesuresTypeCodeTypeCOURBE "PA"
+                    cmd3DateDebut cmd3DateFin
+                    Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
+
+            it "CMD3-R2 C1-C4 - Énergie (EA) C1-C4 avec autorisation client" $ do
+                shouldConsulterHomo
+                    cmd3PrmC1C4b MesuresTypeCodeTypeENERGIE "EA"
+                    cmd3DateDebut cmd3DateFin
+                    Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
+
+            it "CMD3-R6 - Index (EA) C1-C4 avec autorisation client" $ do
+                shouldConsulterHomo
+                    cmd3PrmC1C4b MesuresTypeCodeTypeINDEX "EA"
+                    cmd3DateDebut cmd3DateFin
+                    Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
+
         describe nonRecevablesC $ do
             it "CMD3-NR1 - Période supérieure à 2 ans (SGT4L8)" $ do
                 shouldRefuserHomo
@@ -79,6 +97,13 @@ spec = do
                     cmd3DateDebutLong cmd3DateFinLong
                     Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeACCORDCLIENT
                     "SGT4L8"
+
+            it "CMD3-NR2 - Aucun service de collecte actif (SGT211)" $ do
+                shouldRefuserHomo
+                    cmd3PrmC5 MesuresTypeCodeTypeINDEX "EA"
+                    cmd3DateDebut cmd3DateFin
+                    Nothing False SensMesureTypeSOUTIRAGE CadreAccesTypeESTTITULAIRE
+                    "SGT211"
 
 
 main :: IO ()
