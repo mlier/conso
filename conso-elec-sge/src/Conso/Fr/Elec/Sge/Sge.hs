@@ -59,6 +59,7 @@ import           System.Posix.User
                     ( homeDirectory,
                       getEffectiveUserName,
                       getUserEntryForName )
+import           System.Environment ( lookupEnv )
 
 import           Conso.Fr.Elec.Sge.EnedisDictionnaireResultat
                     ( ResultatType(ResultatType),
@@ -265,11 +266,13 @@ soapRequest envSge myUrlSge mySoapAction body = do
     let loginUtilisateurBS =  T.encodeUtf8 $ userB2b envSge
     let passwordUtilisateurBS = T.encodeUtf8 $ password envSge
 
+    isVerbose <- (== Just "1") <$> lookupEnv "CONSO_VERBOSE"
     transport <- initTransportWithM
         settings
         fullUrlSge
-        ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS >=> printRequest  ) -- pure or printRequest
-        prettyBody -- pure or printBody or prettyBody
+        ( withBasicAuth loginUtilisateurBS passwordUtilisateurBS
+            >=> if isVerbose then printRequest else pure )
+        ( if isVerbose then prettyBody else pure )
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
     return $ L.unpack (LE.decodeUtf8 xml)
