@@ -33,10 +33,10 @@ spec :: Spec
 spec = do
     describe homologationC $ do
         describe recevablesC $ do
-            it "ITC-GK-R1 - Demande infos techniques et contractuelles C5" $ do
+            it "ITC-GK-R1 C5 - Demande infos techniques et contractuelles C5" $ do
                 shouldDemanderHomo itcPrmsC5
 
-            it "ITC-GK-R2 - Demande infos techniques et contractuelles C2-C4" $ do
+            it "ITC-GK-R1 C2-C4 - Demande infos techniques et contractuelles C2-C4" $ do
                 shouldDemanderHomo itcPrmsC2C4
 
 

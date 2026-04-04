@@ -46,12 +46,16 @@ cmd3DateDebut = "2025-04-01"
 cmd3DateFin :: String
 cmd3DateFin = "2025-04-07"
 
--- | Période longue (> 2 ans) – cas non-recevable CMD3-NR1.
-cmd3DateDebutLong :: String
-cmd3DateDebutLong = "2022-01-01"
+-- | Période longue pour les cas C1-C4 (R3, R5, R6).
+cmd3DateDebutC1C4 :: String
+cmd3DateDebutC1C4 = "2024-03-15"
 
-cmd3DateFinLong :: String
-cmd3DateFinLong = "2025-04-01"
+cmd3DateFinC1C4 :: String
+cmd3DateFinC1C4 = "2025-07-23"
+
+-- | Fin de période pour CMD3-NR1 : 14 jours > limite de 7 jours autorisés.
+cmd3DateFinNR1 :: String
+cmd3DateFinNR1 = "2025-04-15"
 
 
 -- ---------------------------------------------------------------------------
@@ -151,6 +155,14 @@ mfiPrmsC2C4 =
     , "98800006694381"
     , "98800001220186"
     ]
+
+-- | 1 seul PRM C5 pour les tests R2 (COURBES) et R3 (PMAX).
+mfiPrmC5Solo :: String
+mfiPrmC5Solo = "25150217034354"
+
+-- | 1 seul PRM C2-C4 pour le test R2 (COURBES).
+mfiPrmC2C4Solo :: String
+mfiPrmC2C4Solo = "98800004935121"
 
 -- | Période pour les cas recevables MFI-GK.
 mfiDateDebut :: String

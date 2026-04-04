@@ -35,15 +35,17 @@ spec :: Spec
 spec = do
     describe homologationC $ do
         describe recevablesC $ do
-            it "MFA-GK-R1 - Demande mesures facturantes C5" $ do
+            it "MFA-GK-R1 C5 - Demande mesures facturantes C5" $ do
                 shouldDemanderHomo mfaPrmsC5 mfaDateDebut mfaDateFin
 
-            it "MFA-GK-R2 - Demande mesures facturantes C2-C4" $ do
+            it "MFA-GK-R1 C2-C4 - Demande mesures facturantes C2-C4" $ do
                 shouldDemanderHomo mfaPrmsC2C4 mfaDateDebut mfaDateFin
 
         describe nonRecevablesC $ do
-            it "MFA-GK-NR1 - Dates incohérentes : dateFin < dateDebut (SGT4K4)" $ do
-                shouldRefuserHomo mfaPrmsC5 mfaDateFin mfaDateDebut "SGT4K4"
+            it "MFA-GK-NR1 C5    - Dates incohérentes : dateFin < dateDebut (SGT4K4)" $ do
+                shouldRefuserHomo mfaPrmsC5   mfaDateFin mfaDateDebut "SGT4K4"
+            it "MFA-GK-NR1 C2-C4 - Dates incohérentes : dateFin < dateDebut (SGT4K4)" $ do
+                shouldRefuserHomo mfaPrmsC2C4 mfaDateFin mfaDateDebut "SGT4K4"
 
 
 main :: IO ()

@@ -3,6 +3,7 @@ module Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Spec where
 import SpecHelper
 import TestData
     ( mfiPrmsC5, mfiPrmsC2C4
+    , mfiPrmC5Solo, mfiPrmC2C4Solo
     , mfiDateDebut, mfiDateFin
     , mfiDateDebutNR1, mfiDateDebutNR2 )
 
@@ -37,23 +38,34 @@ spec :: Spec
 spec = do
     describe homologationC $ do
         describe recevablesC $ do
-            it "MFI-GK-R1 - Demande INDEX C5" $ do
-                shouldDemanderHomo mfiPrmsC5 MesuresTypeCodeINDEX mfiDateDebut mfiDateFin
+            it "MFI-GK-R1 C5    - Historique ENERGIE quotidien" $
+                shouldDemanderHomo mfiPrmsC5   MesuresTypeCodeENERGIE mfiDateDebut mfiDateFin
+            it "MFI-GK-R1 C2-C4 - Historique ENERGIE quotidien" $
+                shouldDemanderHomo mfiPrmsC2C4 MesuresTypeCodeENERGIE mfiDateDebut mfiDateFin
 
-            it "MFI-GK-R2 - Demande INDEX C2-C4" $ do
+            it "MFI-GK-R2 C5    - Historique COURBES (courbe de charge)" $
+                shouldDemanderHomo [mfiPrmC5Solo]   MesuresTypeCodeCOURBES mfiDateDebut mfiDateFin
+            it "MFI-GK-R2 C2-C4 - Historique COURBES (courbe de charge)" $
+                shouldDemanderHomo [mfiPrmC2C4Solo] MesuresTypeCodeCOURBES mfiDateDebut mfiDateFin
+
+            it "MFI-GK-R3 C5    - Historique PMAX (puissances maximales)" $
+                shouldDemanderHomo [mfiPrmC5Solo] MesuresTypeCodePMAX mfiDateDebut mfiDateFin
+
+            it "MFI-GK-R4 C5    - Historique INDEX" $
+                shouldDemanderHomo mfiPrmsC5   MesuresTypeCodeINDEX mfiDateDebut mfiDateFin
+            it "MFI-GK-R4 C2-C4 - Historique INDEX" $
                 shouldDemanderHomo mfiPrmsC2C4 MesuresTypeCodeINDEX mfiDateDebut mfiDateFin
 
-            it "MFI-GK-R3 - Demande COURBES C5" $ do
-                shouldDemanderHomo mfiPrmsC5 MesuresTypeCodeCOURBES mfiDateDebut mfiDateFin
-
-            it "MFI-GK-R4 - Demande ENERGIE C5" $ do
-                shouldDemanderHomo mfiPrmsC5 MesuresTypeCodeENERGIE mfiDateDebut mfiDateFin
-
         describe nonRecevablesC $ do
-            it "MFI-GK-NR1 - Profondeur CDC > 24 mois (SGT4L8)" $ do
-                shouldRefuserHomo mfiPrmsC5 MesuresTypeCodeCOURBES mfiDateDebutNR1 mfiDateFin "SGT4L8"
-            it "MFI-GK-NR2 - Profondeur IDX > 36 mois (SGT4L8)" $ do
-                shouldRefuserHomo mfiPrmsC5 MesuresTypeCodeINDEX mfiDateDebutNR2 mfiDateFin "SGT4L8"
+            it "MFI-GK-NR1 C5    - Profondeur CDC > 24 mois (SGT4L8)" $
+                shouldRefuserHomo mfiPrmsC5   MesuresTypeCodeCOURBES mfiDateDebutNR1 mfiDateFin "SGT4L8"
+            it "MFI-GK-NR1 C2-C4 - Profondeur CDC > 24 mois (SGT4L8)" $
+                shouldRefuserHomo mfiPrmsC2C4 MesuresTypeCodeCOURBES mfiDateDebutNR1 mfiDateFin "SGT4L8"
+
+            it "MFI-GK-NR2 C5    - Profondeur IDX > 36 mois (SGT4L8)" $
+                shouldRefuserHomo mfiPrmsC5   MesuresTypeCodeINDEX mfiDateDebutNR2 mfiDateFin "SGT4L8"
+            it "MFI-GK-NR2 C2-C4 - Profondeur IDX > 36 mois (SGT4L8)" $
+                shouldRefuserHomo mfiPrmsC2C4 MesuresTypeCodeINDEX mfiDateDebutNR2 mfiDateFin "SGT4L8"
 
 
 main :: IO ()
