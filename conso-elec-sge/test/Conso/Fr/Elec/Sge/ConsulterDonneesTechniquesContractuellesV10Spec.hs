@@ -16,7 +16,7 @@ import SpecHelper
       nonRecevablesC,
       pendingOnNetworkError,
       shouldHaveCode )
-import TestData (adpPrmC5)
+import TestData (adpPrmC5, adpPrmC1C4)
 
 
 import Conso.Fr.Elec.Sge.ConsulterDonneesTechniquesContractuellesV10
@@ -41,9 +41,7 @@ shouldConsulterHomo myPointId auth = pendingOnNetworkError $ do
 
 spec :: Spec
 spec = do
-    --let pointIdC1C4 =   "98800007059999" -- ne fonctionne pas
     let pointIdUnkown = "99999999999999"
-
 
     describe productionC $ do
         describe recevablesC $ do
@@ -63,29 +61,23 @@ spec = do
                 rep `shouldHaveCode` "SGT401" -- Demande non recevable : point inexistant
 
     describe homologationC $ do
-        
         describe recevablesC $ do
-            it "ADP-R1 C5 - Accès aux données d’un point pour un acteur tiers avec une autorisation client" $ do
-                shouldConsulterHomo adpPrmC5 True
+            it "ADP-R1 C5    - Accès aux données d’un point avec autorisation client" $
+                shouldConsulterHomo adpPrmC5   True
+            it "ADP-R1 C1-C4 - Accès aux données d’un point avec autorisation client" $
+                shouldConsulterHomo adpPrmC1C4 True
+            it "ADP-R2 C5    - Accès aux données d’un point sans autorisation client" $
+                shouldConsulterHomo adpPrmC5   False
+            it "ADP-R2 C1-C4 - Accès aux données d’un point sans autorisation client" $
+                shouldConsulterHomo adpPrmC1C4 False
 
-            --it "ADP-R1 C1C4 - Accès aux données d’un point pour un acteur tiers avec une autorisation client" $ do
-            --    shouldConsulter pointIdC1C4 True
-
-            it "ADP-R2 C5 - Accès aux données d’un point en service pour un acteur tiers sans autorisation client" $ do
-                shouldConsulterHomo adpPrmC5 False
-
-            --it "ADP-R2 C1C4 - Accès aux données d’un point en service pour un acteur tiers sans autorisation client" $ do
-            --    shouldConsulter pointIdC1C4 False
-
-        --describe (redC "NON RECEVABLES") $ do
-        --    it "ADP-NR1 - Accès aux données d’un point inexistant" $ do
-        --        myType <- initTypeTest pointIdUnkown True
-        --        rep <- wsRequestTest myType :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
-        --        
-        --        let (e, _) = case rep of
-        --                        Left r -> r
-        --                        Right _ -> ("toto", "titi") 
-        --        e `shouldBe` "SGT401" -- Demande non recevable : point inexistant
+        describe nonRecevablesC $ do
+            it "ADP-NR1 - Accès aux données d’un point inexistant (SGT401)" $
+                pendingOnNetworkError $ do
+                    myType <- initTypeTest pointIdUnkown True
+                    rep    <- wsRequestTest myType
+                                  :: IO (Either (String, String) ConsulterDonneesTechniquesContractuellesResponseType)
+                    rep `shouldHaveCode` "SGT401"
 
 main :: IO ()
 main = hspec spec
