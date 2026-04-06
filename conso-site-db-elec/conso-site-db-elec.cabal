@@ -1,0 +1,57 @@
+cabal-version:      3.0
+name:               conso-site-db-elec
+version:            0.1.0.0
+license:            LGPL-3.0-or-later
+license-file:       LICENSE
+author:             mlier
+maintainer:         mlier@free.fr
+category:           database
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:
+        Conso.Fr.Elec.SiteDB
+        Conso.Fr.Elec.SiteDB.Types.Common
+        Conso.Fr.Elec.SiteDB.Types.Header
+        Conso.Fr.Elec.SiteDB.Types.R63
+        Conso.Fr.Elec.SiteDB.Types.R64
+        Conso.Fr.Elec.SiteDB.Types.R65
+        Conso.Fr.Elec.SiteDB.Types.R66
+        Conso.Fr.Elec.SiteDB.Types.R67
+        Conso.Fr.Elec.SiteDB.Types.C68
+        Conso.Fr.Elec.SiteDB.Storage.Connection
+        Conso.Fr.Elec.SiteDB.Storage.Migration
+        Conso.Fr.Elec.SiteDB.Storage.Schema
+        Conso.Fr.Elec.SiteDB.Storage.Insert
+        Conso.Fr.Elec.SiteDB.Storage.Query
+        Conso.Fr.Elec.SiteDB.Storage.Gaps
+        Conso.Fr.Elec.SiteDB.Ingestion.Parser
+        Conso.Fr.Elec.SiteDB.Ingestion.Versioning
+        Conso.Fr.Elec.SiteDB.Ingestion.Batch
+        Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
+        Conso.Fr.Elec.SiteDB.Ingestion.GapFill
+        Conso.Fr.Elec.SiteDB.Analysis.Aggregate
+        Conso.Fr.Elec.SiteDB.Analysis.Compare
+        Conso.Fr.Elec.SiteDB.Analysis.Anomaly
+        Conso.Fr.Elec.SiteDB.Export.CSV
+        Conso.Fr.Elec.SiteDB.Export.JSON
+        Conso.Fr.Elec.SiteDB.Export.Consolidate
+    build-depends:
+          base >=4.17 && <5
+        , conso-site-db
+        , sqlite-simple
+        , text
+        , time
+        , directory
+        , filepath
+        , aeson
+        , bytestring
+        , containers
+        , uuid >= 1.3
+    hs-source-dirs:   src
+    default-language: Haskell2010

@@ -2,3 +2,5 @@ packages:
   conso-elec-sge/
   conso-gaz-adict/
   conso-site-db/
+  conso-site-db-elec/
+  conso-site-db-gaz/

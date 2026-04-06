@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               conso-site-db
+name:               conso-site-db-gaz
 version:            0.1.0.0
 license:            LGPL-3.0-or-later
 license-file:       LICENSE
@@ -15,21 +15,19 @@ common warnings
 library
     import:           warnings
     exposed-modules:
-        -- Registre central (UUID ↔ PRM ↔ PCE)
-        Conso.Fr.SiteDB.Types
-        Conso.Fr.SiteDB.Registry
-        Conso.Fr.SiteDB.Registry.Schema
-        Conso.Fr.SiteDB.Registry.Operations
-        -- Connexion SQLite core (sans migrations)
-        Conso.Fr.SiteDB.Storage.Connection
-
+        Conso.Fr.Gaz.SiteDB.Types
+        Conso.Fr.Gaz.SiteDB.Storage.Connection
+        Conso.Fr.Gaz.SiteDB.Storage.Migration
+        Conso.Fr.Gaz.SiteDB.Storage.Insert
+        Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
     build-depends:
           base >=4.17 && <5
-        , uuid >= 1.3
+        , conso-site-db
+        , conso-gaz-adict
+        , sqlite-simple
         , text
         , time
-        , sqlite-simple
-        , directory
-        , filepath
+        , aeson
+        , bytestring
     hs-source-dirs:   src
     default-language: Haskell2010
