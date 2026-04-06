@@ -185,6 +185,7 @@ executable conso-elec-sge
         , brick
         , vty
         , HaXml
+        , time
 
     ghc-options:      -threaded
 

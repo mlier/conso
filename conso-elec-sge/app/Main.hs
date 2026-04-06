@@ -68,6 +68,8 @@ import qualified Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV1
 import           Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type       (RenouvelerServicesAccesResponseType)
 import qualified Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10                       as RSAD
 import           Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type                   (RechercherServicesAccesDonneesReponseType)
+import           Data.Time ( Day, diffDays, parseTimeM, defaultTimeLocale,
+                             getZonedTime, zonedTimeToLocalTime, localDay )
 
 
 data Options = Options
@@ -205,10 +207,14 @@ data CollecteOptions = CollecteOptions
   , collecteAccord     :: AccesAccordOpts
   } deriving (Eq, Show)
 
+data DureeSpec = DureeJours Integer | DateFinStr String
+    deriving (Eq, Show)
+
 data AcsAccesOptions = AcsAccesOptions
   { acsAccesPoint  :: String
   , acsAccesSens   :: String
   , acsAccesType   :: String
+  , acsAccesDuree  :: Maybe DureeSpec
   , acsAccesAccord :: AccesAccordOpts
   } deriving (Eq, Show)
 
@@ -228,6 +234,7 @@ data AcsRenouvelerOptions = AcsRenouvelerOptions
   { acsRenouvelerPoint    :: String
   , acsRenouvelerSens     :: String
   , acsRenouvelerServices :: [String]
+  , acsRenouvelerDuree    :: Maybe DureeSpec
   , acsRenouvelerAccord   :: AccesAccordOpts
   } deriving (Eq, Show)
 
@@ -991,6 +998,15 @@ accesAccordParser =
                    <> help "Dénomination sociale de la personne morale ayant donné accord"))
 
 
+dureeParser :: Parser (Maybe DureeSpec)
+dureeParser = optional $
+        (DureeJours <$> option auto
+            (long "duree" <> metavar "JOURS"
+            <> help "Durée de l'accès en jours depuis aujourd'hui"))
+    <|> (DateFinStr <$> strOption
+            (long "date-fin" <> metavar "YYYY-MM-DD"
+            <> help "Date de fin de l'accès (format ISO 8601)"))
+
 acsAccesParser :: Parser AcsAccesOptions
 acsAccesParser = AcsAccesOptions
     <$> strOption (long "point" <> short 'p' <> metavar "PRM"
@@ -999,6 +1015,7 @@ acsAccesParser = AcsAccesOptions
                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> strOption (long "type"  <> short 't' <> metavar "CDC|IDX|ENERGIE|PMAX"
                   <> help "Type de données demandé")
+    <*> dureeParser
     <*> accesAccordParser
 
 acsArretParser :: Parser AcsArretOptions
@@ -1027,6 +1044,7 @@ acsRenouvelerParser = AcsRenouvelerOptions
                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> some      (strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
                   <> help "Identifiant de service à renouveler (répétable)"))
+    <*> dureeParser
     <*> accesAccordParser
 
 acsServicesParser :: Parser AcsServicesOptions
@@ -1138,6 +1156,17 @@ toSensRENOUV :: String -> RENOUV.Sens
 toSensRENOUV "SOUTIRAGE" = RENOUV.SensSOUTIRAGE
 toSensRENOUV "INJECTION" = RENOUV.SensINJECTION
 toSensRENOUV s           = errorWithoutStackTrace $ "Sens inconnu: " ++ s ++ " (SOUTIRAGE|INJECTION)"
+
+resolveDuree :: Maybe DureeSpec -> IO (Maybe Integer)
+resolveDuree Nothing               = return Nothing
+resolveDuree (Just (DureeJours n)) = return (Just n)
+resolveDuree (Just (DateFinStr s)) = do
+    zonedTime <- getZonedTime
+    let today = localDay (zonedTimeToLocalTime zonedTime)
+    case parseTimeM True defaultTimeLocale "%Y-%m-%d" s :: Maybe Day of
+        Nothing  -> errorWithoutStackTrace $
+                        "Date invalide : " ++ s ++ " (attendu YYYY-MM-DD)"
+        Just fin -> return $ Just $ diffDays fin today
 
 
 docommand :: Options -> IO ()
@@ -1298,7 +1327,8 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
         let accordType = case acsAccesAccord o of
                 AccesPhysique nom -> ACS.AccordPersonnePhysiqueNom nom
                 AccesMorale   den -> ACS.AccordPersonneMoraleDenominationSociale den
-        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) (Just accordType) (acsAccesType o) Nothing
+        duree  <- resolveDuree (acsAccesDuree o)
+        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) (Just accordType) (acsAccesType o) duree
         if xml then ACS.xmlRequest myType >>= (putStrLn . prettyXml)
         else ACS.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderServicesAccesDonneesResponseType
@@ -1322,7 +1352,8 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
         let accordType = case acsRenouvelerAccord o of
                 AccesPhysique nom -> RENOUV.AccordPersonnePhysiqueNom nom
                 AccesMorale   den -> RENOUV.AccordPersonneMoraleDenominationSociale den
-        myType <- RENOUV.initType (acsRenouvelerPoint o) (toSensRENOUV (acsRenouvelerSens o)) accordType (acsRenouvelerServices o)
+        duree  <- resolveDuree (acsRenouvelerDuree o)
+        myType <- RENOUV.initType (acsRenouvelerPoint o) (toSensRENOUV (acsRenouvelerSens o)) accordType (acsRenouvelerServices o) duree
         if xml then RENOUV.xmlRequest myType >>= (putStrLn . prettyXml)
         else RENOUV.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) RenouvelerServicesAccesResponseType
