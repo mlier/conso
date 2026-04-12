@@ -2,7 +2,7 @@
 module Conso.Fr.Gaz.Adict.DonneesContractuellesSpec where
 
 import SpecHelper
-import Data.Either ( isRight, isLeft )
+import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.DonneesContractuelles ( consulterDonneesContractuelles )
 import TestData
@@ -28,12 +28,12 @@ spec = do
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterDonneesContractuelles session pceDonneesContrac1 []
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000020"
             it "Contrat-NR2bis -  Consulter les données contractuelles - données hors du périmètre du droit d'accès demandé avec filtre CAR" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterDonneesContractuelles session pceDonneesContrac1 ["car"]
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000020"
 
 
 main :: IO ()

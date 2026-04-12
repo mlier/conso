@@ -2,7 +2,7 @@
 module Conso.Fr.Gaz.Adict.InjectionsPublieesSpec where
 
 import SpecHelper
-import Data.Either ( isRight, isLeft )
+import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.InjectionsPubliees ( consulterInjectionsPubliees )
 import Conso.Fr.Gaz.Adict.ConsosPubliees     ( PeriodeParam(..) )
@@ -25,18 +25,18 @@ spec = do
                     session <- sandboxSession
                     rep     <- consulterInjectionsPubliees session pceInj2
                                    (ByDateRange dateDebutInj2 dateFinInj)
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000002" 
             it "Inj-NR3 - Consulter les données d'injection publiées - date de début demandée excédant 5 ans d'historique" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterInjectionsPubliees session pceInj1
                                    (ByDateRange dateDebutInj1 dateFinInj)
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000010" 
             it "Inj-NR4 - Consulter les données d'injection publiées - date de fin supérieure à la date du jour" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterInjectionsPubliees session pceInj3
                                    (ByDateRange dateDebutInj2 dateFinInj2)
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000016" 
 main :: IO ()
 main = hspec spec

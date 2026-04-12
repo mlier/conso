@@ -13,7 +13,7 @@ spec :: Spec
 spec = do
     describe sandboxC $ do
         describe recevablesC $ do
-            it "GDA-R3 - Soumettre une preuve (PUT /droit_acces/{id}/preuves, JDD 33)" $
+            it "GDA-R33 - Soumettre une preuve (PUT /droit_acces/{id}/preuves, JDD 33)" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     let tmpPath = "/tmp/adict-test-preuve.pdf"

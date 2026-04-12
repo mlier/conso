@@ -41,7 +41,7 @@ spec :: Spec
 spec = do
     describe sandboxC $ do
         describe recevablesC $ do
-            it "GDA-R1 - Déclarer un droit d'accès (PUT /pce/{id}/droit_acces, JDD 1)" $
+            it "GDA-R01 - Déclarer un droit d'accès (PUT /pce/{id}/droit_acces, JDD 1)" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     -- Nettoyage préalable : révoquer les droits existants pour ce PCE

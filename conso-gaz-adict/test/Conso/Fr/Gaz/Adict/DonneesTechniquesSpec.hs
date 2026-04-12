@@ -2,7 +2,7 @@
 module Conso.Fr.Gaz.Adict.DonneesTechniquesSpec where
 
 import SpecHelper
-import Data.Either ( isRight, isLeft )
+import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.DonneesTechniques ( consulterDonneesTechniques )
 import TestData
@@ -22,7 +22,7 @@ spec = do
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterDonneesTechniques session pceDonneesTech1
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000021"
 
 main :: IO ()
 main = hspec spec
