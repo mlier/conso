@@ -2,7 +2,6 @@
 module SpecHelper
   ( module Test.Hspec
   , sandboxSession
-  , getTestPce
   , pendingOnAdictError
   , sandboxC
   , recevablesC
@@ -11,10 +10,9 @@ module SpecHelper
 
 import Control.Exception  ( try, SomeException )
 import Test.Hspec
-import Data.Text          ( Text )
 
 import Conso.Fr.Gaz.Adict.Adict
-    ( getEnv, initSessionWith, AdictSession, AdictEnv(..), TestData(..) )
+    ( getEnv, initSessionWith, AdictSession, AdictEnv(..) )
 
 
 -- | Initialise une session vers le bac à sable GRDF.
@@ -22,10 +20,6 @@ sandboxSession :: IO AdictSession
 sandboxSession = do
     env <- getEnv
     initSessionWith True (sandbox env)
-
--- | Identifiant PCE de test lu depuis la configuration.
-getTestPce :: IO Text
-getTestPce = testPce . testData <$> getEnv
 
 -- | Marque le test « pending » si l'API sandbox est inaccessible (réseau/TLS/auth).
 --   Les vraies assertions hspec ne sont pas masquées.

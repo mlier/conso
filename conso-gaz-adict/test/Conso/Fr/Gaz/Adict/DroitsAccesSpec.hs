@@ -6,54 +6,52 @@ import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.DroitsAcces ( consulterDroitsAcces, rechercherDroitsAcces )
 import Conso.Fr.Gaz.Adict.Types       ( FiltreAcces(..) )
+import TestData                        ( pceConsoPub1 )
 
 
 emptyFiltre :: FiltreAcces
-emptyFiltre = FiltreAcces
-    { fa_role_tiers             = Nothing
-    , fa_id_pce                 = Nothing
-    , fa_statut_controle_preuve = Nothing
-    , fa_etat_droit_acces       = Nothing
-    }
+emptyFiltre = FiltreAcces [] [] [] []
 
 
 spec :: Spec
 spec = do
     describe sandboxC $ do
         describe recevablesC $ do
-            it "Droits-R1 - Consulter tous mes droits d'accès (GET)" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                rep     <- consulterDroitsAcces session
-                rep `shouldSatisfy` isRight
+            it "GDA-R25 - Consulter tous mes droits d'accès" $
+                pendingOnAdictError $ do
+                    session <- sandboxSession
+                    rep     <- consulterDroitsAcces session
+                    rep `shouldSatisfy` isRight
 
-            it "Droits-R2 - Rechercher droits d'accès sans filtre (POST)" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                rep     <- rechercherDroitsAcces session emptyFiltre
-                rep `shouldSatisfy` isRight
+            it "GDA-R26 - Consulter mes droits d'accès - avec filtre sur plusieurs PCE" $
+                pendingOnAdictError $ do
+                    session <- sandboxSession
+                    rep     <- rechercherDroitsAcces session
+                                   emptyFiltre { fa_id_pce = ["09999999900617", "GI999055"] }
+                    rep `shouldSatisfy` isRight
 
-            it "Droits-R3 - Rechercher droits d'accès par PCE" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                pce     <- getTestPce
-                rep     <- rechercherDroitsAcces session emptyFiltre { fa_id_pce = Just pce }
-                rep `shouldSatisfy` isRight
+            it "GDA-R27 - Consulter mes droits d'accès - avec filtre sur l'Etat 'Obsolète'" $
+                pendingOnAdictError $ do
+                    session <- sandboxSession
+                    rep     <- rechercherDroitsAcces session
+                                   emptyFiltre { fa_etat_droit_acces = ["Obsolète"] }
+                    rep `shouldSatisfy` isRight
 
-            it "Droits-R4 - Rechercher droits d'accès filtre etat ACTIVE" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                rep     <- rechercherDroitsAcces session emptyFiltre { fa_etat_droit_acces = Just "ACTIVE" }
-                rep `shouldSatisfy` isRight
+            it "GDA-R28 - Consulter mes droits d'accès - avec filtre sur le Statut de contrôle 'Preuve en attente' et 'Preuve en cours de vérification'" $
+                pendingOnAdictError $ do
+                    session <- sandboxSession
+                    rep     <- rechercherDroitsAcces session
+                                   emptyFiltre { fa_statut_controle_preuve = ["Preuve en attente", "Preuve en cours de vérification"] }
+                    rep `shouldSatisfy` isRight
 
-            it "Droits-R5 - Rechercher droits d'accès filtre statut_controle_preuve" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                rep     <- rechercherDroitsAcces session emptyFiltre { fa_statut_controle_preuve = Just "VALIDE" }
-                rep `shouldSatisfy` isRight
-
-            it "Droits-R6 - Rechercher droits d'accès filtres cumulatifs (role + etat)" $ pendingOnAdictError $ do
-                session <- sandboxSession
-                rep     <- rechercherDroitsAcces session emptyFiltre
-                                { fa_role_tiers       = Just "AUTORISE_CONTRAT_FOURNITURE"
-                                , fa_etat_droit_acces = Just "ACTIVE"
-                                }
-                rep `shouldSatisfy` isRight
+            it "GDA-R29 - Consulter mes droits d'accès - avec filtres cumulatifs sur le Role et l'Etat" $
+                pendingOnAdictError $ do
+                    session <- sandboxSession
+                    rep     <- rechercherDroitsAcces session emptyFiltre
+                                    { fa_role_tiers       = ["DETENTEUR_CONTRAT_FOURNITURE", "DETENTEUR_CONTRAT_INJECTION"]
+                                    , fa_etat_droit_acces = ["Active"]
+                                    }
+                    rep `shouldSatisfy` isRight
 
 
 main :: IO ()

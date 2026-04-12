@@ -121,7 +121,7 @@ instance ToJSON   IndexValeur where toJSON = genericToJSON aesonOpts
 
 -- | Période de consultation retournée dans les réponses de consommation.
 data Periode = Periode
-    { valeur     :: Text
+    { valeur     :: Maybe Text
     , date_debut :: Maybe Text
     , date_fin   :: Maybe Text
     } deriving (Show, Generic)
@@ -702,27 +702,31 @@ instance ToJSON RetourFinAcces where
 
 
 -- | Corps de la requête @POST /droits_acces@ (filtres de recherche).
+-- Les champs sont des listes car l'API attend des tableaux JSON.
 data FiltreAcces = FiltreAcces
-    { fa_role_tiers            :: Maybe Text
-    , fa_id_pce                :: Maybe Text
-    , fa_statut_controle_preuve :: Maybe Text
-    , fa_etat_droit_acces      :: Maybe Text
+    { fa_role_tiers             :: [Text]
+    , fa_id_pce                 :: [Text]
+    , fa_statut_controle_preuve :: [Text]
+    , fa_etat_droit_acces       :: [Text]
     } deriving (Show)
 
 instance ToJSON FiltreAcces where
     toJSON f = object $ filter ((/= Null) . snd)
-        [ "role_tiers"             .= fa_role_tiers             f
-        , "id_pce"                 .= fa_id_pce                 f
-        , "statut_controle_preuve" .= fa_statut_controle_preuve f
-        , "etat_droit_acces"       .= fa_etat_droit_acces       f
+        [ "role_tiers"             .= nullIfEmpty (fa_role_tiers             f)
+        , "id_pce"                 .= nullIfEmpty (fa_id_pce                 f)
+        , "statut_controle_preuve" .= nullIfEmpty (fa_statut_controle_preuve f)
+        , "etat_droit_acces"       .= nullIfEmpty (fa_etat_droit_acces       f)
         ]
+      where
+        nullIfEmpty [] = Null
+        nullIfEmpty xs = toJSON xs
 
 instance FromJSON FiltreAcces where
     parseJSON = withObject "FiltreAcces" $ \v -> FiltreAcces
-        <$> v .:? "role_tiers"
-        <*> v .:? "id_pce"
-        <*> v .:? "statut_controle_preuve"
-        <*> v .:? "etat_droit_acces"
+        <$> v .:? "role_tiers"             .!= []
+        <*> v .:? "id_pce"                 .!= []
+        <*> v .:? "statut_controle_preuve" .!= []
+        <*> v .:? "etat_droit_acces"       .!= []
 
 
 -- | Réponse générique avec code et message de traitement.

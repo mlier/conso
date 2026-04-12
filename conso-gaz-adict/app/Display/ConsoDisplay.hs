@@ -28,7 +28,7 @@ renderInjection :: InjectionRestit -> Widget ()
 renderInjection ir = section titre lignes
   where
     titre = maybe "Injection" (\i -> maybe "Injection" T.unpack (inj_journee_gaziere i)) (ir_injection ir)
-         <> maybe "" (\p -> " [" <> T.unpack (valeur p) <> "]") (ir_periode ir)
+         <> maybe "" (\p -> maybe "" (\v -> " [" <> T.unpack v <> "]") (valeur p)) (ir_periode ir)
     lignes =
         [ maybeField "PCE"          (fmap (T.unpack . id_pce) (ir_pce ir))
         , renderInjectionDetail (ir_injection ir)
@@ -55,7 +55,7 @@ renderConso :: ConsoRestit -> Widget ()
 renderConso cr = section titre lignes
   where
     titre = maybe "Consommation" (\c -> maybe "Consommation" T.unpack (journee_gaziere c)) (cr_consommation cr)
-         <> maybe "" (\p -> " [" <> T.unpack (valeur p) <> "]") (cr_periode cr)
+         <> maybe "" (\p -> maybe "" (\v -> " [" <> T.unpack v <> "]") (valeur p)) (cr_periode cr)
     lignes =
         [ maybeField "PCE"          (fmap (T.unpack . id_pce) (cr_pce cr))
         , renderConsoDetail (cr_consommation cr)

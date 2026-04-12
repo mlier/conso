@@ -54,6 +54,7 @@ module Conso.Fr.Gaz.Adict.Adict
 import           Control.Exception                              ( try, SomeException )
 import           Control.Monad.Trans.Except                    ( runExceptT, ExceptT )
 import           Data.Aeson
+import qualified Data.Aeson.KeyMap                              as KM
 import qualified Data.ByteString.Lazy                           as LBS
 import           Conduit                                        ( yieldMany )
 import           Data.Conduit                                   ( ConduitT )
@@ -192,10 +193,11 @@ newDebugTlsManager = newTlsManagerWith tlsManagerSettings
 
 -- | Type d'erreur retourné par toutes les fonctions de requête ADICT.
 data AdictError
-    = HttpError   Int  Text  -- ^ Erreur HTTP : code de statut + corps de la réponse
-    | ParseError       Text  -- ^ Erreur de décodage JSON
-    | AuthError        Text  -- ^ Erreur d'authentification OAuth2
-    | NetworkError     Text  -- ^ Erreur réseau ou configuration invalide
+    = HttpError       Int  Text  -- ^ Erreur HTTP : code de statut + corps de la réponse
+    | ParseError           Text  -- ^ Erreur de décodage JSON
+    | AuthError            Text  -- ^ Erreur d'authentification OAuth2
+    | NetworkError         Text  -- ^ Erreur réseau ou configuration invalide
+    | FunctionalError Text Text  -- ^ Erreur métier HTTP 200 : code + message du statut_restitution
     deriving (Show)
 
 
@@ -257,21 +259,25 @@ getBearerToken session = do
 --   @ClientSecretBasic@ (SOFIT) selon la valeur de 'tokenUrl'.
 fetchToken :: Manager -> Adict -> IO (Either AdictError TokenState)
 fetchToken mgr cfg =
-    case UB.parseURI UB.strictURIParserOptions (T.encodeUtf8 (tokenUrl cfg)) of
-        Left  e   -> return $ Left (AuthError $ "URL SSO invalide : " <> T.pack (show e))
-        Right uri -> do
+    case ( UB.parseURI UB.strictURIParserOptions (T.encodeUtf8 (tokenUrl  cfg))
+         , UB.parseURI UB.strictURIParserOptions (T.encodeUtf8 (adictUrl  cfg))
+         ) of
+        (Left e, _) -> return $ Left (AuthError $ "URL SSO invalide : "   <> T.pack (show e))
+        (_, Left e) -> return $ Left (AuthError $ "URL ADICT invalide : " <> T.pack (show e))
+        (Right tokenUri, Right adictUri) -> do
+            let scopeVal = TL.fromStrict $ T.decodeUtf8 (UB.uriPath adictUri)
             let idpApp = IdpApplication
                     { idp = Idp
-                        { idpUserInfoEndpoint            = uri
-                        , idpAuthorizeEndpoint           = uri
-                        , idpTokenEndpoint               = uri
+                        { idpUserInfoEndpoint            = tokenUri
+                        , idpAuthorizeEndpoint           = tokenUri
+                        , idpTokenEndpoint               = tokenUri
                         , idpDeviceAuthorizationEndpoint = Nothing
                         }
                     , application = ClientCredentialsApplication
-                        { ccClientId                   = ClientId  (TL.fromStrict (clientId     cfg))
+                        { ccClientId                   = ClientId     (TL.fromStrict (clientId     cfg))
                         , ccClientSecret               = ClientSecret (TL.fromStrict (clientSecret cfg))
                         , ccName                       = TL.fromStrict (clientId cfg)
-                        , ccScope                      = Set.fromList [Scope "/adict/bas/v3"]
+                        , ccScope                      = Set.fromList [Scope scopeVal]
                         , ccTokenRequestExtraParams    = Map.empty
                         , ccClientAuthenticationMethod = ClientSecretPost
                         }
@@ -358,8 +364,8 @@ adictGet session apiPath = do
                         body = responseBody resp
                     in if st == 200
                        then case eitherDecode body of
-                                Left  e -> return $ Left (ParseError (T.pack e))
-                                Right v -> return $ Right v
+                                Left  e   -> return $ Left (ParseError (T.pack e))
+                                Right val -> return $ checkFunctionalErrorVal val
                        else return $ Left (HttpError st (decodeBody body))
 
 -- | GET retournant une liste d'objets JSON (format NDJSON : un objet par ligne).
@@ -512,7 +518,11 @@ adictPatch session apiPath = do
             initReq <- parseRequest url
             let req = initReq
                     { method         = "PATCH"
-                    , requestHeaders = [("Authorization", "Bearer " <> T.encodeUtf8 tok)]
+                    , requestBody    = RequestBodyBS "{}"
+                    , requestHeaders =
+                        [ ("Authorization", "Bearer " <> T.encodeUtf8 tok)
+                        , ("Content-Type",  "application/json")
+                        ]
                     }
             result <- try (httpLbs req (sessionManager session))
                         :: IO (Either SomeException (Response LBS.ByteString))
@@ -522,7 +532,7 @@ adictPatch session apiPath = do
                     let st   = statusCode (responseStatus resp)
                         rb   = responseBody resp
                     in if st == 200
-                       then case eitherDecode rb of
+                       then case eitherDecode (dropToJson rb) of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
                        else return $ Left (HttpError st (decodeBody rb))
@@ -535,7 +545,7 @@ adictPatch session apiPath = do
 parseNDJSON :: FromJSON a => LBS.ByteString -> Either AdictError [a]
 parseNDJSON body =
     let ls      = filter (not . LBS.null) $ LBS.split 10 body  -- split sur '\n'
-        ls'     = map stripCR ls
+        ls'     = filter (not . LBS.null) . map (dropToJson . stripCR) $ ls
         results = map eitherDecode ls'
     in case sequence results of
            Left  e  -> Left (ParseError (T.pack e))
@@ -547,6 +557,30 @@ stripCR bs = case LBS.unsnoc bs of
     Just (bs', 13) -> bs'
     _              -> bs
 
+-- | Supprime les octets non-JSON en tête (espaces, U+00A0, etc.) jusqu'au
+--   premier '{' ou '['. No-op pour les lignes JSON valides.
+dropToJson :: LBS.ByteString -> LBS.ByteString
+dropToJson = LBS.dropWhile (\b -> b /= 0x7B && b /= 0x5B)  -- 0x7B='{', 0x5B='['
+
 -- | Décode un corps de réponse en Text (pour les messages d'erreur).
 decodeBody :: LBS.ByteString -> Text
 decodeBody = T.decodeUtf8 . LBS.toStrict
+
+-- | Décode une 'Value' vers @a@ en vérifiant d'abord le champ
+--   @statut_restitution@ : si son @code@ est non vide, retourne
+--   @Left (FunctionalError code msg)@ sans tenter le décodage vers @a@.
+--   Utilisé par 'adictGet' pour les endpoints à objet unique.
+checkFunctionalErrorVal :: FromJSON a => Value -> Either AdictError a
+checkFunctionalErrorVal val =
+    case val of
+        Object o | Just (Object sr) <- KM.lookup "statut_restitution" o ->
+            let code = case KM.lookup "code"    sr of { Just (String c) -> c; _ -> "" }
+                msg  = case KM.lookup "message" sr of { Just (String m) -> m; _ -> "" }
+            in if T.null code
+               then decodeVal val
+               else Left (FunctionalError code msg)
+        _ -> decodeVal val
+  where
+    decodeVal v = case fromJSON v of
+        Error   e -> Left (ParseError (T.pack e))
+        Success x -> Right x

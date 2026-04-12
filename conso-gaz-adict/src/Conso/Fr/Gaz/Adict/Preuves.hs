@@ -60,7 +60,7 @@ soumettrePrevue session idDroitAcces filePath = do
                                 ("/droit_acces/" <> T.unpack idDroitAcces <> "/preuves")
             initReq <- parseRequest url
             let req = initReq
-                    { method         = "POST"
+                    { method         = "PUT"
                     , requestBody    = RequestBodyLBS body
                     , requestHeaders =
                         [ ("Authorization", "Bearer " <> T.encodeUtf8 tok)
@@ -97,7 +97,7 @@ buildMultipartBody boundary fileName fileBytes = LBS.fromStrict $
        "--" <> boundary <> "\r\n"
     <> "Content-Disposition: form-data; name=\"preuve\"; filename=\""
     <> BSC.pack fileName <> "\"\r\n"
-    <> "Content-Type: application/octet-stream\r\n"
+    <> "Content-Type: application/pdf\r\n"
     <> "\r\n"
     <> fileBytes
     <> "\r\n"
