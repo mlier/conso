@@ -99,6 +99,7 @@ test-suite conso-gaz-adict-test
           base ^>=4.18.3.0
         , conso-gaz-adict
         , bytestring
+        , HUnit
         , hspec
         , hspec-discover
         , hspec-expectations

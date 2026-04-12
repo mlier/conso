@@ -83,7 +83,7 @@ soumettrePrevue session idDroitAcces filePath = do
 -- | Comme 'soumettrePrevue' avec une session bac à sable auto-initialisée.
 soumettrePrevueSandbox :: Text -> FilePath -> IO (Either AdictError ())
 soumettrePrevueSandbox idDroitAcces filePath = do
-    session <- initSession False False
+    session <- initSession False False False
     soumettrePrevue session idDroitAcces filePath
 
 

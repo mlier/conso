@@ -31,6 +31,7 @@ data Options = Options
     { optProd    :: Bool
     , optRaw     :: Bool
     , optDebug   :: Bool
+    , optVerbose :: Bool
     , optCommand :: Command
     } deriving (Show)
 
@@ -89,9 +90,10 @@ newtype RevoquerOpts = RevoquerOpts { rvId :: String } deriving (Show)
 
 opts :: Parser Options
 opts = Options
-    <$> switch ( long "prod"  <> help "Serveur de production (défaut : bac à sable)" )
-    <*> switch ( long "raw"   <> help "Afficher la réponse brute (pPrint)" )
-    <*> switch ( long "debug" <> help "Afficher les requêtes HTTP sur stderr" )
+    <$> switch ( long "prod"    <> help "Serveur de production (défaut : bac à sable)" )
+    <*> switch ( long "raw"     <> help "Afficher la réponse brute (pPrint)" )
+    <*> switch ( long "debug"   <> help "Afficher les requêtes HTTP sur stderr" )
+    <*> switch ( long "verbose" <> help "Afficher les corps de réponse JSON sur stderr" )
     <*> commandParser
 
 
@@ -234,7 +236,7 @@ main = do
             ( fullDesc
             <> progDesc "Client GRDF API ADICT — consultation des données PCE"
             <> header "conso-gaz-adict — GRDF ADICT B2B v2" )
-    session <- initSession (optProd o) (optDebug o)
+    session <- initSession (optProd o) (optDebug o) (optVerbose o)
     run session (optRaw o) (optCommand o)
 
 

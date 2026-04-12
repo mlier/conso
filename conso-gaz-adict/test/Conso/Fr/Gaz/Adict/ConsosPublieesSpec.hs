@@ -2,7 +2,7 @@
 module Conso.Fr.Gaz.Adict.ConsosPublieesSpec where
 
 import SpecHelper
-import Data.Either ( isRight, isLeft )
+import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.ConsosPubliees ( consulterConsosPubliees, PeriodeParam(..) )
 
@@ -66,55 +66,55 @@ spec = do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "09999999900112"
                                    (ByDateRange "2021-01-01" "2021-10-15")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000002"   
 
             it "Consos-NR09 - Consulter les données de consommation publiées - erreur technique du serveur GRDF" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "GI999159"
                                    (ByPeriode "2023")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "2000000"
 
             it "Consos-NR10 - Consulter les données de consommation publiées - MHS du PCE sur lequel il existe un droit d'accès" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "GI999092"
                                    (ByDateRange "2021-08-18" "2023-08-17")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000012"
 
             it "Consos-NR11 - Consulter les données de consommation publiées - droit d'accès expiré" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "09999999930215"
                                    (ByDateRange "2023-01-01" "2023-09-01")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000001"
 
             it "Consos-NR12 - Consulter les données de consommation publiées - droit d'accès révoqué par le Titulaire" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "09999999932770"
                                    (ByDateRange "2023-01-01" "2023-02-01")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000014"
 
             it "Consos-NR13 - Consulter les données de consommation publiées - droit d'accès révoqué par le Tiers" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "09999999970626"
                                    (ByPeriode "2023")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000005"
 
             it "Consos-NR14 - Consulter les données de consommation publiées - date de début demandée excédant 5 ans d'historique" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosPubliees session "09999999900617"
                                    (ByDateRange "2018-01-01" "2021-10-15")
-                    rep `shouldSatisfy` isLeft
+                    rep `shouldBeFunctionalError` "1000010"
 
             it "Consos-NR15 - Consulter les données de consommation publiées - erreur technique sur le streaming lors de l’exécution de la requête" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
-                    rep     <- consulterConsosPubliees session "09999999900617"
-                                   (ByDateRange "2018-01-01" "2021-10-15")
-                    rep `shouldSatisfy` isLeft
+                    rep     <- consulterConsosPubliees session "GI999054"
+                                   (ByPeriode "2023")
+                    rep `shouldBeFunctionalError` "2000100"
 main :: IO ()
 main = hspec spec

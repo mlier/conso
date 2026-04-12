@@ -142,28 +142,30 @@ data TokenState = TokenState
 
 -- | Session ADICT encapsulant la configuration, le cache de token et le Manager HTTP.
 data AdictSession = AdictSession
-    { sessionConfig  :: Adict
-    , sessionToken   :: IORef (Maybe TokenState)
-    , sessionManager :: Manager
-    , sessionDebug   :: Bool   -- ^ @True@ = log des requêtes HTTP sur stderr
+    { sessionConfig    :: Adict
+    , sessionToken     :: IORef (Maybe TokenState)
+    , sessionManager   :: Manager
+    , sessionDebugReq  :: Bool  -- ^ @True@ = log des requêtes HTTP sur stderr (@DEBUG=1@)
+    , sessionVerbose   :: Bool  -- ^ @True@ = log des corps de réponse sur stderr (@CONSO_VERBOSE=1@)
     }
 
 -- | Initialise une session ADICT en lisant la configuration depuis
 --   @~\/.conso\/conso-env.yaml@.
---   Premier @Bool@ : @True@ = production, @False@ = bac à sable.
---   Second @Bool@  : @True@ = mode debug (log HTTP sur stderr).
-initSession :: Bool -> Bool -> IO AdictSession
-initSession prod debug = do
+--   @prod@     : @True@ = production, @False@ = bac à sable.
+--   @debugReq@ : @True@ = log des requêtes HTTP (@DEBUG=1@).
+--   @verbose@  : @True@ = log des corps de réponse (@CONSO_VERBOSE=1@).
+initSession :: Bool -> Bool -> Bool -> IO AdictSession
+initSession prod debugReq verbose = do
     cfg <- getEnvAdict prod
-    initSessionWith debug cfg
+    initSessionWith debugReq verbose cfg
 
 -- | Initialise une session ADICT avec une configuration explicite.
---   Le @Bool@ active le mode debug (log HTTP sur stderr).
-initSessionWith :: Bool -> Adict -> IO AdictSession
-initSessionWith debug cfg = do
+--   @debugReq@ : log des requêtes HTTP ; @verbose@ : log des corps de réponse.
+initSessionWith :: Bool -> Bool -> Adict -> IO AdictSession
+initSessionWith debugReq verbose cfg = do
     tokenRef <- newIORef Nothing
-    mgr      <- if debug then newDebugTlsManager else newTlsManager
-    return $ AdictSession cfg tokenRef mgr debug
+    mgr      <- if debugReq then newDebugTlsManager else newTlsManager
+    return $ AdictSession cfg tokenRef mgr debugReq verbose
 
 -- | Manager TLS qui écrit chaque requête (méthode, URL, en-têtes, corps)
 --   sur stderr avant de l'envoyer.  Utile pour diagnostiquer les erreurs OAuth2.
@@ -363,7 +365,7 @@ adictGet session apiPath = do
                 Right resp -> do
                     let st   = statusCode (responseStatus resp)
                         body = responseBody resp
-                    logDebugBody (sessionDebug session) body
+                    logDebugBody (sessionVerbose session) body
                     if st == 200
                        then case eitherDecode body of
                                 Left  e   -> return $ Left (ParseError (T.pack e))
@@ -388,9 +390,11 @@ adictGetNDJSON session apiPath = do
                 Right resp -> do
                     let st   = statusCode (responseStatus resp)
                         body = responseBody resp
-                    logDebugBody (sessionDebug session) body
+                    logDebugBody (sessionVerbose session) body
                     if st == 200
-                       then return $ parseNDJSON body
+                       then return $ case decode body >>= extractFunctionalError of
+                                Just err -> Left err
+                                Nothing  -> parseNDJSON body
                        else return $ tryFunctionalError st body
 
 -- | GET NDJSON retournant un 'ConduitT' qui émet chaque objet décodé.
@@ -444,7 +448,7 @@ adictPut session apiPath body = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionDebug session) rb
+                    logDebugBody (sessionVerbose session) rb
                     if st `elem` [200, 201]
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
@@ -476,7 +480,7 @@ adictPost session apiPath body = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionDebug session) rb
+                    logDebugBody (sessionVerbose session) rb
                     if st == 200
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
@@ -508,9 +512,11 @@ adictPostNDJSON session apiPath body = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionDebug session) rb
+                    logDebugBody (sessionVerbose session) rb
                     if st == 200
-                       then return $ parseNDJSON rb
+                       then return $ case decode rb >>= extractFunctionalError of
+                                Just err -> Left err
+                                Nothing  -> parseNDJSON rb
                        else return $ tryFunctionalError st rb
 
 -- | PATCH sans corps (pour révoquer un droit d'accès).
@@ -537,7 +543,7 @@ adictPatch session apiPath = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionDebug session) rb
+                    logDebugBody (sessionVerbose session) rb
                     if st == 200
                        then case eitherDecode (dropToJson rb) of
                                 Left  e -> return $ Left (ParseError (T.pack e))
@@ -585,19 +591,23 @@ logDebugBody True  body = do
 -- | Décode une 'Value' vers @a@ en vérifiant d'abord le champ
 --   @statut_restitution@ : si son @code@ est non vide, retourne
 --   @Left (FunctionalError code msg)@ sans tenter le décodage vers @a@.
---   Utilisé par 'adictGet' pour les endpoints à objet unique.
-checkFunctionalErrorVal :: FromJSON a => Value -> Either AdictError a
-checkFunctionalErrorVal val =
+-- | Extrait une erreur fonctionnelle depuis un 'Value' JSON si le champ
+--   @statut_restitution.code@ est présent et non vide.
+extractFunctionalError :: Value -> Maybe AdictError
+extractFunctionalError val =
     case val of
         Object o | Just (Object sr) <- KM.lookup "statut_restitution" o ->
             let code = case KM.lookup "code"    sr of { Just (String c) -> c; _ -> "" }
                 msg  = case KM.lookup "message" sr of { Just (String m) -> m; _ -> "" }
-            in if T.null code
-               then decodeVal val
-               else Left (FunctionalError code msg)
-        _ -> decodeVal val
-  where
-    decodeVal v = case fromJSON v of
+            in if T.null code then Nothing else Just (FunctionalError code msg)
+        _ -> Nothing
+
+-- | Décode une 'Value' vers @a@ en vérifiant d'abord @statut_restitution@.
+--   Utilisé par 'adictGet' pour les endpoints à objet unique.
+checkFunctionalErrorVal :: FromJSON a => Value -> Either AdictError a
+checkFunctionalErrorVal val = case extractFunctionalError val of
+    Just err -> Left err
+    Nothing  -> case fromJSON val of
         Error   e -> Left (ParseError (T.pack e))
         Success x -> Right x
 
@@ -606,11 +616,6 @@ checkFunctionalErrorVal val =
 --   @FunctionalError@, sinon @HttpError@.
 tryFunctionalError :: Int -> LBS.ByteString -> Either AdictError a
 tryFunctionalError st body =
-    case decode (dropToJson body) of
-        Just (Object o) | Just (Object sr) <- KM.lookup "statut_restitution" o ->
-            let code = case KM.lookup "code"    sr of { Just (String c) -> c; _ -> "" }
-                msg  = case KM.lookup "message" sr of { Just (String m) -> m; _ -> "" }
-            in if T.null code
-               then Left (HttpError st (decodeBody body))
-               else Left (FunctionalError code msg)
-        _ -> Left (HttpError st (decodeBody body))
+    case decode (dropToJson body) >>= extractFunctionalError of
+        Just err -> Left err
+        Nothing  -> Left (HttpError st (decodeBody body))

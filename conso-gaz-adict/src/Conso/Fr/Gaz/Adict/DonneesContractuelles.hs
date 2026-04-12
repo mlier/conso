@@ -48,5 +48,5 @@ consulterDonneesContractuelles session pce filtres =
 consulterDonneesContractuellesSandbox
     :: Text -> [Text] -> IO (Either AdictError RetourDonneesContractuelles)
 consulterDonneesContractuellesSandbox pce filtres = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterDonneesContractuelles session pce filtres

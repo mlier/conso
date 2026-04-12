@@ -2,7 +2,7 @@
 module Conso.Fr.Gaz.Adict.ConsosInfosSpec where
 
 import SpecHelper
-import Data.Either ( isRight, isLeft )
+import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.ConsosInfos    ( consulterConsosInfos )
 import Conso.Fr.Gaz.Adict.ConsosPubliees ( PeriodeParam(..) )
@@ -32,49 +32,49 @@ spec = do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo3
                                    (ByPeriode periodeConsoInfo1)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000002"  
             it "ConsosInfo-NR04 - Consulter les données de consommation informatives - format du paramètre id_pce incorrect" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo4
                                    (ByPeriode periodeConsoInfo2)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000000"   
             it "ConsosInfo-NR05 - Consulter les données de consommation informatives - erreur technique du serveur GRDF" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo5
                                    (ByPeriode periodeConsoInfo3)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "2000000"  
             it "ConsosInfo-NR06 - Consulter les données de consommation informatives - contrat avec GRDF expiré" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo6
                                    (ByPeriode periodeConsoInfo3)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000002"  
             it "ConsosInfo-NR07 - Consulter les données de consommation informatives - droit d'accès révoqué par le Titulaire" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo7
                                    (ByDateRange dateDebutInfo3 dateFinInfo3)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000014" 
             it "ConsosInfo-NR08 - Consulter les données de consommation informatives - données informatives hors du périmètre du droit d'accès demandé" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo8
                                    (ByDateRange dateDebutInfo2 dateFinInfo1)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000010"  
             it "ConsosInfo-NR09 - Consulter les données de consommation informatives - date de début demandée excédant 3 ans d'historique" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo1
                                    (ByDateRange dateDebutInfo1 dateFinInfo1)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000030"   
             it "ConsosInfo-NR10 - Consulter les données de consommation informatives - date de fin supérieure à la date du jour" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- consulterConsosInfos session pceConsoInfo1
                                    (ByDateRange dateDebutInfo2 dateFinInfo2)
-                    rep `shouldSatisfy` isLeft  
+                    rep `shouldBeFunctionalError` "1000016" 
 
 
 main :: IO ()

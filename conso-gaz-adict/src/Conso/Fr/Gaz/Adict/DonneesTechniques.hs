@@ -37,5 +37,5 @@ consulterDonneesTechniques session pce =
 -- | Comme 'consulterDonneesTechniques' avec une session bac à sable auto-initialisée.
 consulterDonneesTechniquesSandbox :: Text -> IO (Either AdictError RetourDonneesTechniques)
 consulterDonneesTechniquesSandbox pce = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterDonneesTechniques session pce

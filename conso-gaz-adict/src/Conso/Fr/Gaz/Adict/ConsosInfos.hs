@@ -49,5 +49,5 @@ consulterConsosInfos session pce periode =
 -- | Comme 'consulterConsosInfos' avec une session bac à sable auto-initialisée.
 consulterConsosInfosSandbox :: Text -> PeriodeParam -> IO (Either AdictError [ConsoRestit])
 consulterConsosInfosSandbox pce periode = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterConsosInfos session pce periode

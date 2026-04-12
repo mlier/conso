@@ -9,9 +9,10 @@ module SpecHelper
   , nonRecevablesC
   ) where
 
-import Control.Exception    ( try, SomeException )
+import Control.Exception    ( try, throwIO, fromException, SomeException )
 import Data.Text            ( Text )
 import System.Environment   ( lookupEnv )
+import Test.HUnit.Lang      ( HUnitFailure )
 import Test.Hspec
 
 import Conso.Fr.Gaz.Adict.Adict
@@ -22,9 +23,10 @@ import Conso.Fr.Gaz.Adict.Adict
 --   Active le mode debug si la variable d'environnement @CONSO_VERBOSE=1@.
 sandboxSession :: IO AdictSession
 sandboxSession = do
-    env     <- getEnv
-    verbose <- (Just "1" ==) <$> lookupEnv "CONSO_VERBOSE"
-    initSessionWith verbose (sandbox env)
+    env      <- getEnv
+    debugReq <- (Just "1" ==) <$> lookupEnv "DEBUG"
+    verbose  <- (Just "1" ==) <$> lookupEnv "CONSO_VERBOSE"
+    initSessionWith debugReq verbose (sandbox env)
 
 -- | Marque le test « pending » si l'API sandbox est inaccessible (réseau/TLS/auth).
 --   Les vraies assertions hspec ne sont pas masquées.
@@ -32,7 +34,9 @@ pendingOnAdictError :: Expectation -> Expectation
 pendingOnAdictError action = do
     res <- try @SomeException action
     case res of
-        Left e   -> pendingWith $ "API ADICT inaccessible : " ++ show e
+        Left e -> case fromException e :: Maybe HUnitFailure of
+            Just huf -> throwIO huf   -- re-lancer les échecs d'assertion hspec
+            Nothing  -> pendingWith $ "API ADICT inaccessible : " ++ show e
         Right () -> return ()
 
 

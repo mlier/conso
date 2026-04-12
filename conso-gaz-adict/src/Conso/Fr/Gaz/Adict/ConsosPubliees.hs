@@ -65,5 +65,5 @@ consulterConsosPubliees session pce periode =
 --   Pratique pour les tests rapides depuis GHCi.
 consulterConsosPublieesSandbox :: Text -> PeriodeParam -> IO (Either AdictError [ConsoRestit])
 consulterConsosPublieesSandbox pce periode = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterConsosPubliees session pce periode

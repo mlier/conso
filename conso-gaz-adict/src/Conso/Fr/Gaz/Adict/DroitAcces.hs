@@ -66,7 +66,7 @@ declarerDroitAcces session pce demande =
 declarerDroitAccesSandbox
     :: Text -> DemandeAccesIn -> IO (Either AdictError RetourDemandeAcces)
 declarerDroitAccesSandbox pce demande = do
-    session <- initSession False False
+    session <- initSession False False False
     declarerDroitAcces session pce demande
 
 
@@ -85,5 +85,5 @@ revoquerDroitAcces session idDroitAcces =
 -- | Comme 'revoquerDroitAcces' avec une session bac à sable auto-initialisée.
 revoquerDroitAccesSandbox :: Text -> IO (Either AdictError RetourFinAcces)
 revoquerDroitAccesSandbox idDroitAcces = do
-    session <- initSession False False
+    session <- initSession False False False
     revoquerDroitAcces session idDroitAcces

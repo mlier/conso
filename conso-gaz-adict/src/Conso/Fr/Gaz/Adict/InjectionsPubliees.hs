@@ -47,5 +47,5 @@ consulterInjectionsPubliees session pce periode =
 -- | Comme 'consulterInjectionsPubliees' avec une session bac à sable auto-initialisée.
 consulterInjectionsPublieesSandbox :: Text -> PeriodeParam -> IO (Either AdictError [InjectionRestit])
 consulterInjectionsPublieesSandbox pce periode = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterInjectionsPubliees session pce periode

@@ -41,7 +41,7 @@ consulterDroitsAcces session = adictGetNDJSON session "/droits_acces"
 -- | Comme 'consulterDroitsAcces' avec une session bac à sable auto-initialisée.
 consulterDroitsAccesSandbox :: IO (Either AdictError [DroitAcces])
 consulterDroitsAccesSandbox = do
-    session <- initSession False False
+    session <- initSession False False False
     consulterDroitsAcces session
 
 
@@ -64,5 +64,5 @@ consulterPreuvesAFournir session =
 -- | Comme 'rechercherDroitsAcces' avec une session bac à sable auto-initialisée.
 rechercherDroitsAccesSandbox :: FiltreAcces -> IO (Either AdictError [DroitAcces])
 rechercherDroitsAccesSandbox filtre = do
-    session <- initSession False False
+    session <- initSession False False False
     rechercherDroitsAcces session filtre
