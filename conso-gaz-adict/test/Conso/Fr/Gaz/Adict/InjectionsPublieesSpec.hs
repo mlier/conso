@@ -19,7 +19,7 @@ spec = do
                     rep     <- consulterInjectionsPubliees session pceInj1
                                    (ByDateRange dateDebutInj2 dateFinInj)
                     rep `shouldSatisfy` isRight
-    describe nonRecevablesC $ do
+        describe nonRecevablesC $ do
             it "Inj-NR2 - Consulter les données d'injection publiées - droit d'accès ayant un état différent d'Actif, Obsolète ou Révoqué" $
                 pendingOnAdictError $ do
                     session <- sandboxSession

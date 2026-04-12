@@ -3,17 +3,19 @@ module SpecHelper
   ( module Test.Hspec
   , sandboxSession
   , pendingOnAdictError
+  , shouldBeFunctionalError
   , sandboxC
   , recevablesC
   , nonRecevablesC
   ) where
 
 import Control.Exception    ( try, SomeException )
+import Data.Text            ( Text )
 import System.Environment   ( lookupEnv )
 import Test.Hspec
 
 import Conso.Fr.Gaz.Adict.Adict
-    ( getEnv, initSessionWith, AdictSession, AdictEnv(..) )
+    ( getEnv, initSessionWith, AdictSession, AdictEnv(..), AdictError(..) )
 
 
 -- | Initialise une session vers le bac à sable GRDF.
@@ -32,6 +34,21 @@ pendingOnAdictError action = do
     case res of
         Left e   -> pendingWith $ "API ADICT inaccessible : " ++ show e
         Right () -> return ()
+
+
+-- | Vérifie qu'une réponse ADICT est une erreur fonctionnelle avec le code GRDF attendu.
+--   Affiche le code et le message réels en cas d'échec pour faciliter le diagnostic.
+shouldBeFunctionalError :: Show a => Either AdictError a -> Text -> Expectation
+shouldBeFunctionalError result expectedCode = case result of
+    Left (FunctionalError code _) | code == expectedCode -> pure ()
+    Left (FunctionalError code msg) -> expectationFailure $
+        "Expected FunctionalError " ++ show expectedCode ++
+        ", got code " ++ show code ++ ": " ++ show msg
+    Left err  -> expectationFailure $
+        "Expected FunctionalError " ++ show expectedCode ++
+        ", got: " ++ show err
+    Right _   -> expectationFailure $
+        "Expected FunctionalError " ++ show expectedCode ++ ", but got Right"
 
 
 -- ---------------------------------------------------------------------------

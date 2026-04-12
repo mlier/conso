@@ -17,7 +17,7 @@ spec = do
                     session <- sandboxSession
                     rep     <- consulterDonneesTechniques session pceDonneesTech
                     rep `shouldSatisfy` isRight
-    describe nonRecevablesC $ do
+        describe nonRecevablesC $ do
             it "Tech-NR2 - Consulter les données techniques - données hors du périmètre du droit d'accès demandé" $
                 pendingOnAdictError $ do
                     session <- sandboxSession

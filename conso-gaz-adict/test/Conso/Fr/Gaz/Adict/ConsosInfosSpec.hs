@@ -26,7 +26,7 @@ spec = do
                     rep     <- consulterConsosInfos session pceConsoInfo2
                                    (ByPeriode periodeConsoInfo2)
                     rep `shouldSatisfy` isRight
-    describe nonRecevablesC $ do
+        describe nonRecevablesC $ do
             it "ConsosInfo-NR03 - Consulter les données de consommation informatives - format du paramètre période incorrect" $
                 pendingOnAdictError $ do
                     session <- sandboxSession

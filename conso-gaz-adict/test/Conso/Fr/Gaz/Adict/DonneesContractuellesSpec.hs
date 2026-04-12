@@ -23,7 +23,7 @@ spec = do
                     session <- sandboxSession
                     rep     <- consulterDonneesContractuelles session pceDonneesContrac ["car"]
                     rep `shouldSatisfy` isRight
-    describe nonRecevablesC $ do
+        describe nonRecevablesC $ do
             it "Contrat-NR2 -  Consulter les données contractuelles - données hors du périmètre du droit d'accès demandé" $
                 pendingOnAdictError $ do
                     session <- sandboxSession

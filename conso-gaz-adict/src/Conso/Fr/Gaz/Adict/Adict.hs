@@ -368,7 +368,7 @@ adictGet session apiPath = do
                        then case eitherDecode body of
                                 Left  e   -> return $ Left (ParseError (T.pack e))
                                 Right val -> return $ checkFunctionalErrorVal val
-                       else return $ Left (HttpError st (decodeBody body))
+                       else return $ tryFunctionalError st body
 
 -- | GET retournant une liste d'objets JSON (format NDJSON : un objet par ligne).
 adictGetNDJSON :: FromJSON a => AdictSession -> String -> IO (Either AdictError [a])
@@ -391,7 +391,7 @@ adictGetNDJSON session apiPath = do
                     logDebugBody (sessionDebug session) body
                     if st == 200
                        then return $ parseNDJSON body
-                       else return $ Left (HttpError st (decodeBody body))
+                       else return $ tryFunctionalError st body
 
 -- | GET NDJSON retournant un 'ConduitT' qui émet chaque objet décodé.
 --   Pratique pour traiter les résultats un par un sans les charger tous en liste.
@@ -449,7 +449,7 @@ adictPut session apiPath body = do
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
-                       else return $ Left (HttpError st (decodeBody rb))
+                       else return $ tryFunctionalError st rb
 
 -- | POST avec corps JSON.
 adictPost :: (ToJSON req, FromJSON resp)
@@ -481,7 +481,7 @@ adictPost session apiPath body = do
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
-                       else return $ Left (HttpError st (decodeBody rb))
+                       else return $ tryFunctionalError st rb
 
 -- | POST retournant NDJSON.
 adictPostNDJSON :: FromJSON resp
@@ -511,7 +511,7 @@ adictPostNDJSON session apiPath body = do
                     logDebugBody (sessionDebug session) rb
                     if st == 200
                        then return $ parseNDJSON rb
-                       else return $ Left (HttpError st (decodeBody rb))
+                       else return $ tryFunctionalError st rb
 
 -- | PATCH sans corps (pour révoquer un droit d'accès).
 adictPatch :: FromJSON resp => AdictSession -> String -> IO (Either AdictError resp)
@@ -542,7 +542,7 @@ adictPatch session apiPath = do
                        then case eitherDecode (dropToJson rb) of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
-                       else return $ Left (HttpError st (decodeBody rb))
+                       else return $ tryFunctionalError st rb
 
 
 -- ---------------------------------------------------------------------------
@@ -579,7 +579,7 @@ logDebugBody :: Bool -> LBS.ByteString -> IO ()
 logDebugBody False _    = return ()
 logDebugBody True  body = do
     hPutStrLn stderr "[DEBUG] ← body:"
-    hPutStr   stderr $ TL.unpack (pStringNoColor (LBSC.unpack body))
+    hPutStr   stderr $ TL.unpack (pStringNoColor (T.unpack (T.decodeUtf8 (LBS.toStrict body))))
     hPutStrLn stderr ""
 
 -- | Décode une 'Value' vers @a@ en vérifiant d'abord le champ
@@ -600,3 +600,17 @@ checkFunctionalErrorVal val =
     decodeVal v = case fromJSON v of
         Error   e -> Left (ParseError (T.pack e))
         Success x -> Right x
+
+-- | Construit une erreur à partir d'un code HTTP non-200 et du corps brut.
+--   Tente d'extraire @statut_restitution@ du JSON ; si présent retourne
+--   @FunctionalError@, sinon @HttpError@.
+tryFunctionalError :: Int -> LBS.ByteString -> Either AdictError a
+tryFunctionalError st body =
+    case decode (dropToJson body) of
+        Just (Object o) | Just (Object sr) <- KM.lookup "statut_restitution" o ->
+            let code = case KM.lookup "code"    sr of { Just (String c) -> c; _ -> "" }
+                msg  = case KM.lookup "message" sr of { Just (String m) -> m; _ -> "" }
+            in if T.null code
+               then Left (HttpError st (decodeBody body))
+               else Left (FunctionalError code msg)
+        _ -> Left (HttpError st (decodeBody body))

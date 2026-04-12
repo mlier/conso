@@ -53,7 +53,7 @@ spec = do
                                    (ByDateRange "2023-01-31" "2023-02-05")
                     rep `shouldSatisfy` isRight
     
-    describe nonRecevablesC $ do
+        describe nonRecevablesC $ do
             it "Consos-NR07 - Consulter les données de consommation publiées - erreur sur le Bloc de consommation n°1 (appel date à date)" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
