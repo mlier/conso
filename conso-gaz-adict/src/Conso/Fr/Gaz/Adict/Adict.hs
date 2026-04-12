@@ -75,7 +75,8 @@ import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
                     ( newTlsManager, newTlsManagerWith, tlsManagerSettings )
 import           Network.HTTP.Types.Status                      ( statusCode )
-import           System.IO                                      ( hPutStrLn, stderr )
+import           System.IO                                      ( hPutStr, hPutStrLn, stderr )
+import           Text.Pretty.Simple                             ( pStringNoColor )
 import           Network.OAuth2.Experiment
                     ( conduitTokenRequest
                     , Idp(..), IdpApplication(..)
@@ -359,10 +360,11 @@ adictGet session apiPath = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
+                Right resp -> do
                     let st   = statusCode (responseStatus resp)
                         body = responseBody resp
-                    in if st == 200
+                    logDebugBody (sessionDebug session) body
+                    if st == 200
                        then case eitherDecode body of
                                 Left  e   -> return $ Left (ParseError (T.pack e))
                                 Right val -> return $ checkFunctionalErrorVal val
@@ -383,10 +385,11 @@ adictGetNDJSON session apiPath = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
+                Right resp -> do
                     let st   = statusCode (responseStatus resp)
                         body = responseBody resp
-                    in if st == 200
+                    logDebugBody (sessionDebug session) body
+                    if st == 200
                        then return $ parseNDJSON body
                        else return $ Left (HttpError st (decodeBody body))
 
@@ -438,10 +441,11 @@ adictPut session apiPath body = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
-                    let st   = statusCode (responseStatus resp)
-                        rb   = responseBody resp
-                    in if st `elem` [200, 201]
+                Right resp -> do
+                    let st = statusCode (responseStatus resp)
+                        rb = responseBody resp
+                    logDebugBody (sessionDebug session) rb
+                    if st `elem` [200, 201]
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
@@ -469,10 +473,11 @@ adictPost session apiPath body = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
-                    let st   = statusCode (responseStatus resp)
-                        rb   = responseBody resp
-                    in if st == 200
+                Right resp -> do
+                    let st = statusCode (responseStatus resp)
+                        rb = responseBody resp
+                    logDebugBody (sessionDebug session) rb
+                    if st == 200
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
@@ -500,10 +505,11 @@ adictPostNDJSON session apiPath body = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
-                    let st   = statusCode (responseStatus resp)
-                        rb   = responseBody resp
-                    in if st == 200
+                Right resp -> do
+                    let st = statusCode (responseStatus resp)
+                        rb = responseBody resp
+                    logDebugBody (sessionDebug session) rb
+                    if st == 200
                        then return $ parseNDJSON rb
                        else return $ Left (HttpError st (decodeBody rb))
 
@@ -528,10 +534,11 @@ adictPatch session apiPath = do
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
                 Left  e    -> return $ Left (NetworkError (T.pack (show e)))
-                Right resp ->
-                    let st   = statusCode (responseStatus resp)
-                        rb   = responseBody resp
-                    in if st == 200
+                Right resp -> do
+                    let st = statusCode (responseStatus resp)
+                        rb = responseBody resp
+                    logDebugBody (sessionDebug session) rb
+                    if st == 200
                        then case eitherDecode (dropToJson rb) of
                                 Left  e -> return $ Left (ParseError (T.pack e))
                                 Right v -> return $ Right v
@@ -565,6 +572,15 @@ dropToJson = LBS.dropWhile (\b -> b /= 0x7B && b /= 0x5B)  -- 0x7B='{', 0x5B='['
 -- | Décode un corps de réponse en Text (pour les messages d'erreur).
 decodeBody :: LBS.ByteString -> Text
 decodeBody = T.decodeUtf8 . LBS.toStrict
+
+-- | Affiche le corps d'une réponse HTTP sur stderr en mode debug.
+--   Tente un pretty-print via 'pStringNoColor' (lisible pour JSON).
+logDebugBody :: Bool -> LBS.ByteString -> IO ()
+logDebugBody False _    = return ()
+logDebugBody True  body = do
+    hPutStrLn stderr "[DEBUG] ← body:"
+    hPutStr   stderr $ TL.unpack (pStringNoColor (LBSC.unpack body))
+    hPutStrLn stderr ""
 
 -- | Décode une 'Value' vers @a@ en vérifiant d'abord le champ
 --   @statut_restitution@ : si son @code@ est non vide, retourne

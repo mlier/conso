@@ -267,10 +267,10 @@ run session raw cmd = case cmd of
 
     DroitsFiltres fo -> do
         let filtre = FiltreAcces
-                { fa_role_tiers             = fmap packT (foRole   fo)
-                , fa_id_pce                 = fmap packT (foPce    fo)
-                , fa_statut_controle_preuve = fmap packT (foStatut fo)
-                , fa_etat_droit_acces       = fmap packT (foEtat   fo)
+                { fa_role_tiers             = maybe [] (pure . packT) (foRole   fo)
+                , fa_id_pce                 = maybe [] (pure . packT) (foPce    fo)
+                , fa_statut_controle_preuve = maybe [] (pure . packT) (foStatut fo)
+                , fa_etat_droit_acces       = maybe [] (pure . packT) (foEtat   fo)
                 }
         rep <- rechercherDroitsAcces session filtre
         if raw then pPrint rep else renderApp rep

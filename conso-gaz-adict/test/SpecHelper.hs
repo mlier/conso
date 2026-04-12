@@ -8,7 +8,8 @@ module SpecHelper
   , nonRecevablesC
   ) where
 
-import Control.Exception  ( try, SomeException )
+import Control.Exception    ( try, SomeException )
+import System.Environment   ( lookupEnv )
 import Test.Hspec
 
 import Conso.Fr.Gaz.Adict.Adict
@@ -16,10 +17,12 @@ import Conso.Fr.Gaz.Adict.Adict
 
 
 -- | Initialise une session vers le bac à sable GRDF.
+--   Active le mode debug si la variable d'environnement @CONSO_VERBOSE=1@.
 sandboxSession :: IO AdictSession
 sandboxSession = do
-    env <- getEnv
-    initSessionWith True (sandbox env)
+    env     <- getEnv
+    verbose <- (Just "1" ==) <$> lookupEnv "CONSO_VERBOSE"
+    initSessionWith verbose (sandbox env)
 
 -- | Marque le test « pending » si l'API sandbox est inaccessible (réseau/TLS/auth).
 --   Les vraies assertions hspec ne sont pas masquées.
