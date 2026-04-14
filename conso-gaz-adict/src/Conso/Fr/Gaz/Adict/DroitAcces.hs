@@ -58,8 +58,8 @@ declarerDroitAcces
     -> Text             -- ^ Identifiant du PCE
     -> DemandeAccesIn   -- ^ Paramètres de la demande d'accès
     -> IO (Either AdictError RetourDemandeAcces)
-declarerDroitAcces session pce demande =
-    adictPut session ("/pce/" <> T.unpack pce <> "/droit_acces") demande
+declarerDroitAcces session pce =
+    adictPut session ("/pce/" <> T.unpack pce <> "/droit_acces")
 
 
 -- | Comme 'declarerDroitAcces' avec une session bac à sable auto-initialisée.

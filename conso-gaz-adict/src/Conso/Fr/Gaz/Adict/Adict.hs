@@ -48,11 +48,13 @@ module Conso.Fr.Gaz.Adict.Adict
     -- * Utilitaires
   , buildUrl
   , parseNDJSON
+  , tryFunctionalError
   , myHomeDirectory
   ) where
 
 import           Control.Exception                              ( try, SomeException )
 import           Control.Monad.Trans.Except                    ( runExceptT, ExceptT )
+import           Data.Maybe                                     ( mapMaybe )
 import           Data.Aeson
 import qualified Data.Aeson.KeyMap                              as KM
 import qualified Data.ByteString.Lazy                           as LBS
@@ -382,7 +384,9 @@ adictGetNDJSON session apiPath = do
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
-                    { requestHeaders = [("Authorization", "Bearer " <> T.encodeUtf8 tok)] }
+                    { requestHeaders = [ ("Authorization", "Bearer " <> T.encodeUtf8 tok)
+                                       , ("Accept",        "application/x-ndjson")
+                                       ] }
             result <- try (httpLbs req (sessionManager session))
                         :: IO (Either SomeException (Response LBS.ByteString))
             case result of
@@ -390,6 +394,7 @@ adictGetNDJSON session apiPath = do
                 Right resp -> do
                     let st   = statusCode (responseStatus resp)
                         body = responseBody resp
+                    logDebugStatus (sessionVerbose session) st
                     logDebugBody (sessionVerbose session) body
                     if st == 200
                        then return $ case decode body >>= extractFunctionalError of
@@ -432,6 +437,8 @@ adictPut session apiPath body = do
         Left  e   -> return $ Left e
         Right tok -> do
             let url = buildUrl (sessionConfig session) apiPath
+            putStrLn $ "URL : " ++ url
+            putStrLn $ "Body : " ++ show (encode body)
             initReq <- parseRequest url
             let req = initReq
                     { method         = "PUT"
@@ -448,7 +455,8 @@ adictPut session apiPath body = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionVerbose session) rb
+                    logDebugStatus (sessionVerbose session) st
+                    logDebugBody   (sessionVerbose session) rb
                     if st `elem` [200, 201]
                        then case eitherDecode rb of
                                 Left  e -> return $ Left (ParseError (T.pack e))
@@ -503,6 +511,7 @@ adictPostNDJSON session apiPath body = do
                     , requestHeaders =
                         [ ("Authorization", "Bearer " <> T.encodeUtf8 tok)
                         , ("Content-Type",  "application/json")
+                        , ("Accept",        "application/x-ndjson")
                         ]
                     }
             result <- try (httpLbs req (sessionManager session))
@@ -512,6 +521,7 @@ adictPostNDJSON session apiPath body = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
+                    logDebugStatus (sessionVerbose session) st
                     logDebugBody (sessionVerbose session) rb
                     if st == 200
                        then return $ case decode rb >>= extractFunctionalError of
@@ -527,6 +537,7 @@ adictPatch session apiPath = do
         Left  e   -> return $ Left e
         Right tok -> do
             let url = buildUrl (sessionConfig session) apiPath
+            putStrLn $ "URL : " ++ url
             initReq <- parseRequest url
             let req = initReq
                     { method         = "PATCH"
@@ -543,7 +554,8 @@ adictPatch session apiPath = do
                 Right resp -> do
                     let st = statusCode (responseStatus resp)
                         rb = responseBody resp
-                    logDebugBody (sessionVerbose session) rb
+                    logDebugStatus (sessionVerbose session) st
+                    logDebugBody   (sessionVerbose session) rb
                     if st == 200
                        then case eitherDecode (dropToJson rb) of
                                 Left  e -> return $ Left (ParseError (T.pack e))
@@ -554,24 +566,53 @@ adictPatch session apiPath = do
 -- ---------------------------------------------------------------------------
 -- Utilitaires
 
--- | Parse un corps NDJSON (une ligne = un objet JSON) en liste de valeurs Haskell.
+-- | Parse un corps contenant plusieurs objets JSON concaténés
+--   (compact ou pretty-printed) en liste de valeurs Haskell.
+--   Les objets non décodables vers @a@ sont ignorés silencieusement.
 parseNDJSON :: FromJSON a => LBS.ByteString -> Either AdictError [a]
-parseNDJSON body =
-    let ls      = filter (not . LBS.null) $ LBS.split 10 body  -- split sur '\n'
-        ls'     = filter (not . LBS.null) . map (dropToJson . stripCR) $ ls
-        results = map eitherDecode ls'
-    in case sequence results of
-           Left  e  -> Left (ParseError (T.pack e))
-           Right vs -> Right vs
+parseNDJSON = Right . mapMaybe decode . splitJsonObjects
 
--- | Supprime le '\r' final si présent (ligne Windows CRLF).
-stripCR :: LBS.ByteString -> LBS.ByteString
-stripCR bs = case LBS.unsnoc bs of
-    Just (bs', 13) -> bs'
-    _              -> bs
+-- | Extrait les objets JSON de niveau supérieur d'un ByteString
+--   contenant plusieurs objets concaténés (compact ou multi-lignes).
+--   Utilise un comptage de profondeur d'accolades pour délimiter les objets.
+splitJsonObjects :: LBS.ByteString -> [LBS.ByteString]
+splitJsonObjects bs0 = go (dropWS bs0)
+  where
+    dropWS = LBS.dropWhile (\b -> b == 9 || b == 10 || b == 13 || b == 32)
+
+    go bs = case LBS.uncons bs of
+        Nothing -> []
+        Just (b, _)
+            | b == 0x7B || b == 0x5B ->
+                let (obj, rest) = extract bs (0 :: Int) LBS.empty False
+                in obj : go (dropWS rest)
+            | otherwise -> []
+
+    -- Extrait un objet/tableau JSON complet depuis le début du ByteString.
+    -- depth=0 signifie qu'on n'a pas encore ouvert le premier délimiteur.
+    extract bs depth acc inStr = case LBS.uncons bs of
+        Nothing -> (acc, LBS.empty)
+        Just (b, rest) ->
+            let acc' = LBS.snoc acc b
+            in case (inStr, b) of
+                (False, 0x22) -> extract rest depth        acc' True   -- ouvre "
+                (True,  0x5C) -> case LBS.uncons rest of               -- échappement
+                    Nothing       -> (acc', LBS.empty)
+                    Just (b2, r2) -> extract r2 depth (LBS.snoc acc' b2) True
+                (True,  0x22) -> extract rest depth        acc' False  -- ferme "
+                (True,  _   ) -> extract rest depth        acc' True
+                (False, 0x7B) -> extract rest (depth + 1) acc' False   -- {
+                (False, 0x5B) -> extract rest (depth + 1) acc' False   -- [
+                (False, 0x7D) ->
+                    if depth == 1 then (acc', rest)
+                    else extract rest (depth - 1) acc' False
+                (False, 0x5D) ->
+                    if depth == 1 then (acc', rest)
+                    else extract rest (depth - 1) acc' False
+                _             -> extract rest depth        acc' False
 
 -- | Supprime les octets non-JSON en tête (espaces, U+00A0, etc.) jusqu'au
---   premier '{' ou '['. No-op pour les lignes JSON valides.
+--   premier '{' ou '['. Utilisé pour les réponses à objet unique.
 dropToJson :: LBS.ByteString -> LBS.ByteString
 dropToJson = LBS.dropWhile (\b -> b /= 0x7B && b /= 0x5B)  -- 0x7B='{', 0x5B='['
 
@@ -587,6 +628,10 @@ logDebugBody True  body = do
     hPutStrLn stderr "[DEBUG] ← body:"
     hPutStr   stderr $ TL.unpack (pStringNoColor (T.unpack (T.decodeUtf8 (LBS.toStrict body))))
     hPutStrLn stderr ""
+
+logDebugStatus :: Bool -> Int -> IO ()
+logDebugStatus False _ = return ()
+logDebugStatus True  st = hPutStrLn stderr ("[DEBUG] ← status: " ++ show st)
 
 -- | Décode une 'Value' vers @a@ en vérifiant d'abord le champ
 --   @statut_restitution@ : si son @code@ est non vide, retourne
@@ -612,10 +657,22 @@ checkFunctionalErrorVal val = case extractFunctionalError val of
         Success x -> Right x
 
 -- | Construit une erreur à partir d'un code HTTP non-200 et du corps brut.
---   Tente d'extraire @statut_restitution@ du JSON ; si présent retourne
---   @FunctionalError@, sinon @HttpError@.
+--   Tente d'extraire @statut_restitution@ (format conso) ou
+--   @code_statut_traitement@ (format GDA) ; sinon retourne @HttpError@.
 tryFunctionalError :: Int -> LBS.ByteString -> Either AdictError a
 tryFunctionalError st body =
-    case decode (dropToJson body) >>= extractFunctionalError of
-        Just err -> Left err
-        Nothing  -> Left (HttpError st (decodeBody body))
+    case decode (dropToJson body) of
+        Just val ->
+            case extractFunctionalError val of
+                Just err -> Left err
+                Nothing  -> case val of
+                    Object o ->
+                        let code = case KM.lookup "code_statut_traitement"    o of
+                                       { Just (String c) -> c; _ -> "" }
+                            msg  = case KM.lookup "message_retour_traitement" o of
+                                       { Just (String m) -> m; _ -> "" }
+                        in if T.null code
+                           then Left (HttpError st (decodeBody body))
+                           else Left (FunctionalError code msg)
+                    _ -> Left (HttpError st (decodeBody body))
+        Nothing -> Left (HttpError st (decodeBody body))

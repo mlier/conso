@@ -616,10 +616,10 @@ data DemandeAccesIn = DemandeAccesIn
     , din_perim_donnees_conso_fin             :: Maybe Text
     , din_perim_donnees_inj_debut             :: Maybe Text
     , din_perim_donnees_inj_fin               :: Maybe Text
-    , din_perim_donnees_contractuelles        :: Maybe Bool
-    , din_perim_donnees_techniques            :: Maybe Bool
-    , din_perim_donnees_informatives          :: Maybe Bool
-    , din_perim_donnees_publiees              :: Maybe Bool
+    , din_perim_donnees_contractuelles        :: Maybe Text
+    , din_perim_donnees_techniques            :: Maybe Text
+    , din_perim_donnees_informatives          :: Maybe Text
+    , din_perim_donnees_publiees              :: Maybe Text
     } deriving (Show)
 
 instance ToJSON DemandeAccesIn where

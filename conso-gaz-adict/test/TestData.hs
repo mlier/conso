@@ -62,16 +62,54 @@ pceDonneesTech1 :: Text ; pceDonneesTech1 = "GI999055"
 
 
 -- ---------------------------------------------------------------------------
--- GDA — déclaration
+-- GDA — déclaration passants (JDD 1-7)
 
-pceGdaACF :: Text ; pceGdaACF = "09999999900617"  -- AUTORISE_CONTRAT_FOURNITURE
+pceGdaACF  :: Text ; pceGdaACF  = "09999999900617"  -- JDD 1 — AUTORISE_CONTRAT_FOURNITURE
+pceGdaACF2 :: Text ; pceGdaACF2 = "09999999975102"  -- JDD 2
+pceGdaACF3 :: Text ; pceGdaACF3 = "GI999055"        -- JDD 3
+pceGdaACF4 :: Text ; pceGdaACF4 = "GI999947"        -- JDD 4
+pceGdaDCF  :: Text ; pceGdaDCF  = "09999999928289"  -- JDD 5 — DETENTEUR_CONTRAT_FOURNITURE
+pceGdaACI  :: Text ; pceGdaACI  = "GI999602"        -- JDD 6 — AUTORISE_CONTRAT_INJECTION
+pceGdaDCI  :: Text ; pceGdaDCI  = "GI999150"        -- JDD 7 — DETENTEUR_CONTRAT_INJECTION
 
+-- GDA — déclaration non passants (JDD 8-24)
+
+pceGdaNR08 :: Text ; pceGdaNR08 = "GI999159"        -- droit d'accès existe déjà
+pceGdaNR09 :: Text ; pceGdaNR09 = "09999999900609"  -- rôle non renseigné
+pceGdaNR10 :: Text ; pceGdaNR10 = "GI999888"        -- erreur technique serveur
+pceGdaNR11 :: Text ; pceGdaNR11 = "09999999988256"  -- contrat échu
+pceGdaNR12 :: Text ; pceGdaNR12 = "09999999900612"  -- code postal incorrect (attendu ≠ 13000)
+pceGdaNR13 :: Text ; pceGdaNR13 = "0999999999999"   -- PCE inconnu
+pceGdaNR14 :: Text ; pceGdaNR14 = "09999999900614"  -- nom et raison_sociale tous deux vides
+pceGdaNR15 :: Text ; pceGdaNR15 = "09999999900615"  -- nom et raison_sociale tous deux renseignés
+pceGdaNR16 :: Text ; pceGdaNR16 = "45697829232770"  -- code postal incorrect (attendu ≠ 56000)
+pceGdaNR17 :: Text ; pceGdaNR17 = "0999999990061"   -- format PCE incorrect
+pceGdaNR18 :: Text ; pceGdaNR18 = "09999999900618"  -- code postal non renseigné
+pceGdaNR19 :: Text ; pceGdaNR19 = "09999999900619"  -- format code postal incorrect
+pceGdaNR20 :: Text ; pceGdaNR20 = "09999999900620"  -- email titulaire non renseigné
+pceGdaNR21 :: Text ; pceGdaNR21 = "09999999900621"  -- périmètre contractuelles non renseigné
+pceGdaNR22 :: Text ; pceGdaNR22 = "09999999900622"  -- date début périmètre conso manquante
+pceGdaNR23 :: Text ; pceGdaNR23 = "GI999602"        -- date fin périmètre injection manquante
+pceGdaNR24 :: Text ; pceGdaNR24 = "09999999900624"  -- format email incorrect
 
 -- ---------------------------------------------------------------------------
--- GDA — révocation et preuves (UUIDs pré-existants dans la sandbox JDD BAS v1.4)
+-- GDA — révocation (JDD 30-32)
 
 -- | JDD 30 : UUID passant pour la révocation.
 uuidRevoquerPassant :: Text ; uuidRevoquerPassant = "f13a3109-39a7-47a0-8017-3192620dee4e"
+-- | JDD 31 : droit inexistant (révoqué).
+uuidRevoquerNR31    :: Text ; uuidRevoquerNR31    = "3edbd20d-34aa-4ef2-b5f1-dadc211acfb0"
+-- | JDD 32 : PCE utilisé comme UUID → erreur technique.
+uuidRevoquerNR32    :: Text ; uuidRevoquerNR32    = "09999999900617"
 
--- | JDD 33 : UUID passant pour la soumission d'une preuve.
+-- ---------------------------------------------------------------------------
+-- GDA — preuves (JDD 33-36)
+
+-- | JDD 33 : UUID passant pour la soumission d'une preuve (statut "Preuve en cours de vérification").
 uuidPreuvePassant1 :: Text ; uuidPreuvePassant1 = "34ed04b3-1371-4418-93fe-0467760c7919"
+-- | JDD 34 : UUID passant (statut "Preuve en attente").
+uuidPreuvePassant2 :: Text ; uuidPreuvePassant2 = "90494e79-bfee-474e-888a-ea653f48cac6"
+-- | JDD 35 : taille > 4 Mo.
+uuidPreuveNR35     :: Text ; uuidPreuveNR35     = "34ed04b3-1371-4418-93fe-0467760c7920"
+-- | JDD 36 : format non autorisé.
+uuidPreuveNR36     :: Text ; uuidPreuveNR36     = "34ed04b3-1371-4418-93fe-0467760c7921"

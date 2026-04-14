@@ -6,7 +6,6 @@ import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.DroitsAcces ( consulterDroitsAcces, rechercherDroitsAcces )
 import Conso.Fr.Gaz.Adict.Types       ( FiltreAcces(..) )
-import TestData                        ( pceConsoPub1 )
 
 
 emptyFiltre :: FiltreAcces

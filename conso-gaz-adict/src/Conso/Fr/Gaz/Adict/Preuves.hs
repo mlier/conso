@@ -75,9 +75,7 @@ soumettrePrevue session idDroitAcces filePath = do
                     let st = statusCode (responseStatus resp)
                     in if st `elem` [200, 201, 204]
                        then return $ Right ()
-                       else return $ Left
-                                (HttpError st
-                                    (T.decodeUtf8 (LBS.toStrict (responseBody resp))))
+                       else return $ tryFunctionalError st (responseBody resp)
 
 
 -- | Comme 'soumettrePrevue' avec une session bac à sable auto-initialisée.
