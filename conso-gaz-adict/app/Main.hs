@@ -41,8 +41,7 @@ data Command
     | Injections    ConsosOpts
     | Contrat       ContratOpts
     | Tech          TechOpts
-    | Droits
-    | DroitsFiltres FiltreOpts
+    | Droits        FiltreOpts
     | Acces         AccesOpts
     | Revoquer      RevoquerOpts
     deriving (Show)
@@ -127,11 +126,10 @@ commandParser =
     <|> subparser
       (  commandGroup "Droits d'accès"
       <> command "droits"
-           ( info (pure Droits <**> helper)
-                  (progDesc "Consulter tous mes droits d'accès") )
-      <> command "droits-filtres"
-           ( info (DroitsFiltres <$> filtreParser <**> helper)
-                  (progDesc "Rechercher des droits d'accès avec filtres") )
+           ( info (Droits <$> filtreParser <**> helper)
+                  ( fullDesc
+                  <> progDesc "Consulter mes droits d'accès (sans filtre : GET, avec filtre : POST)"
+                  <> footerDoc (Just aideDroits) ) )
       <> command "acces"
            ( info (Acces <$> accesParser <**> helper)
                   ( fullDesc
@@ -209,6 +207,19 @@ aidePeriode = vsep
     , pretty ("  --debut 2024-01-01 --fin 2024-12-31  (plage de dates)" :: String)
     ]
 
+aideDroits :: Doc
+aideDroits = vsep
+    [ pretty ("" :: String)
+    , pretty ("Sans filtre : GET /droits_acces (tous mes droits d'accès)." :: String)
+    , pretty ("Avec au moins un filtre : POST /droits_acces (recherche filtrée)." :: String)
+    , pretty ("" :: String)
+    , pretty ("Valeurs de --role  : AUTORISE_CONTRAT_FOURNITURE, DETENTEUR_CONTRAT_FOURNITURE," :: String)
+    , pretty ("                     AUTORISE_CONTRAT_INJECTION, DETENTEUR_CONTRAT_INJECTION" :: String)
+    , pretty ("Valeurs de --etat  : Active, Obsolète, Refusé" :: String)
+    , pretty ("Valeurs de --statut: Preuve en attente, Preuve en cours de vérification," :: String)
+    , pretty ("                     Preuve validée, Sans objet" :: String)
+    ]
+
 aideAcces :: Doc
 aideAcces = vsep
     [ pretty ("" :: String)
@@ -262,18 +273,16 @@ run session raw cmd = case cmd of
         rep <- consulterDonneesTechniques session (packT (techPce t))
         if raw then pPrint rep else renderApp rep
 
-    Droits -> do
-        rep <- consulterDroitsAcces session
-        if raw then pPrint rep else renderApp rep
-
-    DroitsFiltres fo -> do
+    Droits fo -> do
         let filtre = FiltreAcces
                 { fa_role_tiers             = maybe [] (pure . roleTiersFromText . packT) (foRole   fo)
                 , fa_id_pce                 = maybe [] (pure . packT)                     (foPce    fo)
                 , fa_statut_controle_preuve = maybe [] (pure . statutControlePreuveFromText . packT) (foStatut fo)
                 , fa_etat_droit_acces       = maybe [] (pure . etatDroitAccesFromText . packT) (foEtat   fo)
                 }
-        rep <- rechercherDroitsAcces session filtre
+        rep <- if filtreVide filtre
+                   then consulterDroitsAcces session
+                   else rechercherDroitsAcces session filtre
         if raw then pPrint rep else renderApp rep
 
     Acces ao -> do
@@ -318,3 +327,9 @@ mkPeriode co = case (coPeriode co, coDebut co, coFin co) of
 flagToMaybe :: Bool -> Maybe T.Text
 flagToMaybe False = Nothing
 flagToMaybe True  = Just "true"
+
+filtreVide :: FiltreAcces -> Bool
+filtreVide f = null (fa_role_tiers f)
+            && null (fa_id_pce f)
+            && null (fa_statut_controle_preuve f)
+            && null (fa_etat_droit_acces f)
