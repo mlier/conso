@@ -6,7 +6,9 @@ import           Options.Applicative
 import           Options.Applicative.Help.Pretty ( vsep, pretty, Doc )
 import qualified Data.Text                       as T
 import           Data.Text                       ( Text )
-import           Text.Pretty.Simple              ( pPrint )
+import           Text.Pretty.Simple
+    ( pPrintOpt, CheckColorTty(..), defaultOutputOptionsDarkBg
+    , StringOutputStyle(..), OutputOptions(..) )
 
 import           Conso.Fr.Gaz.Adict.Adict
 import           Conso.Fr.Gaz.Adict.Types
@@ -255,23 +257,23 @@ run session raw cmd = case cmd of
 
     Consos co -> do
         rep <- consulterConsosPubliees session (packT (coPce co)) (mkPeriode co)
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     ConsosInfo co -> do
         rep <- consulterConsosInfos session (packT (coPce co)) (mkPeriode co)
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Injections co -> do
         rep <- consulterInjectionsPubliees session (packT (coPce co)) (mkPeriode co)
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Contrat ct -> do
         rep <- consulterDonneesContractuelles session (packT (ctPce ct)) []
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Tech t -> do
         rep <- consulterDonneesTechniques session (packT (techPce t))
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Droits fo -> do
         let filtre = FiltreAcces
@@ -283,7 +285,7 @@ run session raw cmd = case cmd of
         rep <- if filtreVide filtre
                    then consulterDroitsAcces session
                    else rechercherDroitsAcces session filtre
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Acces ao -> do
         let demande = DemandeAccesIn
@@ -305,11 +307,11 @@ run session raw cmd = case cmd of
                 , din_perim_donnees_publiees            = flagToMaybe (acPubliees ao)
                 }
         rep <- declarerDroitAcces session (packT (acPce ao)) demande
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
     Revoquer rv -> do
         rep <- revoquerDroitAcces session (packT (rvId rv))
-        if raw then pPrint rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp rep
 
 
 -- ---------------------------------------------------------------------------
@@ -323,6 +325,10 @@ mkPeriode co = case (coPeriode co, coDebut co, coFin co) of
     (Just p, _,      _)      -> ByPeriode   (packT p)
     (_,      Just d, Just f) -> ByDateRange (packT d) (packT f)
     _                        -> ByPeriode "2024"
+
+pPrintUtf8 :: Show a => a -> IO ()
+pPrintUtf8 = pPrintOpt CheckColorTty
+    defaultOutputOptionsDarkBg { outputOptionsStringStyle = DoNotEscapeNonPrintable }
 
 flagToMaybe :: Bool -> Maybe T.Text
 flagToMaybe False = Nothing

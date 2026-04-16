@@ -90,5 +90,10 @@ renderError :: AdictError -> Widget ()
 renderError err =
     border $ withAttr errorAttr $ vBox
         [ ustr "Erreur ADICT"
-        , ustr (show err)
+        , case err of
+            FunctionalError code msg -> ustr $ "Erreur fonctionnelle " ++ T.unpack code ++ " : " ++ T.unpack msg
+            HttpError status msg     -> ustr $ "Erreur HTTP " ++ show status ++ " : " ++ T.unpack msg
+            ParseError msg           -> ustr $ "Erreur de décodage : " ++ T.unpack msg
+            AuthError msg            -> ustr $ "Erreur d'authentification : " ++ T.unpack msg
+            NetworkError msg         -> ustr $ "Erreur réseau : " ++ T.unpack msg
         ]
