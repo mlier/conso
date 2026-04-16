@@ -164,11 +164,10 @@ techParser = TechOpts
 
 filtreParser :: Parser FiltreOpts
 filtreParser = FiltreOpts
-    <$> optional (strOption ( long "role"   <> metavar "ROLE"   <> help "Rôle tiers" ))
+    <$> optional (strOption ( long "role"   <> metavar "ROLE"   <> help "Rôle tiers : AUTORISE_FOURNITURE, DETENTEUR_FOURNITURE, AUTORISE_INJECTION, DETENTEUR_INJECTION" ))
     <*> optional (strOption ( long "pce"    <> metavar "PCE"    <> help "Identifiant PCE" ))
-    <*> optional (strOption ( long "statut" <> metavar "STATUT" <> help "Statut contrôle preuve" ))
-    <*> optional (strOption ( long "etat"   <> metavar "ETAT"   <> help "État du droit d'accès" ))
-
+    <*> optional (strOption ( long "statut" <> metavar "STATUT" <> help "Statut contrôle preuve : Attente, Vérification, Validée, SansObjet" ))
+    <*> optional (strOption ( long "etat"   <> metavar "ETAT"   <> help "État du droit d'accès : Active, Obsolète, Refusé" ))  
 
 accesParser :: Parser AccesOpts
 accesParser = AccesOpts
@@ -269,10 +268,10 @@ run session raw cmd = case cmd of
 
     DroitsFiltres fo -> do
         let filtre = FiltreAcces
-                { fa_role_tiers             = maybe [] (pure . packT) (foRole   fo)
-                , fa_id_pce                 = maybe [] (pure . packT) (foPce    fo)
-                , fa_statut_controle_preuve = maybe [] (pure . packT) (foStatut fo)
-                , fa_etat_droit_acces       = maybe [] (pure . packT) (foEtat   fo)
+                { fa_role_tiers             = maybe [] (pure . roleTiersFromText . packT) (foRole   fo)
+                , fa_id_pce                 = maybe [] (pure . packT)                     (foPce    fo)
+                , fa_statut_controle_preuve = maybe [] (pure . statutControlePreuveFromText . packT) (foStatut fo)
+                , fa_etat_droit_acces       = maybe [] (pure . etatDroitAccesFromText . packT) (foEtat   fo)
                 }
         rep <- rechercherDroitsAcces session filtre
         if raw then pPrint rep else renderApp rep
@@ -316,6 +315,6 @@ mkPeriode co = case (coPeriode co, coDebut co, coFin co) of
     (_,      Just d, Just f) -> ByDateRange (packT d) (packT f)
     _                        -> ByPeriode "2024"
 
-flagToMaybe :: Bool -> Maybe Bool
+flagToMaybe :: Bool -> Maybe T.Text
 flagToMaybe False = Nothing
-flagToMaybe True  = Just True
+flagToMaybe True  = Just "true"

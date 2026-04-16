@@ -5,7 +5,12 @@ import SpecHelper
 import Data.Either ( isRight )
 
 import Conso.Fr.Gaz.Adict.DroitsAcces ( consulterDroitsAcces, rechercherDroitsAcces )
-import Conso.Fr.Gaz.Adict.Types       ( FiltreAcces(..) )
+import Conso.Fr.Gaz.Adict.Types
+    ( FiltreAcces(..)
+    , RoleTiers(..)
+    , EtatDroitAcces(..)
+    , StatutControlePreuve(..)
+    )
 
 
 emptyFiltre :: FiltreAcces
@@ -33,22 +38,22 @@ spec = do
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- rechercherDroitsAcces session
-                                   emptyFiltre { fa_etat_droit_acces = ["Obsolète"] }
+                                   emptyFiltre { fa_etat_droit_acces = [EtatObsolete] }
                     rep `shouldSatisfy` isRight
 
             it "GDA-R28 - Consulter mes droits d'accès - avec filtre sur le Statut de contrôle 'Preuve en attente' et 'Preuve en cours de vérification'" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- rechercherDroitsAcces session
-                                   emptyFiltre { fa_statut_controle_preuve = ["Preuve en attente", "Preuve en cours de vérification"] }
+                                   emptyFiltre { fa_statut_controle_preuve = [PreuveEnAttente, PreuveEnCoursDeVerification] }
                     rep `shouldSatisfy` isRight
 
             it "GDA-R29 - Consulter mes droits d'accès - avec filtres cumulatifs sur le Role et l'Etat" $
                 pendingOnAdictError $ do
                     session <- sandboxSession
                     rep     <- rechercherDroitsAcces session emptyFiltre
-                                    { fa_role_tiers       = ["DETENTEUR_CONTRAT_FOURNITURE", "DETENTEUR_CONTRAT_INJECTION"]
-                                    , fa_etat_droit_acces = ["Active"]
+                                    { fa_role_tiers       = [DetenteurContratFourniture, DetenteurContratInjection]
+                                    , fa_etat_droit_acces = [EtatActive]
                                     }
                     rep `shouldSatisfy` isRight
 

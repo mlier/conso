@@ -31,7 +31,14 @@ module Conso.Fr.Gaz.Adict.Types
   , DonneesTechniques(..)
   , SituationCompteurDetail(..)
   , PitdDetail(..)
-    -- * Droits d'accès
+    -- * Droits d'accès — énumérations
+  , RoleTiers(..)
+  , EtatDroitAcces(..)
+  , StatutControlePreuve(..)
+  , roleTiersText, roleTiersFromText
+  , etatDroitAccesText, etatDroitAccesFromText
+  , statutControlePreuveText, statutControlePreuveFromText
+    -- * Droits d'accès — structures
   , DroitAcces(..)
   , DemandeAccesIn(..)
   , RetourDemandeAcces(..)
@@ -498,13 +505,94 @@ instance ToJSON RetourDonneesTechniques where
 
 
 -- ---------------------------------------------------------------------------
--- Droits d'accès
+-- Droits d'accès — énumérations
+
+-- | Rôle du tiers dans un droit d'accès.
+data RoleTiers
+    = AutoriseContratFourniture
+    | DetenteurContratFourniture
+    | AutoriseContratInjection
+    | DetenteurContratInjection
+    | AutreRoleTiers Text
+    deriving (Show, Eq)
+
+roleTiersText :: RoleTiers -> Text
+roleTiersText AutoriseContratFourniture  = "AUTORISE_CONTRAT_FOURNITURE"
+roleTiersText DetenteurContratFourniture = "DETENTEUR_CONTRAT_FOURNITURE"
+roleTiersText AutoriseContratInjection   = "AUTORISE_CONTRAT_INJECTION"
+roleTiersText DetenteurContratInjection  = "DETENTEUR_CONTRAT_INJECTION"
+roleTiersText (AutreRoleTiers t)         = t
+
+roleTiersFromText :: Text -> RoleTiers
+roleTiersFromText "AUTORISE_CONTRAT_FOURNITURE"  = AutoriseContratFourniture
+roleTiersFromText "DETENTEUR_CONTRAT_FOURNITURE" = DetenteurContratFourniture
+roleTiersFromText "AUTORISE_CONTRAT_INJECTION"   = AutoriseContratInjection
+roleTiersFromText "DETENTEUR_CONTRAT_INJECTION"  = DetenteurContratInjection
+roleTiersFromText t                              = AutreRoleTiers t
+
+instance FromJSON RoleTiers where parseJSON = fmap roleTiersFromText . parseJSON
+instance ToJSON   RoleTiers where toJSON    = toJSON . roleTiersText
+
+
+-- | État d'un droit d'accès.
+data EtatDroitAcces
+    = EtatActive
+    | EtatObsolete
+    | EtatRefuse
+    | AutreEtat Text
+    deriving (Show, Eq)
+
+etatDroitAccesText :: EtatDroitAcces -> Text
+etatDroitAccesText EtatActive    = "Active"
+etatDroitAccesText EtatObsolete  = "Obsolète"
+etatDroitAccesText EtatRefuse    = "Refusé"
+etatDroitAccesText (AutreEtat t) = t
+
+etatDroitAccesFromText :: Text -> EtatDroitAcces
+etatDroitAccesFromText "Active"   = EtatActive
+etatDroitAccesFromText "Obsolète" = EtatObsolete
+etatDroitAccesFromText "Refusé"   = EtatRefuse
+etatDroitAccesFromText t          = AutreEtat t
+
+instance FromJSON EtatDroitAcces where parseJSON = fmap etatDroitAccesFromText . parseJSON
+instance ToJSON   EtatDroitAcces where toJSON    = toJSON . etatDroitAccesText
+
+
+-- | Statut du contrôle de preuve d'un droit d'accès.
+data StatutControlePreuve
+    = PreuveEnAttente
+    | PreuveEnCoursDeVerification
+    | PreuveValidee
+    | StatutSansObjet
+    | AutreStatut Text
+    deriving (Show, Eq)
+
+statutControlePreuveText :: StatutControlePreuve -> Text
+statutControlePreuveText PreuveEnAttente             = "Preuve en attente"
+statutControlePreuveText PreuveEnCoursDeVerification = "Preuve en cours de vérification"
+statutControlePreuveText PreuveValidee               = "Preuve validée"
+statutControlePreuveText StatutSansObjet             = "Sans objet"
+statutControlePreuveText (AutreStatut t)             = t
+
+statutControlePreuveFromText :: Text -> StatutControlePreuve
+statutControlePreuveFromText "Attente"               = PreuveEnAttente
+statutControlePreuveFromText "Vérification"          = PreuveEnCoursDeVerification
+statutControlePreuveFromText "Validée"               = PreuveValidee
+statutControlePreuveFromText "SansObjet"             = StatutSansObjet
+statutControlePreuveFromText t                       = AutreStatut t
+
+instance FromJSON StatutControlePreuve where parseJSON = fmap statutControlePreuveFromText . parseJSON
+instance ToJSON   StatutControlePreuve where toJSON    = toJSON . statutControlePreuveText
+
+
+-- ---------------------------------------------------------------------------
+-- Droits d'accès — structures
 
 -- | Droit d'accès retourné par @GET /droits_acces@ (ligne NDJSON).
 data DroitAcces = DroitAcces
     { da_id_droit_acces                   :: Maybe Text
     , da_id_pce                           :: Maybe Text
-    , da_role_tiers                       :: Maybe Text
+    , da_role_tiers                       :: Maybe RoleTiers
     , da_raison_sociale_du_tiers          :: Maybe Text
     , da_nom_titulaire                    :: Maybe Text
     , da_raison_sociale_du_titulaire      :: Maybe Text
@@ -522,7 +610,7 @@ data DroitAcces = DroitAcces
     , da_perim_donnees_informatives       :: Maybe Text
     , da_perim_donnees_publiees           :: Maybe Text
     , da_date_creation                    :: Maybe Text
-    , da_etat_droit_acces                 :: Maybe Text
+    , da_etat_droit_acces                 :: Maybe EtatDroitAcces
     , da_date_revocation                  :: Maybe Text
     , da_source_revocation                :: Maybe Text
     , da_date_passage_a_obsolete          :: Maybe Text
@@ -530,7 +618,7 @@ data DroitAcces = DroitAcces
     , da_date_passage_a_refuse            :: Maybe Text
     , da_source_passage_a_refuse          :: Maybe Text
     , da_parcours                         :: Maybe Text
-    , da_statut_controle_preuve           :: Maybe Text
+    , da_statut_controle_preuve           :: Maybe StatutControlePreuve
     , da_date_limite_transmission_preuve  :: Maybe Text
     } deriving (Show)
 
@@ -704,10 +792,10 @@ instance ToJSON RetourFinAcces where
 -- | Corps de la requête @POST /droits_acces@ (filtres de recherche).
 -- Les champs sont des listes car l'API attend des tableaux JSON.
 data FiltreAcces = FiltreAcces
-    { fa_role_tiers             :: [Text]
+    { fa_role_tiers             :: [RoleTiers]
     , fa_id_pce                 :: [Text]
-    , fa_statut_controle_preuve :: [Text]
-    , fa_etat_droit_acces       :: [Text]
+    , fa_statut_controle_preuve :: [StatutControlePreuve]
+    , fa_etat_droit_acces       :: [EtatDroitAcces]
     } deriving (Show)
 
 instance ToJSON FiltreAcces where

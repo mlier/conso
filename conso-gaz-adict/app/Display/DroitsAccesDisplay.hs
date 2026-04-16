@@ -22,7 +22,7 @@ renderDroitAcces da = section titre lignes
     titre = maybe "Droit d'accès" T.unpack (da_id_droit_acces da)
     lignes =
         [ maybeField "PCE"              (fmap T.unpack (da_id_pce da))
-        , maybeField "Rôle"             (fmap T.unpack (da_role_tiers da))
+        , maybeField "Rôle"             (fmap (T.unpack . roleTiersText) (da_role_tiers da))
         , maybeField "Tiers"            (fmap T.unpack (da_raison_sociale_du_tiers da))
         , maybeField "Titulaire"        (fmap T.unpack (da_nom_titulaire da))
         , maybeField "Raison soc. tit." (fmap T.unpack (da_raison_sociale_du_titulaire da))
@@ -30,7 +30,7 @@ renderDroitAcces da = section titre lignes
         , maybeField "Code postal"      (fmap T.unpack (da_code_postal da))
         , maybeField "Début accès"      (fmap T.unpack (da_date_debut_droit_acces da))
         , maybeField "Fin accès"        (fmap T.unpack (da_date_fin_droit_acces da))
-        , maybeField "État"             (fmap T.unpack (da_etat_droit_acces da))
+        , maybeField "État"             (fmap (T.unpack . etatDroitAccesText) (da_etat_droit_acces da))
         , maybeField "Parcours"         (fmap T.unpack (da_parcours da))
         , maybeField "Périm. conso dbt" (fmap T.unpack (da_perim_donnees_conso_debut da))
         , maybeField "Périm. conso fin" (fmap T.unpack (da_perim_donnees_conso_fin da))
@@ -38,7 +38,7 @@ renderDroitAcces da = section titre lignes
         , maybeField "Périm. tech."     (fmap T.unpack (da_perim_donnees_techniques da))
         , maybeField "Périm. info."     (fmap T.unpack (da_perim_donnees_informatives da))
         , maybeField "Périm. publ."     (fmap T.unpack (da_perim_donnees_publiees da))
-        , maybeField "Statut preuve"    (fmap T.unpack (da_statut_controle_preuve da))
+        , maybeField "Statut preuve"    (fmap (T.unpack . statutControlePreuveText) (da_statut_controle_preuve da))
         , maybeField "Lim. preuve"      (fmap T.unpack (da_date_limite_transmission_preuve da))
         ]
 
