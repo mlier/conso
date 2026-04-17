@@ -51,7 +51,7 @@ module Conso.Fr.Gaz.Adict.Types
   ) where
 
 import           Data.Aeson
-import           Data.Text   ( Text )
+import           Data.Text   ( Text, unpack )
 import           GHC.Generics ( Generic )
 
 
@@ -513,7 +513,6 @@ data RoleTiers
     | DetenteurContratFourniture
     | AutoriseContratInjection
     | DetenteurContratInjection
-    | AutreRoleTiers Text
     deriving (Show, Eq)
 
 roleTiersText :: RoleTiers -> Text
@@ -521,17 +520,18 @@ roleTiersText AutoriseContratFourniture  = "AUTORISE_CONTRAT_FOURNITURE"
 roleTiersText DetenteurContratFourniture = "DETENTEUR_CONTRAT_FOURNITURE"
 roleTiersText AutoriseContratInjection   = "AUTORISE_CONTRAT_INJECTION"
 roleTiersText DetenteurContratInjection  = "DETENTEUR_CONTRAT_INJECTION"
-roleTiersText (AutreRoleTiers t)         = t
 
-roleTiersFromText :: Text -> RoleTiers
-roleTiersFromText "AUTORISE_CONTRAT_FOURNITURE"  = AutoriseContratFourniture
-roleTiersFromText "DETENTEUR_CONTRAT_FOURNITURE" = DetenteurContratFourniture
-roleTiersFromText "AUTORISE_CONTRAT_INJECTION"   = AutoriseContratInjection
-roleTiersFromText "DETENTEUR_CONTRAT_INJECTION"  = DetenteurContratInjection
-roleTiersFromText t                              = AutreRoleTiers t
+roleTiersFromText :: Text -> Maybe RoleTiers
+roleTiersFromText "AUTORISE_CONTRAT_FOURNITURE"  = Just AutoriseContratFourniture
+roleTiersFromText "DETENTEUR_CONTRAT_FOURNITURE" = Just DetenteurContratFourniture
+roleTiersFromText "AUTORISE_CONTRAT_INJECTION"   = Just AutoriseContratInjection
+roleTiersFromText "DETENTEUR_CONTRAT_INJECTION"  = Just DetenteurContratInjection
+roleTiersFromText _                              = Nothing
 
-instance FromJSON RoleTiers where parseJSON = fmap roleTiersFromText . parseJSON
-instance ToJSON   RoleTiers where toJSON    = toJSON . roleTiersText
+instance FromJSON RoleTiers where
+    parseJSON v = parseJSON v >>= \t ->
+        maybe (fail $ "Rôle tiers inconnu : " ++ unpack t) return (roleTiersFromText t)
+instance ToJSON RoleTiers where toJSON = toJSON . roleTiersText
 
 
 -- | État d'un droit d'accès (valeurs API GRDF PROD v1.9).
@@ -542,29 +542,29 @@ data EtatDroitAcces
     | EtatAReverifier
     | EtatObsolete
     | EtatRefusee
-    | AutreEtat Text
     deriving (Show, Eq)
 
 etatDroitAccesText :: EtatDroitAcces -> Text
-etatDroitAccesText EtatActive      = "Actif"
+etatDroitAccesText EtatActive      = "Active"
 etatDroitAccesText EtatAValider    = "A valider"
-etatDroitAccesText EtatRevoquee    = "Révoqué"
+etatDroitAccesText EtatRevoquee    = "Révoquée"
 etatDroitAccesText EtatAReverifier = "A revérifier"
 etatDroitAccesText EtatObsolete    = "Obsolète"
-etatDroitAccesText EtatRefusee     = "Refusé"
-etatDroitAccesText (AutreEtat t)   = t
+etatDroitAccesText EtatRefusee     = "Refusée"
 
-etatDroitAccesFromText :: Text -> EtatDroitAcces
-etatDroitAccesFromText "actif"       = EtatActive
-etatDroitAccesFromText "avalider"    = EtatAValider
-etatDroitAccesFromText "revoque"     = EtatRevoquee
-etatDroitAccesFromText "areverifier" = EtatAReverifier
-etatDroitAccesFromText "obsolete"     = EtatObsolete
-etatDroitAccesFromText "refuse"      = EtatRefusee
-etatDroitAccesFromText t              = AutreEtat t
+etatDroitAccesFromText :: Text -> Maybe EtatDroitAcces
+etatDroitAccesFromText "Active"       = Just EtatActive
+etatDroitAccesFromText "A valider"    = Just EtatAValider
+etatDroitAccesFromText "Révoquée"     = Just EtatRevoquee
+etatDroitAccesFromText "A revérifier" = Just EtatAReverifier
+etatDroitAccesFromText "Obsolète"     = Just EtatObsolete
+etatDroitAccesFromText "Refusée"      = Just EtatRefusee
+etatDroitAccesFromText _              = Nothing
 
-instance FromJSON EtatDroitAcces where parseJSON = fmap etatDroitAccesFromText . parseJSON
-instance ToJSON   EtatDroitAcces where toJSON    = toJSON . etatDroitAccesText
+instance FromJSON EtatDroitAcces where
+    parseJSON v = parseJSON v >>= \t ->
+        maybe (fail $ "État droit d'accès inconnu : " ++ unpack t) return (etatDroitAccesFromText t)
+instance ToJSON EtatDroitAcces where toJSON = toJSON . etatDroitAccesText
 
 
 -- | Statut du contrôle de preuve d'un droit d'accès (valeurs API GRDF PROD v1.9).
@@ -573,7 +573,6 @@ data StatutControlePreuve
     | PreuveEnCoursDeVerification
     | PreuveVerifieeOK
     | PreuveVerifieeKO
-    | AutreStatut Text
     deriving (Show, Eq)
 
 statutControlePreuveText :: StatutControlePreuve -> Text
@@ -581,17 +580,18 @@ statutControlePreuveText PreuveEnAttente             = "Preuve en attente"
 statutControlePreuveText PreuveEnCoursDeVerification = "Preuve en cours de vérification"
 statutControlePreuveText PreuveVerifieeOK            = "Preuve Vérifiée OK"
 statutControlePreuveText PreuveVerifieeKO            = "Preuve Vérifiée KO"
-statutControlePreuveText (AutreStatut t)             = t
 
-statutControlePreuveFromText :: Text -> StatutControlePreuve
-statutControlePreuveFromText "attente"               = PreuveEnAttente
-statutControlePreuveFromText "verification"          = PreuveEnCoursDeVerification
-statutControlePreuveFromText "verifieeok"            = PreuveVerifieeOK
-statutControlePreuveFromText "verifieeko"            = PreuveVerifieeKO
-statutControlePreuveFromText t                       = AutreStatut t
+statutControlePreuveFromText :: Text -> Maybe StatutControlePreuve
+statutControlePreuveFromText "Preuve en attente"               = Just PreuveEnAttente
+statutControlePreuveFromText "Preuve en cours de vérification" = Just PreuveEnCoursDeVerification
+statutControlePreuveFromText "Preuve Vérifiée OK"              = Just PreuveVerifieeOK
+statutControlePreuveFromText "Preuve Vérifiée KO"              = Just PreuveVerifieeKO
+statutControlePreuveFromText _                                 = Nothing
 
-instance FromJSON StatutControlePreuve where parseJSON = fmap statutControlePreuveFromText . parseJSON
-instance ToJSON   StatutControlePreuve where toJSON    = toJSON . statutControlePreuveText
+instance FromJSON StatutControlePreuve where
+    parseJSON v = parseJSON v >>= \t ->
+        maybe (fail $ "Statut contrôle preuve inconnu : " ++ unpack t) return (statutControlePreuveFromText t)
+instance ToJSON StatutControlePreuve where toJSON = toJSON . statutControlePreuveText
 
 
 -- ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import           Options.Applicative
 import           Options.Applicative.Help.Pretty ( vsep, pretty, Doc )
 import qualified Data.Text                       as T
 import           Data.Text                       ( Text )
+import           System.Exit                     ( die )
 import           Text.Pretty.Simple
     ( pPrintOpt, CheckColorTty(..), defaultOutputOptionsDarkBg
     , StringOutputStyle(..), OutputOptions(..) )
@@ -218,7 +219,7 @@ aideDroits = vsep
     , pretty ("Valeurs de --role  : AUTORISE_CONTRAT_FOURNITURE, DETENTEUR_CONTRAT_FOURNITURE," :: String)
     , pretty ("                     AUTORISE_CONTRAT_INJECTION, DETENTEUR_CONTRAT_INJECTION" :: String)
     , pretty ("Valeurs de --etat  : actif, avalider, revoque, areverifier, obsolete, refuse" :: String)
-    , pretty ("Valeurs de --statut: attente, verification, verifieeok, verifieeko" :: String)
+    , pretty ("Valeurs de --statut: attente, verification, verifok, verifko" :: String)
     ]
 
 aideAcces :: Doc
@@ -275,11 +276,14 @@ run session raw cmd = case cmd of
         if raw then pPrintUtf8 rep else renderApp rep
 
     Droits fo -> do
+        role   <- parseFiltre "--role"   roleTiersFromText   (foRole   fo)
+        statut <- parseFiltre "--statut" statutFromCli       (foStatut fo)
+        etat   <- parseFiltre "--etat"   etatFromCli         (foEtat   fo)
         let filtre = FiltreAcces
-                { fa_role_tiers             = maybe [] (pure . roleTiersFromText . packT) (foRole   fo)
-                , fa_id_pce                 = maybe [] (pure . packT)                     (foPce    fo)
-                , fa_statut_controle_preuve = maybe [] (pure . statutControlePreuveFromText . packT) (foStatut fo)
-                , fa_etat_droit_acces       = maybe [] (pure . etatDroitAccesFromText . packT) (foEtat   fo)
+                { fa_role_tiers             = role
+                , fa_id_pce                 = maybe [] pure (fmap packT (foPce fo))
+                , fa_statut_controle_preuve = statut
+                , fa_etat_droit_acces       = etat
                 }
         rep <- if filtreVide filtre
                    then consulterDroitsAcces session
@@ -324,6 +328,31 @@ mkPeriode co = case (coPeriode co, coDebut co, coFin co) of
     (Just p, _,      _)      -> ByPeriode   (packT p)
     (_,      Just d, Just f) -> ByDateRange (packT d) (packT f)
     _                        -> ByPeriode "2024"
+
+-- | Parse une valeur de filtre CLI, échoue explicitement si inconnue.
+parseFiltre :: String -> (T.Text -> Maybe a) -> Maybe String -> IO [a]
+parseFiltre _    _    Nothing  = return []
+parseFiltre flag conv (Just s) = case conv (packT s) of
+    Just v  -> return [v]
+    Nothing -> die $ "Valeur invalide pour " ++ flag ++ " : " ++ show s
+
+-- | Shortcuts CLI pour etat_droit_acces.
+etatFromCli :: T.Text -> Maybe EtatDroitAcces
+etatFromCli "actif"       = Just EtatActive
+etatFromCli "avalider"    = Just EtatAValider
+etatFromCli "revoque"     = Just EtatRevoquee
+etatFromCli "areverifier" = Just EtatAReverifier
+etatFromCli "obsolete"    = Just EtatObsolete
+etatFromCli "refuse"      = Just EtatRefusee
+etatFromCli _             = Nothing
+
+-- | Shortcuts CLI pour statut_controle_preuve.
+statutFromCli :: T.Text -> Maybe StatutControlePreuve
+statutFromCli "attente"      = Just PreuveEnAttente
+statutFromCli "verification" = Just PreuveEnCoursDeVerification
+statutFromCli "verifok"   = Just PreuveVerifieeOK
+statutFromCli "verifko"   = Just PreuveVerifieeKO
+statutFromCli _              = Nothing
 
 pPrintUtf8 :: Show a => a -> IO ()
 pPrintUtf8 = pPrintOpt CheckColorTty
