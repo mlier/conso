@@ -534,51 +534,60 @@ instance FromJSON RoleTiers where parseJSON = fmap roleTiersFromText . parseJSON
 instance ToJSON   RoleTiers where toJSON    = toJSON . roleTiersText
 
 
--- | État d'un droit d'accès.
+-- | État d'un droit d'accès (valeurs API GRDF PROD v1.9).
 data EtatDroitAcces
     = EtatActive
+    | EtatAValider
+    | EtatRevoquee
+    | EtatAReverifier
     | EtatObsolete
-    | EtatRefuse
+    | EtatRefusee
     | AutreEtat Text
     deriving (Show, Eq)
 
 etatDroitAccesText :: EtatDroitAcces -> Text
-etatDroitAccesText EtatActive    = "Active"
-etatDroitAccesText EtatObsolete  = "Obsolète"
-etatDroitAccesText EtatRefuse    = "Refusé"
-etatDroitAccesText (AutreEtat t) = t
+etatDroitAccesText EtatActive      = "Actif"
+etatDroitAccesText EtatAValider    = "A valider"
+etatDroitAccesText EtatRevoquee    = "Révoqué"
+etatDroitAccesText EtatAReverifier = "A revérifier"
+etatDroitAccesText EtatObsolete    = "Obsolète"
+etatDroitAccesText EtatRefusee     = "Refusé"
+etatDroitAccesText (AutreEtat t)   = t
 
 etatDroitAccesFromText :: Text -> EtatDroitAcces
-etatDroitAccesFromText "Active"   = EtatActive
-etatDroitAccesFromText "Obsolète" = EtatObsolete
-etatDroitAccesFromText "Refusé"   = EtatRefuse
-etatDroitAccesFromText t          = AutreEtat t
+etatDroitAccesFromText "actif"       = EtatActive
+etatDroitAccesFromText "avalider"    = EtatAValider
+etatDroitAccesFromText "revoque"     = EtatRevoquee
+etatDroitAccesFromText "areverifier" = EtatAReverifier
+etatDroitAccesFromText "obsolete"     = EtatObsolete
+etatDroitAccesFromText "refuse"      = EtatRefusee
+etatDroitAccesFromText t              = AutreEtat t
 
 instance FromJSON EtatDroitAcces where parseJSON = fmap etatDroitAccesFromText . parseJSON
 instance ToJSON   EtatDroitAcces where toJSON    = toJSON . etatDroitAccesText
 
 
--- | Statut du contrôle de preuve d'un droit d'accès.
+-- | Statut du contrôle de preuve d'un droit d'accès (valeurs API GRDF PROD v1.9).
 data StatutControlePreuve
     = PreuveEnAttente
     | PreuveEnCoursDeVerification
-    | PreuveValidee
-    | StatutSansObjet
+    | PreuveVerifieeOK
+    | PreuveVerifieeKO
     | AutreStatut Text
     deriving (Show, Eq)
 
 statutControlePreuveText :: StatutControlePreuve -> Text
 statutControlePreuveText PreuveEnAttente             = "Preuve en attente"
 statutControlePreuveText PreuveEnCoursDeVerification = "Preuve en cours de vérification"
-statutControlePreuveText PreuveValidee               = "Preuve validée"
-statutControlePreuveText StatutSansObjet             = "Sans objet"
+statutControlePreuveText PreuveVerifieeOK            = "Preuve Vérifiée OK"
+statutControlePreuveText PreuveVerifieeKO            = "Preuve Vérifiée KO"
 statutControlePreuveText (AutreStatut t)             = t
 
 statutControlePreuveFromText :: Text -> StatutControlePreuve
-statutControlePreuveFromText "Attente"               = PreuveEnAttente
-statutControlePreuveFromText "Vérification"          = PreuveEnCoursDeVerification
-statutControlePreuveFromText "Validée"               = PreuveValidee
-statutControlePreuveFromText "SansObjet"             = StatutSansObjet
+statutControlePreuveFromText "attente"               = PreuveEnAttente
+statutControlePreuveFromText "verification"          = PreuveEnCoursDeVerification
+statutControlePreuveFromText "verifieeok"            = PreuveVerifieeOK
+statutControlePreuveFromText "verifieeko"            = PreuveVerifieeKO
 statutControlePreuveFromText t                       = AutreStatut t
 
 instance FromJSON StatutControlePreuve where parseJSON = fmap statutControlePreuveFromText . parseJSON

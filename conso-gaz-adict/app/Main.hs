@@ -217,9 +217,8 @@ aideDroits = vsep
     , pretty ("" :: String)
     , pretty ("Valeurs de --role  : AUTORISE_CONTRAT_FOURNITURE, DETENTEUR_CONTRAT_FOURNITURE," :: String)
     , pretty ("                     AUTORISE_CONTRAT_INJECTION, DETENTEUR_CONTRAT_INJECTION" :: String)
-    , pretty ("Valeurs de --etat  : Active, Obsolète, Refusé" :: String)
-    , pretty ("Valeurs de --statut: Preuve en attente, Preuve en cours de vérification," :: String)
-    , pretty ("                     Preuve validée, Sans objet" :: String)
+    , pretty ("Valeurs de --etat  : actif, avalider, revoque, areverifier, obsolete, refuse" :: String)
+    , pretty ("Valeurs de --statut: attente, verification, verifieeok, verifieeko" :: String)
     ]
 
 aideAcces :: Doc
