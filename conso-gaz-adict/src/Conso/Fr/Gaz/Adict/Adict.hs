@@ -397,9 +397,12 @@ adictGetNDJSON session apiPath = do
                     logDebugStatus (sessionVerbose session) st
                     logDebugBody (sessionVerbose session) body
                     if st == 200
-                       then return $ case decode body >>= extractFunctionalError of
-                                Just err -> Left err
+                       then return $ case decode body of
                                 Nothing  -> parseNDJSON body
+                                Just val -> case extractFunctionalError val of
+                                    Just err                     -> Left err
+                                    Nothing | isGdaResponse val -> Right []
+                                            | otherwise         -> parseNDJSON body
                        else return $ tryFunctionalError st body
 
 -- | GET NDJSON retournant un 'ConduitT' qui émet chaque objet décodé.
@@ -524,9 +527,12 @@ adictPostNDJSON session apiPath body = do
                     logDebugStatus (sessionVerbose session) st
                     logDebugBody (sessionVerbose session) rb
                     if st == 200
-                       then return $ case decode rb >>= extractFunctionalError of
-                                Just err -> Left err
+                       then return $ case decode rb of
                                 Nothing  -> parseNDJSON rb
+                                Just val -> case extractFunctionalError val of
+                                    Just err                     -> Left err
+                                    Nothing | isGdaResponse val -> Right []
+                                            | otherwise         -> parseNDJSON rb
                        else return $ tryFunctionalError st rb
 
 -- | PATCH sans corps (pour révoquer un droit d'accès).
@@ -646,6 +652,13 @@ extractFunctionalError val =
                 msg  = case KM.lookup "message" sr of { Just (String m) -> m; _ -> "" }
             in if T.null code then Nothing else Just (FunctionalError code msg)
         _ -> Nothing
+
+-- | Détecte si la valeur JSON est une réponse GDA (@code_statut_traitement@)
+--   plutôt que du NDJSON. Dans un endpoint NDJSON 200, ce format indique
+--   une liste vide (ex. "Aucun droit d'accès trouvé.").
+isGdaResponse :: Value -> Bool
+isGdaResponse (Object o) = KM.member "code_statut_traitement" o
+isGdaResponse _          = False
 
 -- | Décode une 'Value' vers @a@ en vérifiant d'abord @statut_restitution@.
 --   Utilisé par 'adictGet' pour les endpoints à objet unique.
