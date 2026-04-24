@@ -103,17 +103,17 @@ commandParser :: Parser Command
 commandParser =
     subparser
       (  commandGroup "Données de consommation/injection"
-      <> command "consos"
+      <> command "conso"
            ( info (Consos <$> consosParser <**> helper)
                   ( fullDesc
                   <> progDesc "Consulter les consommations publiées d'un PCE"
                   <> footerDoc (Just aidePeriode) ) )
-      <> command "consos-info"
+      <> command "conso-info"
            ( info (ConsosInfo <$> consosParser <**> helper)
                   ( fullDesc
                   <> progDesc "Consulter les consommations informatives d'un PCE"
                   <> footerDoc (Just aidePeriode) ) )
-      <> command "injections"
+      <> command "injection"
            ( info (Injections <$> consosParser <**> helper)
                   (progDesc "Consulter les injections publiées d'un PCE") )
       )
@@ -128,12 +128,12 @@ commandParser =
       )
     <|> subparser
       (  commandGroup "Droits d'accès"
-      <> command "droits"
+      <> command "liste"
            ( info (Droits <$> filtreParser <**> helper)
                   ( fullDesc
                   <> progDesc "Consulter mes droits d'accès (sans filtre : GET, avec filtre : POST)"
                   <> footerDoc (Just aideDroits) ) )
-      <> command "acces"
+      <> command "declarer"
            ( info (Acces <$> accesParser <**> helper)
                   ( fullDesc
                   <> progDesc "Déclarer un droit d'accès aux données d'un PCE"
@@ -165,7 +165,7 @@ techParser = TechOpts
 
 filtreParser :: Parser FiltreOpts
 filtreParser = FiltreOpts
-    <$> optional (strOption ( long "role"   <> metavar "ROLE"   <> help "Rôle tiers : AUTORISE_FOURNITURE, DETENTEUR_FOURNITURE, AUTORISE_INJECTION, DETENTEUR_INJECTION" ))
+    <$> optional (strOption ( long "role"   <> metavar "ROLE"   <> help "Rôle tiers : acf, dcf, aci, dci" ))
     <*> optional (strOption ( long "pce"    <> metavar "PCE"    <> help "Identifiant PCE" ))
     <*> optional (strOption ( long "statut" <> metavar "STATUT" <> help "Statut contrôle preuve : Attente, Vérification, Validée, SansObjet" ))
     <*> optional (strOption ( long "etat"   <> metavar "ETAT"   <> help "État du droit d'accès : Active, Obsolète, Refusé" ))  
@@ -174,9 +174,9 @@ accesParser :: Parser AccesOpts
 accesParser = AccesOpts
     <$> strOption ( long "pce"   <> metavar "PCE" <> help "Identifiant PCE" )
     <*> strOption ( long "role"  <> metavar "ROLE"
-                  <> value "AUTORISE_CONTRAT_FOURNITURE"
+                  <> value "acf"
                   <> showDefault
-                  <> help "Rôle tiers" )
+                  <> help "Rôle tiers : acf, dcf, aci, dci" )
     <*> strOption ( long "cp"    <> metavar "CODE_POSTAL" <> help "Code postal du PCE" )
     <*> optional (strOption ( long "nom"    <> metavar "NOM"   <> help "Nom titulaire (personne physique)" ))
     <*> optional (strOption ( long "raison" <> metavar "RS"    <> help "Raison sociale (personne morale)" ))
@@ -216,8 +216,12 @@ aideDroits = vsep
     , pretty ("Sans filtre : GET /droits_acces (tous mes droits d'accès)." :: String)
     , pretty ("Avec au moins un filtre : POST /droits_acces (recherche filtrée)." :: String)
     , pretty ("" :: String)
-    , pretty ("Valeurs de --role  : AUTORISE_CONTRAT_FOURNITURE, DETENTEUR_CONTRAT_FOURNITURE," :: String)
-    , pretty ("                     AUTORISE_CONTRAT_INJECTION, DETENTEUR_CONTRAT_INJECTION" :: String)
+    , pretty ("Rôles disponibles :" :: String)
+    , pretty ("  acf : régime d'Autorisation pour accéder au Contrat de Fourniture" :: String)
+    , pretty ("  dcf : régime de Détention du Contrat de Fourniture" :: String)
+    , pretty ("  aci : régime d'Autorisation pour accéder au Contrat d'Injection" :: String)
+    , pretty ("  dci : régime de Détention du Contrat d'Injection" :: String)
+    , pretty ("" :: String)
     , pretty ("Valeurs de --etat  : actif, avalider, revoque, areverifier, obsolete, refuse" :: String)
     , pretty ("Valeurs de --statut: attente, verification, verifok, verifko" :: String)
     ]
@@ -226,13 +230,13 @@ aideAcces :: Doc
 aideAcces = vsep
     [ pretty ("" :: String)
     , pretty ("Rôles disponibles :" :: String)
-    , pretty ("  AUTORISE_CONTRAT_FOURNITURE (défaut)" :: String)
-    , pretty ("  DETENTEUR_CONTRAT_FOURNITURE" :: String)
-    , pretty ("  AUTORISE_CONTRAT_INJECTION" :: String)
-    , pretty ("  DETENTEUR_CONTRAT_INJECTION" :: String)
+    , pretty ("  acf : régime d'Autorisation pour accéder au Contrat de Fourniture (défaut)" :: String)
+    , pretty ("  dcf : régime de Détention du Contrat de Fourniture" :: String)
+    , pretty ("  aci : régime d'Autorisation pour accéder au Contrat d'Injection" :: String)
+    , pretty ("  dci : régime de Détention du Contrat d'Injection" :: String)
     , pretty ("" :: String)
     , pretty ("Exemple :" :: String)
-    , pretty ("  conso-gaz-adict acces --pce 12345678901234 --cp 75001 \\" :: String)
+    , pretty ("  conso-gaz-adict declarer --pce 12345678901234 --cp 75001 --role acf \\" :: String)
     , pretty ("    --raison 'Ma Société SAS' --email client@example.com \\" :: String)
     , pretty ("    --debut-acces 2024-01-01 --fin-acces 2025-01-01 \\" :: String)
     , pretty ("    --debut-conso 2023-01-01 --fin-conso 2025-01-01 \\" :: String)
@@ -276,7 +280,7 @@ run session raw cmd = case cmd of
         if raw then pPrintUtf8 rep else renderApp rep
 
     Droits fo -> do
-        role   <- parseFiltre "--role"   roleTiersFromText   (foRole   fo)
+        role   <- parseFiltre "--role"   roleTiersFromCli    (foRole   fo)
         statut <- parseFiltre "--statut" statutFromCli       (foStatut fo)
         etat   <- parseFiltre "--etat"   etatFromCli         (foEtat   fo)
         let filtre = FiltreAcces
@@ -291,8 +295,9 @@ run session raw cmd = case cmd of
         if raw then pPrintUtf8 rep else renderApp rep
 
     Acces ao -> do
+        role <- expandRole (acRole ao)
         let demande = DemandeAccesIn
-                { din_role_tiers                        = packT (acRole ao)
+                { din_role_tiers                        = role
                 , din_raison_sociale                    = fmap packT (acRaisonSociale ao)
                 , din_nom_titulaire                     = fmap packT (acNom ao)
                 , din_code_postal                       = packT (acCp ao)
@@ -335,6 +340,30 @@ parseFiltre _    _    Nothing  = return []
 parseFiltre flag conv (Just s) = case conv (packT s) of
     Just v  -> return [v]
     Nothing -> die $ "Valeur invalide pour " ++ flag ++ " : " ++ show s
+
+-- | Expand un alias court de rôle (acf/dcf/aci/dci) ou accepte la valeur
+--   complète. Retourne le texte canonique ou échoue avec un message d'erreur.
+expandRole :: String -> IO T.Text
+expandRole s = case s of
+    "acf"                          -> ok "AUTORISE_CONTRAT_FOURNITURE"
+    "dcf"                          -> ok "DETENTEUR_CONTRAT_FOURNITURE"
+    "aci"                          -> ok "AUTORISE_CONTRAT_INJECTION"
+    "dci"                          -> ok "DETENTEUR_CONTRAT_INJECTION"
+    "AUTORISE_CONTRAT_FOURNITURE"  -> ok "AUTORISE_CONTRAT_FOURNITURE"
+    "DETENTEUR_CONTRAT_FOURNITURE" -> ok "DETENTEUR_CONTRAT_FOURNITURE"
+    "AUTORISE_CONTRAT_INJECTION"   -> ok "AUTORISE_CONTRAT_INJECTION"
+    "DETENTEUR_CONTRAT_INJECTION"  -> ok "DETENTEUR_CONTRAT_INJECTION"
+    _                              -> die $ "Rôle invalide : " ++ show s
+                                        ++ " (valeurs : acf, dcf, aci, dci)"
+  where ok = return . T.pack
+
+-- | Alias courts pour role_tiers (accepte aussi les noms complets).
+roleTiersFromCli :: T.Text -> Maybe RoleTiers
+roleTiersFromCli "acf" = Just AutoriseContratFourniture
+roleTiersFromCli "dcf" = Just DetenteurContratFourniture
+roleTiersFromCli "aci" = Just AutoriseContratInjection
+roleTiersFromCli "dci" = Just DetenteurContratInjection
+roleTiersFromCli t     = roleTiersFromText t
 
 -- | Shortcuts CLI pour etat_droit_acces.
 etatFromCli :: T.Text -> Maybe EtatDroitAcces
