@@ -22,15 +22,18 @@ import           Conso.Fr.Gaz.Adict.Adict ( AdictError(..) )
 
 
 -- | Typeclass associant chaque type de réponse à un widget Brick.
+--   'toHeader' retourne la partie fixe (hors viewport) ; défaut : vide.
 class Renderable a where
     toWidget :: Either AdictError a -> Widget ()
+    toHeader :: Either AdictError a -> Widget ()
+    toHeader _ = emptyWidget
 
 
 -- | Lance l'affichage TUI Brick.  Quitter avec q ou Esc, défiler avec ↑/↓.
 renderApp :: Renderable a => Either AdictError a -> IO ()
 renderApp x = do
     let theApp = App
-            { appDraw         = const [viewport () Vertical (toWidget x)]
+            { appDraw         = const [vBox [toHeader x, viewport () Vertical (toWidget x)]]
             , appChooseCursor = neverShowCursor
             , appHandleEvent  = handleKey
             , appStartEvent   = return ()

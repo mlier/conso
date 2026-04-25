@@ -23,7 +23,7 @@ import           Conso.Fr.Gaz.Adict.DroitAcces
 import           Conso.Fr.Gaz.Adict.Preuves
 
 import           Display
-import           Display.ConsoDisplay        ()
+import           Display.ConsoDisplay        ( ConsosPubliees(..), ConsosInfos(..) )
 import           Display.DroitsAccesDisplay  ()
 import           Display.DonneesDisplay      ()
 
@@ -280,11 +280,11 @@ run session raw cmd = case cmd of
 
     Consos co -> do
         rep <- consulterConsosPubliees session (packT (coPce co)) (mkPeriode co)
-        if raw then pPrintUtf8 rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp (ConsosPubliees <$> rep)
 
     ConsosInfo co -> do
         rep <- consulterConsosInfos session (packT (coPce co)) (mkPeriode co)
-        if raw then pPrintUtf8 rep else renderApp rep
+        if raw then pPrintUtf8 rep else renderApp (ConsosInfos <$> rep)
 
     Injections co -> do
         rep <- consulterInjectionsPubliees session (packT (coPce co)) (mkPeriode co)
@@ -366,9 +366,9 @@ mkPeriode co = case (coPeriode co, coDebut co, coFin co) of
 -- | Parse une valeur de filtre CLI, échoue explicitement si inconnue.
 parseFiltre :: String -> (T.Text -> Maybe a) -> Maybe String -> IO [a]
 parseFiltre _    _    Nothing  = return []
-parseFiltre flag conv (Just s) = case conv (packT s) of
+parseFiltre myflag conv (Just s) = case conv (packT s) of
     Just v  -> return [v]
-    Nothing -> die $ "Valeur invalide pour " ++ flag ++ " : " ++ show s
+    Nothing -> die $ "Valeur invalide pour " ++ myflag ++ " : " ++ show s
 
 -- | Expand un alias court de rôle (acf/dcf/aci/dci) ou accepte la valeur
 --   complète. Retourne le texte canonique ou échoue avec un message d'erreur.

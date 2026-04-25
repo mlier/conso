@@ -1,91 +1,196 @@
 {-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-module Display.ConsoDisplay () where
+module Display.ConsoDisplay
+  ( ConsosPubliees(..)
+  , ConsosInfos(..)
+  ) where
 
 import           Brick
-import qualified Data.Text                  as T
+import           Data.List              ( intersperse )
+import           Data.Maybe             ( listToMaybe )
+import qualified Data.Text              as T
+import           Text.Printf            ( printf )
 
 import           Display
 import           Conso.Fr.Gaz.Adict.Types
 
 
--- | Instance Renderable pour une liste de ConsoRestit (résultat NDJSON).
-instance Renderable [ConsoRestit] where
-    toWidget (Left  err) = renderError err
-    toWidget (Right lst)
-        | null lst  = section "Consommations" [ustr "Aucune donnée."]
-        | otherwise = vBox $ map renderConso lst
+-- ---------------------------------------------------------------------------
+-- Newtypes pour distinguer les deux commandes
 
+newtype ConsosPubliees = ConsosPubliees [ConsoRestit]
+newtype ConsosInfos    = ConsosInfos    [ConsoRestit]
+
+
+-- ---------------------------------------------------------------------------
+-- Helpers tableau
+
+data ColAlign = AlignLeft | AlignRight
+
+data Col a = Col
+    { colHeader :: String
+    , colWidth  :: Int
+    , colAlign  :: ColAlign
+    , colGet    :: a -> String
+    }
+
+tableCell :: Int -> ColAlign -> String -> Widget ()
+tableCell w AlignLeft  s = ustr $ take w $ s ++ repeat ' '
+tableCell w AlignRight s = ustr $ replicate (max 0 (w - length s)) ' ' ++ take w s
+
+sep :: Widget ()
+sep = ustr " │ "
+
+fmt2 :: Maybe Double -> String
+fmt2 = maybe "" (printf "%.2f")
+
+fmtInt :: Maybe Double -> String
+fmtInt = maybe "" (show . (round :: Double -> Int))
+
+sepWidth :: [Col a] -> Int
+sepWidth cols = sum (map colWidth cols) + 3 * (length cols - 1)
+
+renderTableHeader :: [Col a] -> Widget ()
+renderTableHeader cols = vBox
+    [ withAttr labelAttr $ hBox $ intersperse sep
+        [ tableCell (colWidth c) AlignLeft (colHeader c) | c <- cols ]
+    , ustr $ replicate (sepWidth cols) '─'
+    ]
+
+renderTableRow :: [Col a] -> a -> Widget ()
+renderTableRow cols x = hBox $ intersperse sep
+    [ tableCell (colWidth c) (colAlign c) (colGet c x) | c <- cols ]
+
+
+-- ---------------------------------------------------------------------------
+-- Accesseurs communs ConsoRestit
+
+getC :: (Consommation -> Maybe T.Text) -> ConsoRestit -> String
+getC f cr = maybe "" (maybe "" T.unpack . f) (cr_consommation cr)
+
+getN :: (Consommation -> Maybe Double) -> ConsoRestit -> String
+getN f cr = fmt2 (cr_consommation cr >>= f)
+
+getIdxDebut :: ConsoRestit -> String
+getIdxDebut cr = fmtInt (cr_releve_debut cr >>= rd_index_brut_debut >>= valeur_index)
+
+getIdxFin :: ConsoRestit -> String
+getIdxFin cr = fmtInt (cr_releve_fin cr >>= rf_index_brut_fin >>= valeur_index)
+
+getCoeff :: ConsoRestit -> String
+getCoeff cr = fmt2 (cr_consommation cr >>= coeff_calcul >>= coeff_conversion)
+
+getPcs :: ConsoRestit -> String
+getPcs cr = fmt2 (cr_consommation cr >>= coeff_calcul >>= valeur_pcs)
+
+
+-- ---------------------------------------------------------------------------
+-- Colonnes communes (sans Journée)
+
+commonCols :: [Col ConsoRestit]
+commonCols =
+    [ Col "Début"         25 AlignLeft  (getC date_debut_consommation)
+    , Col "Fin"           25 AlignLeft  (getC date_fin_consommation)
+    , Col "Énergie kWh"   11 AlignRight (getN energie)
+    , Col "Vol brut"       8 AlignRight (getN volume_brut)
+    , Col "Vol converti"  12 AlignRight (getN volume_converti)
+    , Col "Idx déb"        7 AlignRight getIdxDebut
+    , Col "Idx fin"        7 AlignRight getIdxFin
+    , Col "Coeff conv"    10 AlignRight getCoeff
+    , Col "PCS"            5 AlignRight getPcs
+    , Col "Qualif."        8 AlignLeft  (getC type_qualif_conso)
+    , Col "Statut"        12 AlignLeft  (getC statut_conso)
+    ]
+
+publieesCols :: [Col ConsoRestit]
+publieesCols = commonCols
+
+infosCols :: [Col ConsoRestit]
+infosCols = Col "Journée" 10 AlignLeft (getC journee_gaziere) : commonCols
+
+
+-- ---------------------------------------------------------------------------
+-- Helpers affichage
+
+consoHeader :: [Col ConsoRestit] -> [ConsoRestit] -> Widget ()
+consoHeader cols lst = vBox
+    [ field "PCE"     (maybe "-" (T.unpack . id_pce) (listToMaybe lst >>= cr_pce))
+    , field "Période" (maybe "-" T.unpack (listToMaybe lst >>= cr_periode >>= valeur))
+    , renderTableHeader cols
+    ]
+
+consoBody :: [Col ConsoRestit] -> [ConsoRestit] -> Widget ()
+consoBody cols lst = vBox $
+    map (renderTableRow cols) lst
+    ++ concatMap renderStatutRow lst
+  where
+    renderStatutRow cr = case cr_statut_restitution cr of
+        Nothing -> []
+        Just s  -> [renderStatut (Just s)]
+
+
+-- ---------------------------------------------------------------------------
+-- Instances Renderable
+
+instance Renderable ConsosPubliees where
+    toHeader (Left  _)                    = emptyWidget
+    toHeader (Right (ConsosPubliees []))  = ustr "Aucune consommation publiée."
+    toHeader (Right (ConsosPubliees lst)) = consoHeader publieesCols lst
+
+    toWidget (Left  err)                    = renderError err
+    toWidget (Right (ConsosPubliees []))    = emptyWidget
+    toWidget (Right (ConsosPubliees lst))   = consoBody publieesCols lst
+
+
+instance Renderable ConsosInfos where
+    toHeader (Left  _)                  = emptyWidget
+    toHeader (Right (ConsosInfos []))   = ustr "Aucune consommation informative."
+    toHeader (Right (ConsosInfos lst))  = consoHeader infosCols lst
+
+    toWidget (Left  err)                  = renderError err
+    toWidget (Right (ConsosInfos []))     = emptyWidget
+    toWidget (Right (ConsosInfos lst))    = consoBody infosCols lst
+
+
+-- ---------------------------------------------------------------------------
+-- InjectionRestit (inchangé)
 
 instance Renderable [InjectionRestit] where
+    toHeader (Left  _)   = emptyWidget
+    toHeader (Right [])  = ustr "Aucune injection."
+    toHeader (Right lst) = vBox
+        [ field "PCE"     (maybe "-" (T.unpack . id_pce) (listToMaybe lst >>= ir_pce))
+        , field "Période" (maybe "-" T.unpack (listToMaybe lst >>= ir_periode >>= valeur))
+        , renderTableHeader injCols
+        ]
+
     toWidget (Left  err) = renderError err
-    toWidget (Right lst)
-        | null lst  = section "Injections" [ustr "Aucune donnée."]
-        | otherwise = vBox $ map renderInjection lst
+    toWidget (Right [])  = emptyWidget
+    toWidget (Right lst) = vBox $
+        map (renderTableRow injCols) lst
+        ++ concatMap renderStatutRow lst
+      where
+        renderStatutRow ir = case ir_statut_restitution ir of
+            Nothing -> []
+            Just s  -> [renderStatut (Just s)]
 
-
-renderInjection :: InjectionRestit -> Widget ()
-renderInjection ir = section titre lignes
+injCols :: [Col InjectionRestit]
+injCols =
+    [ Col "Début"         25 AlignLeft  (getCI date_debut_injection)
+    , Col "Fin"           25 AlignLeft  (getCI date_fin_injection)
+    , Col "Énergie kWh"   11 AlignRight (getNI inj_energie)
+    , Col "Vol brut"       8 AlignRight (getNI inj_volume_brut)
+    , Col "Vol converti"  12 AlignRight (getNI inj_volume_converti)
+    , Col "Qualif."        8 AlignLeft  (getCI type_qualif_injection)
+    , Col "Statut"        12 AlignLeft  (getCI statut_injection)
+    ]
   where
-    titre = maybe "Injection" (\i -> maybe "Injection" T.unpack (inj_journee_gaziere i)) (ir_injection ir)
-         <> maybe "" (\p -> maybe "" (\v -> " [" <> T.unpack v <> "]") (valeur p)) (ir_periode ir)
-    lignes =
-        [ maybeField "PCE"          (fmap (T.unpack . id_pce) (ir_pce ir))
-        , renderInjectionDetail (ir_injection ir)
-        , renderStatut (ir_statut_restitution ir)
-        ]
+    getCI f ir = maybe "" (maybe "" T.unpack . f) (ir_injection ir)
+    getNI f ir = fmt2 (ir_injection ir >>= f)
 
 
-renderInjectionDetail :: Maybe Injection -> Widget ()
-renderInjectionDetail Nothing  = emptyWidget
-renderInjectionDetail (Just i) = vBox
-    [ maybeField "Début"           (fmap T.unpack (date_debut_injection i))
-    , maybeField "Fin"             (fmap T.unpack (date_fin_injection i))
-    , maybeField "Énergie (kWh)"   (fmap show (inj_energie i))
-    , maybeField "Volume brut"     (fmap show (inj_volume_brut i))
-    , maybeField "Volume conv."    (fmap show (inj_volume_converti i))
-    , maybeField "Qualif."         (fmap T.unpack (type_qualif_injection i))
-    , maybeField "Statut"          (fmap T.unpack (statut_injection i))
-    , maybeField "Type injection"  (fmap T.unpack (type_injection i))
-    , renderCoeff (inj_coeff_calcul i)
-    ]
-
-
-renderConso :: ConsoRestit -> Widget ()
-renderConso cr = section titre lignes
-  where
-    titre = maybe "Consommation" (\c -> maybe "Consommation" T.unpack (journee_gaziere c)) (cr_consommation cr)
-         <> maybe "" (\p -> maybe "" (\v -> " [" <> T.unpack v <> "]") (valeur p)) (cr_periode cr)
-    lignes =
-        [ maybeField "PCE"          (fmap (T.unpack . id_pce) (cr_pce cr))
-        , renderConsoDetail (cr_consommation cr)
-        , renderStatut (cr_statut_restitution cr)
-        ]
-
-
-renderConsoDetail :: Maybe Consommation -> Widget ()
-renderConsoDetail Nothing  = emptyWidget
-renderConsoDetail (Just c) = vBox
-    [ maybeField "Début"        (fmap T.unpack (date_debut_consommation c))
-    , maybeField "Fin"          (fmap T.unpack (date_fin_consommation c))
-    , maybeField "Énergie (kWh)" (fmap show (energie c))
-    , maybeField "Volume brut"  (fmap show (volume_brut c))
-    , maybeField "Volume conv." (fmap show (volume_converti c))
-    , maybeField "Qualif."      (fmap T.unpack (type_qualif_conso c))
-    , maybeField "Statut"       (fmap T.unpack (statut_conso c))
-    , maybeField "Type conso"   (fmap T.unpack (type_conso c))
-    , renderCoeff (coeff_calcul c)
-    ]
-
-
-renderCoeff :: Maybe CoeffCalcul -> Widget ()
-renderCoeff Nothing  = emptyWidget
-renderCoeff (Just k) = vBox
-    [ maybeField "Coeff PTA"   (fmap show (coeff_pta k))
-    , maybeField "PCS"         (fmap show (valeur_pcs k))
-    , maybeField "Coeff conv." (fmap show (coeff_conversion k))
-    ]
-
+-- ---------------------------------------------------------------------------
+-- Helpers communs
 
 renderStatut :: Maybe StatutRestitution -> Widget ()
 renderStatut Nothing  = emptyWidget
