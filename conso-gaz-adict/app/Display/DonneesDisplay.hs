@@ -3,8 +3,11 @@
 module Display.DonneesDisplay () where
 
 import           Brick
-import           Data.Aeson             ( Value, encode )
+import           Data.Aeson             ( Value(..), encode )
+import qualified Data.Aeson.Key         as Key
+import qualified Data.Aeson.KeyMap      as KM
 import qualified Data.ByteString.Lazy   as LBS
+import qualified Data.Scientific        as Sci
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as T
 
@@ -25,14 +28,33 @@ renderContrat dc =
     , maybeField "Tarif acheminement" (fmap T.unpack (dc_tarif_acheminement dc))
     , maybeField "Date publication"   (fmap T.unpack (dc_date_publication dc))
     , maybeField "Conso plafond"      (fmap T.unpack (dc_consommation_journaliere_plafond dc))
-    , maybe emptyWidget (\v -> field "CAR"       (jsonCompact v)) (dc_car dc)
-    , maybe emptyWidget (\v -> field "CJA"       (jsonCompact v)) (dc_cja dc)
-    , maybe emptyWidget (\v -> field "Profil"    (jsonCompact v)) (dc_profil dc)
-    , maybe emptyWidget (\v -> field "Modulation"(jsonCompact v)) (dc_modulation dc)
     ]
+    ++ maybe [] (renderJsonSection "CAR")        (dc_car dc)
+    ++ maybe [] (renderJsonSection "CJA")        (dc_cja dc)
+    ++ maybe [] (renderJsonSection "Profil")     (dc_profil dc)
+    ++ maybe [] (renderJsonSection "Modulation") (dc_modulation dc)
 
 jsonCompact :: Value -> String
 jsonCompact = T.unpack . T.decodeUtf8 . LBS.toStrict . encode
+
+-- | Affiche un objet JSON comme une liste de champs clé : valeur.
+--   Précédé d'un titre de section.
+renderJsonSection :: String -> Value -> [Widget ()]
+renderJsonSection title (Object o) =
+    withAttr sectionAttr (ustr title) : map renderEntry (KM.toAscList o)
+  where
+    renderEntry (k, v) = field (Key.toString k) (renderScalar v)
+renderJsonSection title v = [field title (jsonCompact v)]
+
+renderScalar :: Value -> String
+renderScalar (String t)  = T.unpack t
+renderScalar (Number n)  = case (Sci.floatingOrInteger n :: Either Double Int) of
+                               Left  d -> show d
+                               Right i -> show i
+renderScalar (Bool True)  = "true"
+renderScalar (Bool False) = "false"
+renderScalar Null         = "-"
+renderScalar v            = jsonCompact v
 
 
 instance Renderable RetourDonneesTechniques where
@@ -46,11 +68,8 @@ renderTech :: DonneesTechniques -> [Widget ()]
 renderTech dt =
     maybe [] renderSituation (dt_situation_compteur dt)
     ++ [renderPitd (dt_pitd dt)]
-    ++ [ maybe emptyWidget (\v -> field "Caractéristiques" (jsonCompact v))
-                           (dt_caracteristiques_compteur dt)
-       , maybe emptyWidget (\v -> field "Régime propriété" (jsonCompact v))
-                           (dt_regime_propriete dt)
-       ]
+    ++ maybe [] (renderJsonSection "Caractéristiques compteur") (dt_caracteristiques_compteur dt)
+    ++ maybe [] (renderJsonSection "Régime propriété")          (dt_regime_propriete dt)
 
 renderSituation :: SituationCompteurDetail -> [Widget ()]
 renderSituation s =

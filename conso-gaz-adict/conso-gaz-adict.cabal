@@ -68,6 +68,7 @@ executable conso-gaz-adict
         , bytestring
         , optparse-applicative
         , aeson
+        , scientific
         , yaml
         , unix
         , pretty-simple
