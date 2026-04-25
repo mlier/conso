@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Conso.Fr.Gaz.Adict.Preuves
-Description : Webservice GRDF ADICT — POST \/droit_acces\/{id_droit_acces}\/preuves
+Description : Webservice GRDF ADICT — PUT \/droit_acces\/{id_droit_acces}\/preuves
 
 Permet de soumettre une preuve d'accord client pour un droit d'accès en
 attente de justificatif.  Le fichier (PDF ou image JPEG\/PNG) est envoyé
@@ -93,7 +93,7 @@ soumettrePrevueSandbox idDroitAcces filePath = do
 buildMultipartBody :: BS.ByteString -> FilePath -> BS.ByteString -> LBS.ByteString
 buildMultipartBody boundary fileName fileBytes = LBS.fromStrict $
        "--" <> boundary <> "\r\n"
-    <> "Content-Disposition: form-data; name=\"preuve\"; filename=\""
+    <> "Content-Disposition: form-data; name=\"preuves\"; filename=\""
     <> BSC.pack fileName <> "\"\r\n"
     <> "Content-Type: application/pdf\r\n"
     <> "\r\n"

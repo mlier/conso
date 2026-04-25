@@ -20,6 +20,7 @@ import           Conso.Fr.Gaz.Adict.DonneesTechniques
 import           Conso.Fr.Gaz.Adict.InjectionsPubliees
 import           Conso.Fr.Gaz.Adict.DroitsAcces
 import           Conso.Fr.Gaz.Adict.DroitAcces
+import           Conso.Fr.Gaz.Adict.Preuves
 
 import           Display
 import           Display.ConsoDisplay        ()
@@ -47,6 +48,8 @@ data Command
     | Droits        FiltreOpts
     | Acces         AccesOpts
     | Revoquer      RevoquerOpts
+    | PreuvesAttente
+    | Preuve        PreuveOpts
     deriving (Show)
 
 data ConsosOpts = ConsosOpts
@@ -85,6 +88,11 @@ data AccesOpts = AccesOpts
     } deriving (Show)
 
 newtype RevoquerOpts = RevoquerOpts { rvId :: String } deriving (Show)
+
+data PreuveOpts = PreuveOpts
+    { pvId      :: String
+    , pvFichier :: String
+    } deriving (Show)
 
 
 -- ---------------------------------------------------------------------------
@@ -141,6 +149,12 @@ commandParser =
       <> command "revoquer"
            ( info (Revoquer <$> revoquerParser <**> helper)
                   (progDesc "Révoquer un droit d'accès (UUID)") )
+      <> command "preuves-attente"
+           ( info (pure PreuvesAttente <**> helper)
+                  (progDesc "Lister les droits d'accès en attente de preuve de consentement") )
+      <> command "preuve"
+           ( info (Preuve <$> preuveParser <**> helper)
+                  (progDesc "Transmettre une preuve de consentement pour un droit d'accès") )
       )
 
 
@@ -195,6 +209,11 @@ accesParser = AccesOpts
 revoquerParser :: Parser RevoquerOpts
 revoquerParser = RevoquerOpts
     <$> strOption ( long "id" <> metavar "UUID" <> help "UUID du droit d'accès à révoquer" )
+
+preuveParser :: Parser PreuveOpts
+preuveParser = PreuveOpts
+    <$> strOption ( long "id"      <> metavar "UUID"    <> help "UUID du droit d'accès" )
+    <*> strOption ( long "fichier" <> metavar "FICHIER" <> help "Chemin vers le fichier de preuve (PDF/image, max 4 Mo)" )
 
 
 -- ---------------------------------------------------------------------------
@@ -320,6 +339,16 @@ run session raw cmd = case cmd of
     Revoquer rv -> do
         rep <- revoquerDroitAcces session (packT (rvId rv))
         if raw then pPrintUtf8 rep else renderApp rep
+
+    PreuvesAttente -> do
+        rep <- consulterPreuvesAFournir session
+        if raw then pPrintUtf8 rep else renderApp rep
+
+    Preuve pv -> do
+        rep <- soumettrePrevue session (packT (pvId pv)) (pvFichier pv)
+        case rep of
+            Left  err -> pPrintUtf8 (Left err :: Either AdictError ())
+            Right ()  -> putStrLn "Preuve transmise avec succès."
 
 
 -- ---------------------------------------------------------------------------

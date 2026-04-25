@@ -576,7 +576,11 @@ adictPatch session apiPath = do
 --   (compact ou pretty-printed) en liste de valeurs Haskell.
 --   Les objets non décodables vers @a@ sont ignorés silencieusement.
 parseNDJSON :: FromJSON a => LBS.ByteString -> Either AdictError [a]
-parseNDJSON = Right . mapMaybe decode . splitJsonObjects
+parseNDJSON = Right . mapMaybe decodeNonGda . splitJsonObjects
+  where
+    decodeNonGda chunk = case decode chunk of
+        Just (Object o) | KM.member "code_statut_traitement" o -> Nothing
+        _ -> decode chunk
 
 -- | Extrait les objets JSON de niveau supérieur d'un ByteString
 --   contenant plusieurs objets concaténés (compact ou multi-lignes).
