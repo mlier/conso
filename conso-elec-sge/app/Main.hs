@@ -302,14 +302,14 @@ comm =
         -- NOUVEAU : groupe AccesDonnees
     <|> subparser
         (  commandGroup "Accès aux flux R6x (API v26+)"
-        <> command "services"
+        <> command "liste"
             ( info
                 ( AcsServices <$> acsServicesParser <**> helper )
                 ( fullDesc
                 <> progDesc "RechercherServicesAccesDonneesV10 : Rechercher les services AccesDonnees sur un point"
                 )
             )
-        <> command "acces"
+        <> command "declarer"
             ( info
                 ( AcsAcces <$> acsAccesParser <**> helper )
                 ( fullDesc
