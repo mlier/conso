@@ -148,7 +148,9 @@ commandParser =
                   <> footerDoc (Just aideAcces) ) )
       <> command "revoquer"
            ( info (Revoquer <$> revoquerParser <**> helper)
-                  (progDesc "Révoquer un droit d'accès (UUID)") )
+                  ( fullDesc 
+                  <> progDesc "Révoquer un droit d'accès (danger !)"
+                  <> footerDoc (Just aideRevoquer) ) )
       <> command "preuves-attente"
            ( info (pure PreuvesAttente <**> helper)
                   (progDesc "Lister les droits d'accès en attente de preuve de consentement") )
@@ -262,7 +264,12 @@ aideAcces = vsep
     , pretty ("    --contractuelles --techniques --informatives --publiees" :: String)
     ]
 
-
+aideRevoquer :: Doc
+aideRevoquer = vsep
+    [ pretty ("La révocation a pour conséquence de bloquer définitivement" :: String)
+    , pretty ("les nouvelles déclarations de droit d'accès pour le PCE" :: String)
+    , pretty ("via le parcours Tiers Direct." :: String)
+    ]
 -- ---------------------------------------------------------------------------
 -- Exécution
 main :: IO ()
@@ -304,7 +311,7 @@ run session raw cmd = case cmd of
         etat   <- parseFiltre "--etat"   etatFromCli         (foEtat   fo)
         let filtre = FiltreAcces
                 { fa_role_tiers             = role
-                , fa_id_pce                 = maybe [] pure (fmap packT (foPce fo))
+                , fa_id_pce                 = maybe [] (pure . packT) (foPce fo)
                 , fa_statut_controle_preuve = statut
                 , fa_etat_droit_acces       = etat
                 }
