@@ -186,6 +186,7 @@ executable conso-elec-sge
         , vty
         , HaXml
         , time
+        , containers
 
     ghc-options:      -threaded
 
