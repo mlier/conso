@@ -69,6 +69,7 @@ executable conso-gaz-adict
         , optparse-applicative
         , aeson
         , scientific
+        , time
         , yaml
         , unix
         , pretty-simple

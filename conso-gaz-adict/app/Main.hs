@@ -6,6 +6,9 @@ import           Options.Applicative
 import           Options.Applicative.Help.Pretty ( vsep, pretty, Doc )
 import qualified Data.Text                       as T
 import           Data.Text                       ( Text )
+import           Data.Time                       ( getCurrentTime, utctDay
+                                                 , addGregorianYearsRollOver
+                                                 , formatTime, defaultTimeLocale )
 import           System.Exit                     ( die )
 import           Text.Pretty.Simple
     ( pPrintOpt, CheckColorTty(..), defaultOutputOptionsDarkBg
@@ -85,6 +88,7 @@ data AccesOpts = AccesOpts
     , acTech          :: Bool
     , acInfos         :: Bool
     , acPubliees      :: Bool
+    , acDuree         :: Maybe Int   -- Just N = durée N ans calculée auto
     } deriving (Show)
 
 newtype RevoquerOpts = RevoquerOpts { rvId :: String } deriving (Show)
@@ -206,6 +210,11 @@ accesParser = AccesOpts
     <*> switch ( long "techniques"     <> help "Accès données techniques" )
     <*> switch ( long "informatives"   <> help "Accès données informatives" )
     <*> switch ( long "publiees"       <> help "Accès données publiées" )
+    <*> optional
+          (   flag' 1 (long "1an"  <> help "Durée 1 an  : dates calculées automatiquement")
+          <|> flag' 2 (long "2ans" <> help "Durée 2 ans : dates calculées automatiquement")
+          <|> flag' 3 (long "3ans" <> help "Durée 3 ans : dates calculées automatiquement")
+          )
 
 
 revoquerParser :: Parser RevoquerOpts
@@ -256,7 +265,18 @@ aideAcces = vsep
     , pretty ("  aci : régime d'Autorisation pour accéder au Contrat d'Injection" :: String)
     , pretty ("  dci : régime de Détention du Contrat d'Injection" :: String)
     , pretty ("" :: String)
-    , pretty ("Exemple :" :: String)
+    , pretty ("Durée automatique (--1an / --2ans / --3ans) :" :: String)
+    , pretty ("  début accès  = aujourd'hui" :: String)
+    , pretty ("  fin accès    = aujourd'hui + N ans" :: String)
+    , pretty ("  début conso  = aujourd'hui − 5 ans" :: String)
+    , pretty ("  fin conso    = aujourd'hui + N ans" :: String)
+    , pretty ("" :: String)
+    , pretty ("Exemple avec durée automatique :" :: String)
+    , pretty ("  conso-gaz-adict declarer --pce 12345678901234 --cp 75001 \\" :: String)
+    , pretty ("    --nom 'Dupont Jean' --email client@example.com --2ans \\" :: String)
+    , pretty ("    --contractuelles --techniques --informatives --publiees" :: String)
+    , pretty ("" :: String)
+    , pretty ("Exemple avec dates manuelles :" :: String)
     , pretty ("  conso-gaz-adict declarer --pce 12345678901234 --cp 75001 --role acf \\" :: String)
     , pretty ("    --raison 'Ma Société SAS' --email client@example.com \\" :: String)
     , pretty ("    --debut-acces 2024-01-01 --fin-acces 2025-01-01 \\" :: String)
@@ -322,6 +342,15 @@ run session raw cmd = case cmd of
 
     Acces ao -> do
         role <- expandRole (acRole ao)
+        (dDebutAcces, dFinAcces, dDebutConso, dFinConso) <- case acDuree ao of
+            Nothing -> return ( acDebutAcces ao, acFinAcces ao
+                              , acDebutConso ao, acFinConso ao )
+            Just n  -> do
+                today <- utctDay <$> getCurrentTime
+                let finDate    = addGregorianYearsRollOver (fromIntegral n) today
+                    debutConso = addGregorianYearsRollOver (-5) today
+                    fmt d      = Just (formatTime defaultTimeLocale "%Y-%m-%d" d)
+                return (fmt today, fmt finDate, fmt debutConso, fmt finDate)
         let demande = DemandeAccesIn
                 { din_role_tiers                        = role
                 , din_raison_sociale                    = fmap packT (acRaisonSociale ao)
@@ -329,10 +358,10 @@ run session raw cmd = case cmd of
                 , din_code_postal                       = packT (acCp ao)
                 , din_courriel_titulaire                = fmap packT (acEmail ao)
                 , din_numero_telephone_mobile_titulaire = fmap packT (acTel ao)
-                , din_date_debut_droit_acces            = fmap packT (acDebutAcces ao)
-                , din_date_fin_droit_acces              = fmap packT (acFinAcces ao)
-                , din_perim_donnees_conso_debut         = fmap packT (acDebutConso ao)
-                , din_perim_donnees_conso_fin           = fmap packT (acFinConso ao)
+                , din_date_debut_droit_acces            = fmap packT dDebutAcces
+                , din_date_fin_droit_acces              = fmap packT dFinAcces
+                , din_perim_donnees_conso_debut         = fmap packT dDebutConso
+                , din_perim_donnees_conso_fin           = fmap packT dFinConso
                 , din_perim_donnees_inj_debut           = Nothing
                 , din_perim_donnees_inj_fin             = Nothing
                 , din_perim_donnees_contractuelles      = flagToMaybe (acContrat ao)
