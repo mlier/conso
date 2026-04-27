@@ -3,8 +3,9 @@
 module Display.MesuresDetailDisplay () where
 
 import           Brick
-import           Data.List       (nub, sortBy)
+import           Data.List       (nub, sort)
 import qualified Data.Map.Strict as Map
+import           Data.Maybe (fromMaybe)
 import           Text.XML.HaXml.Schema.Schema (SimpleType(simpleTypeText))
 
 import           Display
@@ -55,13 +56,13 @@ renderGrandeur g =
 pointsHeader :: Widget ()
 pointsHeader =
     withAttr labelAttr $ ustr $
-    padTo 25 "Horodatage" ++ " | " ++ padTo 12 "Valeur" ++ " | " ++
+    padTo 25 "Horodatage" ++ " | " ++ padTo 6 "Valeur" ++ " | " ++
     padTo 5 "Pas" ++ " | N | iv"
 
 renderPoint :: Points -> Widget ()
 renderPoint p = ustr $
     padTo 25 (simpleTypeText $ points_d p) ++ " | " ++
-    padTo 12 (simpleTypeText $ points_v p) ++ " | " ++
+    lpad   6 (simpleTypeText $ points_v p) ++ " | " ++
     padTo 5  (maybe ""  simpleTypeText (points_p p)) ++ " | " ++
     maybe " " simpleTypeText (points_n  p)           ++ " | " ++
     maybe ""  simpleTypeText (points_iv p)
@@ -83,7 +84,7 @@ renderGrandeurType g =
         cts    = map ciCT  infos
         rows   = sortedDates cts
         pivot  = buildPivot cols cts
-        colWs  = map (dynColWidth pivot rows) (zip cols infos)
+        colWs  = zipWith (curry (dynColWidth pivot rows)) cols infos
     in section title $
         renderLegende infos
         : renderCalRow infos colWs
@@ -159,7 +160,7 @@ buildPivot keys cts = foldr insertCT Map.empty (zip keys cts)
 
 sortedDates :: [ClasseTemporelle] -> [String]
 sortedDates cts =
-    sortBy compare $ nub
+    sort $ nub
     [ simpleTypeText (valeur_d v)
     | ct <- cts, v <- classeTemporelle_valeur ct ]
 
@@ -205,11 +206,11 @@ renderSep colWs =
 
 renderPivotRow :: [String] -> [Int] -> PivotMap -> String -> Widget ()
 renderPivotRow cols colWs pivot d =
-    let cells = maybe Map.empty id (Map.lookup d pivot)
+    let cells = fromMaybe Map.empty (Map.lookup d pivot)
     in ustr $
        rpad dateW d ++
        concatMap (\(c, w) ->
-           " | " ++ lpad w (maybe "" id (Map.lookup c cells))
+           " | " ++ lpad w (fromMaybe "" (Map.lookup c cells))
        ) (zip cols colWs)
 
 
