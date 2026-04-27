@@ -2,6 +2,7 @@ module Display
   ( Renderable(..)
   , renderApp
   , ustr
+  , sText
   , field
   , maybeField
   , section
@@ -18,6 +19,7 @@ import           Brick
 import           Brick.Widgets.Border (borderWithLabel, border)
 import qualified Graphics.Vty         as V
 import qualified Data.Text            as T
+import           Text.XML.HaXml.Schema.Schema (SimpleType, simpleTypeText)
 
 
 -- | Typeclass associant chaque type de réponse à un widget brick.
@@ -31,6 +33,16 @@ class Renderable a where
 --   d'affichage Unicode via ses propres tables, indépendamment de la locale C.
 ustr :: String -> Widget n
 ustr = txt . T.pack
+
+-- | Like 'simpleTypeText' but resolves XML character entities (&amp; &lt; etc.).
+sText :: SimpleType a => a -> String
+sText x = T.unpack
+    . T.replace (T.pack "&amp;")  (T.pack "&")
+    . T.replace (T.pack "&lt;")   (T.pack "<")
+    . T.replace (T.pack "&gt;")   (T.pack ">")
+    . T.replace (T.pack "&quot;") (T.pack "\"")
+    . T.replace (T.pack "&apos;") (T.pack "'")
+    $ T.pack (simpleTypeText x)
 
 renderApp :: Renderable a => Either (String, String) a -> IO ()
 renderApp x = do

@@ -21,7 +21,7 @@ module Conso.Fr.Elec.Sge.Sge  where
 import           Control.Monad ( (>=>) )
 import           Control.Exception ( try, evaluate, catch, SomeException )
 import qualified Data.Text as T
-import           Data.Text.Encoding as T ( encodeUtf8 )
+import           Data.Text.Encoding as T ( encodeUtf8, decodeUtf8Lenient )
 import           Data.Text ( Text )
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.Encoding as LE
@@ -39,7 +39,7 @@ import           Network.HTTP.Client ( applyBasicAuth )
 
 import           Text.XML.Writer ( XML, node )
 import qualified Text.XML as X
-import           Data.ByteString ( ByteString )
+import           Data.ByteString ( ByteString, pack )
 import           Text.XML.HaXml
                     ( Element,
                       Content(CElem),
@@ -275,10 +275,21 @@ soapRequest envSge myUrlSge mySoapAction body = do
         ( if isVerbose then prettyBody else pure )
 
     xml <- invokeWS transport mySoapAction () body (RawParser id)
-    return $ L.unpack (LE.decodeUtf8 xml)
+    return $ fixDoubleUtf8 $ L.unpack (LE.decodeUtf8 xml)
     where
         withBasicAuth :: ByteString -> ByteString -> RequestProc
         withBasicAuth username passw req = pure (applyBasicAuth username passw req)
+
+
+-- Certaines réponses SGE sont double-encodées en UTF-8 côté serveur.
+-- Signature : des chars en 0x80–0xBF (octets de continuation UTF-8) apparaissent
+-- comme des caractères isolés, ce qui n'arrive jamais dans du texte bien formé.
+-- Si détecté, chaque Char est re-interprété comme un octet puis re-décodé en UTF-8.
+fixDoubleUtf8 :: String -> String
+fixDoubleUtf8 s
+    | any (\c -> let n = fromEnum c in n >= 0x80 && n <= 0xBF) s
+        = T.unpack . T.decodeUtf8Lenient . pack . map (fromIntegral . fromEnum) $ s
+    | otherwise = s
 
 
 xml2hsType :: (ResponseType a) => String -> XMLParser a -> String -> IO (Either (String, String) a)
