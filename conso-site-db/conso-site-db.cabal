@@ -22,6 +22,11 @@ library
         Conso.Fr.SiteDB.Registry.Operations
         -- Connexion SQLite core (sans migrations)
         Conso.Fr.SiteDB.Storage.Connection
+        -- Orchestration (logique métier partagée)
+        Conso.Fr.SiteDB.Orchestration.Types
+        Conso.Fr.SiteDB.Orchestration.Adresses
+        Conso.Fr.SiteDB.Orchestration.Prm
+        Conso.Fr.SiteDB.Orchestration.Pce
 
     build-depends:
           base >=4.17 && <5
@@ -31,5 +36,26 @@ library
         , sqlite-simple
         , directory
         , filepath
+        , conso-elec-sge
+        , conso-gaz-adict
+        , HaXml
+
     hs-source-dirs:   src
     default-language: Haskell2010
+
+executable conso-registre
+    import:           warnings
+    main-is:          Main.hs
+    other-modules:    Display
+    hs-source-dirs:   app
+    build-depends:
+          base              >= 4.17 && < 5
+        , conso-site-db
+        , conso-gaz-adict
+        , text
+        , uuid
+        , optparse-applicative
+        , directory
+        , filepath
+    default-language: Haskell2010
+    ghc-options:      -threaded

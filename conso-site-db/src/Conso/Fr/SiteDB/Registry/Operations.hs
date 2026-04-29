@@ -10,6 +10,7 @@ module Conso.Fr.SiteDB.Registry.Operations
   ( createSite
   , lookupByPrm
   , lookupByPce
+  , lookupBySiteId
   , lookupOrCreateByPrm
   , lookupOrCreateByPce
   , linkPce
@@ -73,6 +74,25 @@ lookupOrCreateByPce conn pce = do
   case mSite of
     Just siteId -> return siteId
     Nothing     -> createSite conn Nothing (Just pce) Nothing
+
+-- | Recherche un site par son 'SiteId'. Retourne @Nothing@ s'il n'existe pas.
+lookupBySiteId :: Connection -> SiteId -> IO (Maybe SiteRef)
+lookupBySiteId conn (SiteId uuid) = do
+  rows <- query conn
+    "SELECT uuid, prm, pce, label FROM site_registry WHERE uuid = ?"
+    (Only (UUID.toText uuid)) :: IO [(Text, Maybe Text, Maybe Text, Maybe Text)]
+  return $ case rows of
+    [(u, p, c, l)] -> Just SiteRef
+      { srSiteId = SiteId (parseUuid u)
+      , srPrm    = Prm <$> p
+      , srPce    = Pce <$> c
+      , srLabel  = l
+      }
+    _ -> Nothing
+  where
+    parseUuid t = case UUID.fromText t of
+      Just u  -> u
+      Nothing -> error $ "UUID invalide dans le registre : " ++ T.unpack t
 
 -- | Associe un PCE à un site existant identifié par son 'SiteId'.
 linkPce :: Connection -> SiteId -> Pce -> IO ()

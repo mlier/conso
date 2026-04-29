@@ -59,11 +59,11 @@ encodeText :: A.ToJSON a => a -> Text
 encodeText = TE.decodeUtf8 . LBS.toStrict . A.encode
 
 adictErrorToText :: AdictError -> Text
-adictErrorToText (HttpError code body) =
-    "HTTP " <> T.pack (show code) <> ": " <> body
-adictErrorToText (ParseError msg)   = "Parse error: " <> msg
-adictErrorToText (AuthError msg)    = "Auth error: " <> msg
-adictErrorToText (NetworkError msg) = "Network error: " <> msg
+adictErrorToText (HttpError code body)      = "HTTP " <> T.pack (show code) <> ": " <> body
+adictErrorToText (ParseError msg)           = "Parse error: " <> msg
+adictErrorToText (AuthError msg)            = "Auth error: " <> msg
+adictErrorToText (NetworkError msg)         = "Network error: " <> msg
+adictErrorToText (FunctionalError code msg) = "Erreur métier " <> code <> ": " <> msg
 
 -- | Infère la granularité depuis la valeur de période ADICT.
 -- Une valeur de 10 caractères (\"YYYY-MM-DD\") correspond à une journée gazière.
@@ -82,7 +82,7 @@ toGazConso td cr = do
   pure GazConso
     { gcDateDebut       = d1
     , gcDateFin         = d2
-    , gcPeriode         = inferPeriode (valeur <$> per)
+    , gcPeriode         = inferPeriode (per >>= valeur)
     , gcTypeDonnee      = td
     , gcEnergie         = conso >>= energie
     , gcVolumeBrut      = conso >>= volume_brut
@@ -103,7 +103,7 @@ toGazInjection td ir = do
   pure GazInjection
     { giDateDebut      = d1
     , giDateFin        = d2
-    , giPeriode        = inferPeriode (valeur <$> per)
+    , giPeriode        = inferPeriode (per >>= valeur)
     , giTypeDonnee     = td
     , giEnergie        = inj >>= inj_energie
     , giVolumeBrut     = inj >>= inj_volume_brut
