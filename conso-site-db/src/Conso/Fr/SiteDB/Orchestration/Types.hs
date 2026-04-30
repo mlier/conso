@@ -7,6 +7,7 @@ module Conso.Fr.SiteDB.Orchestration.Types
   , InscriptionPrmParams(..)
   , InscriptionPceParams(..)
   , InscriptionResult(..)
+  , SgeAbonnement(..)
   , VerifAdresse(..)
   ) where
 
@@ -49,10 +50,12 @@ data InscriptionPceParams = InscriptionPceParams
   , ipeRattachement :: Rattachement
   } deriving (Show)
 
+data SgeAbonnement = SgeNouveau | SgeRenouvele deriving (Show)
+
 data InscriptionResult = InscriptionResult
   { irSiteId      :: SiteId
   , irCreated     :: Bool
-  , irSgeResults  :: [(TypeFlux, Either (String, String) ())]
+  , irSgeResults  :: [(TypeFlux, Either (String, String) SgeAbonnement)]
   , irAdictResult :: Maybe (Either String Text)
   } deriving (Show)
 

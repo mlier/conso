@@ -7,6 +7,7 @@ module Display
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
+import Data.Foldable (forM_)
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
@@ -18,15 +19,12 @@ afficherResultat r = do
       tag = if irCreated r then " (nouveau)" else " (existant)"
   putStrLn $ "Site UUID : " <> UUID.toString uuid <> tag
   mapM_ afficherSge (irSgeResults r)
-  case irAdictResult r of
-    Nothing  -> return ()
-    Just res -> afficherAdict res
+  forM_ (irAdictResult r) afficherAdict
 
-afficherSge :: (TypeFlux, Either (String, String) ()) -> IO ()
-afficherSge (t, Right ()) =
-  putStrLn $ "  SGE " <> show t <> " : souscrit"
-afficherSge (t, Left (code, lbl)) =
-  putStrLn $ "  SGE " <> show t <> " : " <> code <> " — " <> lbl
+afficherSge :: (TypeFlux, Either (String, String) SgeAbonnement) -> IO ()
+afficherSge (t, Right SgeNouveau)   = putStrLn $ "  SGE " <> show t <> " : souscrit"
+afficherSge (t, Right SgeRenouvele) = putStrLn $ "  SGE " <> show t <> " : renouvelé"
+afficherSge (t, Left (code, lbl))   = putStrLn $ "  SGE " <> show t <> " : " <> code <> " — " <> lbl
 
 afficherAdict :: Either String Text -> IO ()
 afficherAdict (Right idAcces) =

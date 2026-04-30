@@ -3,11 +3,13 @@ module Conso.Fr.SiteDB.Orchestration.Prm
   ( inscrirePrm
   ) where
 
-import Control.Monad (forM, when)
-import Data.Maybe (isNothing)
+import Control.Monad (forM, when, void)
+import Data.Maybe (isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-
+import qualified Data.Map.Strict as Map
+import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
+import System.IO (hPutStrLn, stderr)
 
 import Database.SQLite.Simple (Connection)
 
@@ -18,6 +20,18 @@ import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
   )
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
   (CommanderServicesAccesDonneesResponseType)
+
+import qualified Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10 as RSD
+import           Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
+  ( RechercherServicesAccesDonneesReponseType(..)
+  , ServicesSouscritsType(..)
+  , ServiceSouscritType(..)
+  )
+import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
+  ( MesureTypeCodeType(..), Chaine15Type(..) )
+import qualified Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 as RRen
+import           Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
+  (RenouvelerServicesAccesResponseType)
 
 import Conso.Fr.Gaz.Adict.Adict (AdictSession)
 
@@ -33,7 +47,7 @@ import Conso.Fr.SiteDB.Orchestration.Adresses (verifierAdresses)
 inscrirePrm :: Connection -> Bool -> Bool -> Maybe AdictSession -> InscriptionPrmParams -> IO InscriptionResult
 inscrirePrm conn prod verbose mSession params = do
   (siteId, created) <- resoudreSite
-  sgeResults <- abonnerSge prod (ippPrm params) (ippAccord params) (ippTypes params)
+  sgeResults <- abonnerSge prod verbose (ippPrm params) (ippAccord params) (ippTypes params)
   return $ InscriptionResult siteId created sgeResults Nothing
   where
     prm = Prm (ippPrm params)
@@ -109,17 +123,84 @@ checkAdresses verbose prod session prmT pceT False = do
       fail $ "Vérification d'adresse impossible : " <> e
 
 
-abonnerSge :: Bool -> Text -> Accord -> [TypeFlux] -> IO [(TypeFlux, Either (String, String) ())]
-abonnerSge prod prmT accord types = forM types $ \t -> do
-  r <- subscribeSge prod prmT accord t
-  return (t, r)
+logV :: Bool -> String -> IO ()
+logV True  msg = hPutStrLn stderr $ "[verbose] " <> msg
+logV False _   = return ()
+
+
+abonnerSge :: Bool -> Bool -> Text -> Accord -> [TypeFlux] -> IO [(TypeFlux, Either (String, String) SgeAbonnement)]
+abonnerSge prod verbose prmT accord types = do
+  actifMap <- rechercherServicesActifs prod verbose prmT
+  forM types $ \t -> do
+    r <- case Map.lookup (typeFluxToStr t) actifMap of
+           Just sid -> do
+             logV verbose $ "SGE renouveler " <> typeFluxToStr t <> " (sid=" <> sid <> ")"
+             raw <- renouvelerSge prod prmT accord sid
+             let result = case raw of
+                   Left ("SGT570", _) -> Right ()
+                   other              -> other
+             return $ fmap (const SgeRenouvele) result
+           Nothing  -> do
+             logV verbose $ "SGE souscrire " <> typeFluxToStr t
+             fmap (const SgeNouveau)  <$> subscribeSge prod prmT accord t
+    return (t, r)
+
+
+rechercherServicesActifs :: Bool -> Bool -> Text -> IO (Map.Map String String)
+rechercherServicesActifs prod verbose prmT = do
+  logV verbose $ "SGE RechercherServicesAccesDonnees → PRM " <> T.unpack prmT
+  req <- if prod then RSD.initType prmStr else RSD.initTypeTest prmStr
+  resp <- (if prod then RSD.wsRequest else RSD.wsRequestTest) req
+            :: IO (Either (String, String) RechercherServicesAccesDonneesReponseType)
+  case resp of
+    Left (code, lbl) -> do
+      logV verbose $ "SGE RechercherServicesAccesDonnees erreur : " <> code <> " " <> lbl
+      return Map.empty
+    Right r -> do
+      let services = maybe [] servicesSouscritsType_serviceSouscrit
+                       (rechercherServicesAccesDonneesReponseType_servicesSouscrits r)
+          pairs = mapMaybe toPair services
+      logV verbose $ "SGE services actifs : "
+        <> show [ (c, e, sid)
+                | s <- services
+                , let e   = concatMap (\x -> [simpleText15 x]) (serviceSouscritType_etatCode s)
+                      sid = simpleText15 (serviceSouscritType_serviceSouscritId s)
+                      c   = maybe "?" simpleText (serviceSouscritType_mesuresTypeCode s)
+                ]
+      return (Map.fromList pairs)
+  where
+    prmStr = T.unpack prmT
+    toPair s =
+      let etats = map simpleText15 (serviceSouscritType_etatCode s)
+      in if "ACTIF" `notElem` etats then Nothing
+         else case serviceSouscritType_mesuresTypeCode s of
+           Nothing   -> Nothing
+           Just code ->
+             let codeStr = simpleText code
+                 sidStr  = simpleText15 (serviceSouscritType_serviceSouscritId s)
+             in Just (codeStr, sidStr)
+    simpleText  (MesureTypeCodeType (Xsd.XsdString s)) = s
+    simpleText15 (Chaine15Type (Xsd.XsdString s))      = s
+
+
+renouvelerSge :: Bool -> Text -> Accord -> String -> IO (Either (String, String) ())
+renouvelerSge prod prmT accord sid = do
+  req <- mkInit (T.unpack prmT) RRen.SensSOUTIRAGE accordType [sid] (Just 730)
+  resp <- mkWs req :: IO (Either (String, String) RenouvelerServicesAccesResponseType)
+  return $ void resp
+  where
+    accordType = case accord of
+      AccordNom nom        -> RRen.AccordPersonnePhysiqueNom (T.unpack nom)
+      AccordDenomination d -> RRen.AccordPersonneMoraleDenominationSociale (T.unpack d)
+    mkInit = if prod then RRen.initType else RRen.initTypeTest
+    mkWs   = if prod then RRen.wsRequest else RRen.wsRequestTest
 
 
 subscribeSge :: Bool -> Text -> Accord -> TypeFlux -> IO (Either (String, String) ())
 subscribeSge prod prmT accord t = do
   req <- mkInit (T.unpack prmT) SensSOUTIRAGE (Just accordType) (typeFluxToStr t) (Just 730)
   resp <- mkWs req :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
-  return $ fmap (const ()) resp
+  return $ void resp
   where
     accordType = case accord of
       AccordNom nom        -> AccordPersonnePhysiqueNom (T.unpack nom)
