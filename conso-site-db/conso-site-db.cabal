@@ -27,6 +27,7 @@ library
         Conso.Fr.SiteDB.Orchestration.Adresses
         Conso.Fr.SiteDB.Orchestration.Prm
         Conso.Fr.SiteDB.Orchestration.Pce
+        Conso.Fr.SiteDB.Orchestration.Desinscription
 
     build-depends:
           base >=4.17 && <5
@@ -53,6 +54,7 @@ executable conso-registre
           base              >= 4.17 && < 5
         , conso-site-db
         , conso-gaz-adict
+        , sqlite-simple
         , text
         , uuid
         , optparse-applicative

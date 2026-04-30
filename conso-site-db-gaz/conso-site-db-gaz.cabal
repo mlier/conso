@@ -20,6 +20,7 @@ library
         Conso.Fr.Gaz.SiteDB.Storage.Migration
         Conso.Fr.Gaz.SiteDB.Storage.Insert
         Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
+        Conso.Fr.Gaz.SiteDB.Storage.Delete
     build-depends:
           base >=4.17 && <5
         , conso-site-db

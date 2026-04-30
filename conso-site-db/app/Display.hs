@@ -2,6 +2,7 @@
 module Display
   ( afficherResultat
   , afficherSites
+  , afficherDesinscription
   ) where
 
 import Data.Text (Text)
@@ -11,6 +12,7 @@ import Data.Foldable (forM_)
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
+import Conso.Fr.SiteDB.Orchestration.Desinscription (DesinscriptionResult(..))
 
 
 afficherResultat :: InscriptionResult -> IO ()
@@ -32,6 +34,17 @@ afficherAdict (Right idAcces) =
 afficherAdict (Left err) =
   putStrLn $ "  ADICT : erreur — " <> err
 
+
+afficherDesinscription :: DesinscriptionResult -> IO ()
+afficherDesinscription r = do
+  let (SiteId uuid) = drSiteId r
+      tag = if drSiteDeleted r then " (supprimé)" else " (données effacées)"
+  putStrLn $ "Site UUID : " <> UUID.toString uuid <> tag
+  mapM_ afficherArret (drSgeResults r)
+
+afficherArret :: (String, Either (String, String) ()) -> IO ()
+afficherArret (sid, Right ())        = putStrLn $ "  SGE " <> sid <> " : arrêté"
+afficherArret (sid, Left (code, lbl)) = putStrLn $ "  SGE " <> sid <> " : " <> code <> " — " <> lbl
 
 afficherSites :: [SiteRef] -> IO ()
 afficherSites [] = putStrLn "(aucun site inscrit)"

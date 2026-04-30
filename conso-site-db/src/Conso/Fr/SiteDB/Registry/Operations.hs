@@ -15,6 +15,9 @@ module Conso.Fr.SiteDB.Registry.Operations
   , lookupOrCreateByPce
   , linkPce
   , linkPrm
+  , unlinkPrm
+  , unlinkPce
+  , deleteFromRegistry
   , listSites
   ) where
 
@@ -107,6 +110,21 @@ linkPrm conn (SiteId uuid) (Prm prm) =
   execute conn
     "UPDATE site_registry SET prm = ? WHERE uuid = ?"
     (prm, UUID.toText uuid)
+
+-- | Dissocie le PRM d'un site (SET prm = NULL).
+unlinkPrm :: Connection -> SiteId -> IO ()
+unlinkPrm conn (SiteId uuid) =
+  execute conn "UPDATE site_registry SET prm = NULL WHERE uuid = ?" (Only (UUID.toText uuid))
+
+-- | Dissocie le PCE d'un site (SET pce = NULL).
+unlinkPce :: Connection -> SiteId -> IO ()
+unlinkPce conn (SiteId uuid) =
+  execute conn "UPDATE site_registry SET pce = NULL WHERE uuid = ?" (Only (UUID.toText uuid))
+
+-- | Supprime un site du registre (ne supprime pas le fichier .db).
+deleteFromRegistry :: Connection -> SiteId -> IO ()
+deleteFromRegistry conn (SiteId uuid) =
+  execute conn "DELETE FROM site_registry WHERE uuid = ?" (Only (UUID.toText uuid))
 
 -- | Liste tous les sites du registre.
 listSites :: Connection -> IO [SiteRef]

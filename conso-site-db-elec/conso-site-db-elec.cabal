@@ -30,6 +30,7 @@ library
         Conso.Fr.Elec.SiteDB.Storage.Insert
         Conso.Fr.Elec.SiteDB.Storage.Query
         Conso.Fr.Elec.SiteDB.Storage.Gaps
+        Conso.Fr.Elec.SiteDB.Storage.Delete
         Conso.Fr.Elec.SiteDB.Ingestion.Parser
         Conso.Fr.Elec.SiteDB.Ingestion.Versioning
         Conso.Fr.Elec.SiteDB.Ingestion.Batch

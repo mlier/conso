@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Exception (catch, SomeException, displayException)
+import Control.Exception (catch, try, SomeException, displayException)
+import Database.SQLite.Simple (Connection, execute_)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import Data.Maybe (fromMaybe)
@@ -12,10 +13,13 @@ import System.FilePath ((</>))
 import Conso.Fr.Gaz.Adict.Adict (initSession)
 import Conso.Fr.SiteDB.Registry (withRegistry)
 import Conso.Fr.SiteDB.Registry.Operations (listSites)
+import Conso.Fr.SiteDB.Types (SiteId(..))
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Prm (inscrirePrm)
 import Conso.Fr.SiteDB.Orchestration.Pce (inscrirePce)
-import Display (afficherResultat, afficherSites)
+import Conso.Fr.SiteDB.Orchestration.Desinscription
+  ( DesinscriptionCallbacks(..), desinscrirePrm, desinscrirePce, supprimerSite )
+import Display (afficherResultat, afficherSites, afficherDesinscription)
 
 
 -- ---------------------------------------------------------------------------
@@ -32,6 +36,9 @@ data Command
   = CmdInscrirePrm InscriptionPrmParams (Maybe Rattachement')
   | CmdInscrirePce InscriptionPceParams (Maybe Rattachement')
   | CmdLister
+  | CmdSupprimerPrm  SiteId
+  | CmdSupprimerPce  SiteId
+  | CmdSupprimerTout SiteId
 
 data Rattachement'
   = RPce String Bool
@@ -79,6 +86,41 @@ runCommand configDir _ _ CmdLister =
     sites <- listSites conn
     afficherSites sites
 
+runCommand configDir prod verbose (CmdSupprimerPrm siteId) = do
+  let siteDbDir = configDir </> "sites"
+      callbacks = DesinscriptionCallbacks deleteElecData deleteGazData
+  withRegistry configDir $ \conn -> do
+    result <- desinscrirePrm conn siteDbDir prod verbose callbacks siteId
+    afficherDesinscription result
+
+runCommand configDir _ _ (CmdSupprimerPce siteId) = do
+  let siteDbDir = configDir </> "sites"
+      callbacks = DesinscriptionCallbacks deleteElecData deleteGazData
+  withRegistry configDir $ \conn -> do
+    result <- desinscrirePce conn siteDbDir callbacks siteId
+    afficherDesinscription result
+
+runCommand configDir prod verbose (CmdSupprimerTout siteId) =
+  withRegistry configDir $ \conn -> do
+    let siteDbDir = configDir </> "sites"
+    result <- supprimerSite conn siteDbDir prod verbose siteId
+    afficherDesinscription result
+
+
+-- Les fonctions de suppression sont définies ici car l'exécutable ne peut pas importer
+-- conso-site-db-elec/conso-site-db-gaz sans créer un cycle de dépendances (ces packages
+-- dépendent de conso-site-db). Les modules Delete.hs dans les extensions sont la référence
+-- autoritaire pour les futurs consommateurs (ex. API web).
+deleteElecData :: Connection -> IO ()
+deleteElecData conn = mapM_ del
+  ["ingestion_log", "curve_points", "index_values", "daily_energy", "daily_pmax", "billing_measures", "prm_info"]
+  where del t = (try (execute_ conn ("DELETE FROM " <> t)) :: IO (Either SomeException ())) >> return ()
+
+deleteGazData :: Connection -> IO ()
+deleteGazData conn = mapM_ del
+  ["gaz_ingestion_log", "gaz_consos", "gaz_injections", "gaz_infos_contractuelles", "gaz_infos_techniques"]
+  where del t = (try (execute_ conn ("DELETE FROM " <> t)) :: IO (Either SomeException ())) >> return ()
+
 
 resolveRattPrm :: Maybe Rattachement' -> Rattachement
 resolveRattPrm Nothing              = Standalone
@@ -106,14 +148,15 @@ globalParser = GlobalOpts
   <*> switch (long "sandbox" <> help "Utiliser les serveurs sandbox/homologation (défaut : production)")
   <*> switch (long "verbose" <> short 'v' <> help "Afficher les détails des appels API")
   <*> subparser
-    (  command "inscrire" (info inscrireParser (progDesc "Inscrire un PRM ou PCE"))
-    <> command "lister"   (info (pure CmdLister) (progDesc "Lister les sites inscrits"))
+    (  command "lister"    (info (pure CmdLister <**> helper) (progDesc "Lister les sites inscrits"))
+    <> command "inscrire"  (info (inscrireParser  <**> helper) (progDesc "Inscrire un PRM ou PCE"))
+    <> command "supprimer" (info (supprimerParser <**> helper) (progDesc "Supprimer un PRM, PCE ou site"))
     )
 
 inscrireParser :: Parser Command
 inscrireParser = subparser
-  (  command "prm" (info prmParser (progDesc "Inscrire un PRM (Enedis SGE)"))
-  <> command "pce" (info pceParser (progDesc "Inscrire un PCE (GRDF ADICT)"))
+  (  command "prm" (info (prmParser <**> helper) (progDesc "Inscrire un PRM (Enedis SGE)"))
+  <> command "pce" (info (pceParser <**> helper) (progDesc "Inscrire un PCE (GRDF ADICT)"))
   )
 
 prmParser :: Parser Command
@@ -157,6 +200,20 @@ rattachementPceParser =
 
 forceFlag :: Parser Bool
 forceFlag = switch (long "force" <> help "Ignorer la vérification de code postal")
+
+supprimerParser :: Parser Command
+supprimerParser = subparser
+  (  command "prm"  (info (CmdSupprimerPrm  <$> uuidArg "UUID du site dont le PRM doit être supprimé" <**> helper) (progDesc "Arrêt SGE + suppression données élec"))
+  <> command "pce"  (info (CmdSupprimerPce  <$> uuidArg "UUID du site dont le PCE doit être supprimé" <**> helper) (progDesc "Suppression données gaz"))
+  <> command "tout" (info (CmdSupprimerTout <$> uuidArg "UUID du site à supprimer entièrement"         <**> helper) (progDesc "Suppression complète du site (arrêt SGE si PRM + suppression fichier .db)"))
+  )
+
+uuidArg :: String -> Parser SiteId
+uuidArg h = argument (eitherReader parseUUID) (metavar "UUID" <> help h)
+  where
+    parseUUID s = case UUID.fromString s of
+      Just u  -> Right (SiteId u)
+      Nothing -> Left $ "UUID invalide : " <> s
 
 parseTypeFlux :: String -> Either String TypeFlux
 parseTypeFlux "CDC"     = Right CDC
