@@ -21,9 +21,16 @@ import           System.Directory       (createDirectoryIfMissing)
 import qualified Data.UUID              as UUID
 import           Conso.Fr.SiteDB.Types  (SiteId(..))
 
--- | Calcule le chemin SQLite d'un site : @siteDbDir/{uuid}.db@
+-- | Calcule le chemin SQLite d'un site avec sharding 2 niveaux × 2 chars hex.
+-- Exemple : UUID "550e8400-e29b-41d4-a716-446655440000"
+--   → siteDbDir/55/0e/550e8400-e29b-41d4-a716-446655440000.db
+-- 65 536 répertoires feuilles possibles (~457 fichiers/répertoire pour 30M sites).
 siteDbPath :: FilePath -> SiteId -> FilePath
-siteDbPath siteDbDir (SiteId uuid) = siteDbDir </> UUID.toString uuid <.> "db"
+siteDbPath siteDbDir (SiteId uuid) =
+  let uuidStr = UUID.toString uuid
+      shard1  = take 2 uuidStr
+      shard2  = take 2 (drop 2 uuidStr)
+  in siteDbDir </> shard1 </> shard2 </> uuidStr <.> "db"
 
 -- | Ouvre (ou crée) la base SQLite d'un site.
 -- Crée le répertoire si absent, applique les PRAGMA.

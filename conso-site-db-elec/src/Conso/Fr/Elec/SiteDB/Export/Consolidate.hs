@@ -6,7 +6,7 @@ Description : Consolidation et requêtes multi-site sur les bases SiteDB
 
 Fournit trois fonctions pour travailler sur l'ensemble des bases site :
 
-  * 'listAllSiteDbs'      — liste tous les fichiers @{uuid}.db@ dans le répertoire plat
+  * 'listAllSiteDbs'      — liste tous les fichiers @{uuid}.db@ dans l'arborescence shardée
   * 'consolidateAllSites' — itère sur chaque base site, une connexion à la fois
   * 'attachAndQuery'      — attache jusqu'à ~125 bases via @ATTACH DATABASE@
 
@@ -26,6 +26,7 @@ import           Data.Maybe             (catMaybes)
 import           System.FilePath        ((</>), takeBaseName)
 import           System.Directory       (listDirectory)
 import           Control.Exception      (try, SomeException)
+import           Control.Monad          (forM)
 import qualified Data.UUID              as UUID
 import           Conso.Fr.SiteDB.Types                        (SiteId(..))
 import           Conso.Fr.Elec.SiteDB.Storage.Connection (siteDbPath)
@@ -81,18 +82,23 @@ consolidateAllSites siteDbDir extractor = do
         Left  (_ex :: SomeException) -> return Nothing
         Right pair                   -> return (Just pair)
 
--- | Liste tous les fichiers @{uuid}.db@ présents dans le répertoire plat.
--- Chaque entrée associe le 'SiteId' (UUID déduit du nom de fichier) au chemin absolu.
--- Les fichiers dont le nom n'est pas un UUID valide sont ignorés.
+-- | Liste tous les fichiers @{uuid}.db@ dans l'arborescence shardée 2 niveaux.
+-- Structure : @siteDbDir/XX/YY/{uuid}.db@
+-- Les entrées dont le nom n'est pas un UUID valide sont ignorées.
 listAllSiteDbs :: FilePath -> IO [(SiteId, FilePath)]
 listAllSiteDbs siteDbDir = do
-  entries <- safeListDir siteDbDir
-  return
-    [ (SiteId uuid, siteDbDir </> f)
-    | f <- entries
-    , ".db" `T.isSuffixOf` T.pack f
-    , Just uuid <- [UUID.fromString (takeBaseName f)]
-    ]
+  shards1 <- safeListDir siteDbDir
+  fmap concat $ forM shards1 $ \s1 -> do
+    shards2 <- safeListDir (siteDbDir </> s1)
+    fmap concat $ forM shards2 $ \s2 -> do
+      let leafDir = siteDbDir </> s1 </> s2
+      entries <- safeListDir leafDir
+      return
+        [ (SiteId uuid, leafDir </> f)
+        | f <- entries
+        , ".db" `T.isSuffixOf` T.pack f
+        , Just uuid <- [UUID.fromString (takeBaseName f)]
+        ]
 
 safeListDir :: FilePath -> IO [FilePath]
 safeListDir path = do
