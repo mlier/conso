@@ -21,6 +21,9 @@ library
         Conso.Fr.Gaz.SiteDB.Storage.Insert
         Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
         Conso.Fr.Gaz.SiteDB.Storage.Delete
+        Conso.Fr.Gaz.SiteDB.Orchestration.Adresse
+        Conso.Fr.Gaz.SiteDB.Orchestration.Inscription
+        Conso.Fr.Gaz.SiteDB.Cli
     build-depends:
           base >=4.17 && <5
         , conso-site-db
@@ -30,5 +33,7 @@ library
         , time
         , aeson
         , bytestring
+        , uuid >= 1.3
+        , optparse-applicative
     hs-source-dirs:   src
     default-language: Haskell2010

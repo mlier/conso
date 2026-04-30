@@ -42,9 +42,13 @@ library
         Conso.Fr.Elec.SiteDB.Export.CSV
         Conso.Fr.Elec.SiteDB.Export.JSON
         Conso.Fr.Elec.SiteDB.Export.Consolidate
+        Conso.Fr.Elec.SiteDB.Orchestration.Adresse
+        Conso.Fr.Elec.SiteDB.Orchestration.Inscription
+        Conso.Fr.Elec.SiteDB.Cli
     build-depends:
           base >=4.17 && <5
         , conso-site-db
+        , conso-elec-sge
         , sqlite-simple
         , text
         , time
@@ -54,5 +58,7 @@ library
         , bytestring
         , containers
         , uuid >= 1.3
+        , HaXml
+        , optparse-applicative
     hs-source-dirs:   src
     default-language: Haskell2010

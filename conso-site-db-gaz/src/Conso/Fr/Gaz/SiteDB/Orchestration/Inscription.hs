@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Conso.Fr.SiteDB.Orchestration.Pce
+module Conso.Fr.Gaz.SiteDB.Orchestration.Inscription
   ( inscrirePce
   ) where
 
@@ -7,8 +7,9 @@ import Control.Monad (when)
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time (getZonedTime, zonedTimeToLocalTime, localDay, addGregorianYearsRollOver, formatTime, defaultTimeLocale)
-
+import Data.Time
+  ( getZonedTime, zonedTimeToLocalTime, localDay
+  , addGregorianYearsRollOver, formatTime, defaultTimeLocale )
 
 import Database.SQLite.Simple (Connection)
 
@@ -17,20 +18,23 @@ import Conso.Fr.Gaz.Adict.DroitAcces (declarerDroitAcces)
 import Conso.Fr.Gaz.Adict.DroitsAcces (rechercherDroitsAcces)
 import Conso.Fr.Gaz.Adict.Types
   ( DemandeAccesIn(..), RetourDemandeAcces(..)
-  , FiltreAcces(..), DroitAcces(..), EtatDroitAcces(..)
-  )
+  , FiltreAcces(..), DroitAcces(..), EtatDroitAcces(..) )
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Registry.Operations
-  ( lookupByPce, lookupByPrm, lookupBySiteId
-  , createSite, linkPce
-  )
+  ( lookupByPce, lookupByPrm, lookupBySiteId, createSite, linkPce )
 import Conso.Fr.SiteDB.Orchestration.Types
-import Conso.Fr.SiteDB.Orchestration.Adresses (verifierAdresses)
+import Conso.Fr.SiteDB.Orchestration.Adresses (verifierCoherence)
+
+import Conso.Fr.Gaz.SiteDB.Orchestration.Adresse (codePostalPce)
 
 
-inscrirePce :: Connection -> Bool -> Bool -> AdictSession -> InscriptionPceParams -> IO InscriptionResult
-inscrirePce conn prod verbose session params = do
+inscrirePce :: Connection -> Bool -> Bool
+            -> AdictSession
+            -> Maybe GetCodePostal  -- ^ code postal PRM, fourni par conso-site-db-elec si disponible
+            -> InscriptionPceParams
+            -> IO InscriptionResult
+inscrirePce conn prod verbose session mGetCpPrm params = do
   (siteId, created) <- resoudreSite
   adictResult <- gererDroitAcces session (ipePce params) (ipeCodePostal params) (ipeEmail params) (ipeAccord params)
   return $ InscriptionResult siteId created [] (Just adictResult)
@@ -39,8 +43,8 @@ inscrirePce conn prod verbose session params = do
 
     resoudreSite = case ipeRattachement params of
       Standalone         -> creerOuTrouver conn pce
-      ParPrm prmT force  -> rattacherAuPrm conn prod verbose session pce (Prm prmT) force
-      ParSite uuid force -> rattacherAuSite conn prod verbose session pce (SiteId uuid) force
+      ParPrm prmT force  -> rattacherAuPrm conn prod verbose session mGetCpPrm pce (Prm prmT) force
+      ParSite uuid force -> rattacherAuSite conn prod verbose session mGetCpPrm pce (SiteId uuid) force
       ParPce _ _         -> fail "ParPce invalide dans inscrirePce"
 
 
@@ -54,25 +58,25 @@ creerOuTrouver conn pce = do
       return (sid, True)
 
 
-rattacherAuPrm :: Connection -> Bool -> Bool -> AdictSession -> Pce -> Prm -> Bool -> IO (SiteId, Bool)
-rattacherAuPrm conn prod verbose session pce@(Pce pceT) prm@(Prm prmT) force = do
+rattacherAuPrm :: Connection -> Bool -> Bool -> AdictSession -> Maybe GetCodePostal -> Pce -> Prm -> Bool -> IO (SiteId, Bool)
+rattacherAuPrm conn prod verbose session mGetCpPrm pce@(Pce pceT) prm@(Prm prmT) force = do
   mPrmSite <- lookupByPrm conn prm
   targetSiteId <- maybe (fail $ "PRM " <> T.unpack prmT <> " non inscrit dans le registre") return mPrmSite
   verifierConflitPce conn pce targetSiteId
-  checkAdresses verbose prod session prmT pceT force
+  checkAdresses verbose prod session mGetCpPrm prmT pceT force
   mPceSite <- lookupByPce conn pce
   when (isNothing mPceSite) $ linkPce conn targetSiteId pce
   return (targetSiteId, isNothing mPceSite)
 
 
-rattacherAuSite :: Connection -> Bool -> Bool -> AdictSession -> Pce -> SiteId -> Bool -> IO (SiteId, Bool)
-rattacherAuSite conn prod verbose session pce@(Pce pceT) siteId force = do
+rattacherAuSite :: Connection -> Bool -> Bool -> AdictSession -> Maybe GetCodePostal -> Pce -> SiteId -> Bool -> IO (SiteId, Bool)
+rattacherAuSite conn prod verbose session mGetCpPrm pce@(Pce pceT) siteId force = do
   mSite <- lookupBySiteId conn siteId
   site  <- maybe (fail $ "Site non trouvé dans le registre : " <> show siteId) return mSite
   verifierConflitPce conn pce siteId
-  case srPrm site of
-    Just (Prm prmT) -> checkAdresses verbose prod session prmT pceT force
-    Nothing         -> return ()
+  case (srPrm site, mGetCpPrm) of
+    (Just (Prm prmT), Just getCpPrm) -> checkAdresses verbose prod session (Just getCpPrm) prmT pceT force
+    _                                -> return ()
   mPceSite <- lookupByPce conn pce
   when (isNothing mPceSite) $ linkPce conn siteId pce
   return (siteId, isNothing mPceSite)
@@ -87,10 +91,10 @@ verifierConflitPce conn pce targetSiteId = do
     _ -> return ()
 
 
-checkAdresses :: Bool -> Bool -> AdictSession -> Text -> Text -> Bool -> IO ()
-checkAdresses _ _ _ _ _ True = return ()
-checkAdresses verbose prod session prmT pceT False = do
-  verif <- verifierAdresses verbose prod session prmT pceT
+checkAdresses :: Bool -> Bool -> AdictSession -> Maybe GetCodePostal -> Text -> Text -> Bool -> IO ()
+checkAdresses _ _ _ _ _ _ True = return ()
+checkAdresses verbose _prod session (Just getCpPrm) prmT pceT False = do
+  verif <- verifierCoherence verbose getCpPrm (codePostalPce session) prmT pceT
   case verif of
     CodePostauxIdentiques -> return ()
     Mismatch cpP cpC ->
@@ -99,6 +103,7 @@ checkAdresses verbose prod session prmT pceT False = do
           <> "\nUtilisez --force pour ignorer."
     VerifImpossible e ->
       fail $ "Vérification d'adresse impossible : " <> e
+checkAdresses _ _ _ Nothing _ _ False = return ()
 
 
 gererDroitAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> IO (Either String Text)
@@ -119,8 +124,8 @@ droitActif session pceT = do
         }
   result <- rechercherDroitsAcces session filtre
   return $ case result of
-    Left _    -> Nothing
-    Right []  -> Nothing
+    Left _      -> Nothing
+    Right []    -> Nothing
     Right (d:_) -> da_id_droit_acces d
 
 

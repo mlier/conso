@@ -9,11 +9,16 @@ module Conso.Fr.SiteDB.Orchestration.Types
   , InscriptionResult(..)
   , SgeAbonnement(..)
   , VerifAdresse(..)
+  , GetCodePostal
   ) where
 
 import Data.Text (Text)
 import Data.UUID (UUID)
 import Conso.Fr.SiteDB.Types (SiteId)
+
+-- | Abstraction fournie par une extension pour obtenir le code postal d'un point de livraison.
+-- Règle : toute extension gérant un point avec adresse physique doit exporter une valeur de ce type.
+type GetCodePostal = Text -> IO (Either String Text)
 
 data Accord
   = AccordNom Text

@@ -43,7 +43,7 @@ afficherDesinscription r = do
   mapM_ afficherArret (drSgeResults r)
 
 afficherArret :: (String, Either (String, String) ()) -> IO ()
-afficherArret (sid, Right ())        = putStrLn $ "  SGE " <> sid <> " : arrêté"
+afficherArret (sid, Right ())         = putStrLn $ "  SGE " <> sid <> " : arrêté"
 afficherArret (sid, Left (code, lbl)) = putStrLn $ "  SGE " <> sid <> " : " <> code <> " — " <> lbl
 
 afficherSites :: [SiteRef] -> IO ()

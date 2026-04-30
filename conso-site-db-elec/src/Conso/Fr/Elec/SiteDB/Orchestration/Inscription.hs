@@ -1,51 +1,40 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Conso.Fr.SiteDB.Orchestration.Prm
+module Conso.Fr.Elec.SiteDB.Orchestration.Inscription
   ( inscrirePrm
   ) where
 
 import Control.Monad (forM, when, void)
-import Data.Maybe (isNothing, mapMaybe)
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
-import qualified Text.XML.HaXml.Schema.PrimitiveTypes as Xsd
 import System.IO (hPutStrLn, stderr)
 
 import Database.SQLite.Simple (Connection)
 
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
-  ( initType, initTypeTest
-  , wsRequest, wsRequestTest
-  , AccordPersonneType(..), Sens(..)
-  )
+  ( initType, initTypeTest, wsRequest, wsRequestTest
+  , AccordPersonneType(..), Sens(..) )
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
   (CommanderServicesAccesDonneesResponseType)
-
-import qualified Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10 as RSD
-import           Conso.Fr.Elec.Sge.RechercherServicesAccesDonneesV10Type
-  ( RechercherServicesAccesDonneesReponseType(..)
-  , ServicesSouscritsType(..)
-  , ServiceSouscritType(..)
-  )
-import           Conso.Fr.Elec.Sge.EnedisDictionnaireTypeSimpleV50
-  ( MesureTypeCodeType(..), Chaine15Type(..) )
 import qualified Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 as RRen
-import           Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
+import Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10Type
   (RenouvelerServicesAccesResponseType)
-
-import Conso.Fr.Gaz.Adict.Adict (AdictSession)
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Registry.Operations
-  ( lookupByPrm, lookupByPce, lookupBySiteId
-  , createSite, linkPrm
-  )
+  ( lookupByPrm, lookupByPce, lookupBySiteId, createSite, linkPrm )
 import Conso.Fr.SiteDB.Orchestration.Types
-import Conso.Fr.SiteDB.Orchestration.Adresses (verifierAdresses)
+import Conso.Fr.SiteDB.Orchestration.Adresses (verifierCoherence)
+
+import Conso.Fr.Elec.SiteDB.Orchestration.Adresse (codePostalPrm, rechercherServicesActifs)
 
 
-inscrirePrm :: Connection -> Bool -> Bool -> Maybe AdictSession -> InscriptionPrmParams -> IO InscriptionResult
-inscrirePrm conn prod verbose mSession params = do
+inscrirePrm :: Connection -> Bool -> Bool
+            -> Maybe GetCodePostal  -- ^ code postal PCE, fourni par conso-site-db-gaz si disponible
+            -> InscriptionPrmParams
+            -> IO InscriptionResult
+inscrirePrm conn prod verbose mGetCpPce params = do
   (siteId, created) <- resoudreSite
   sgeResults <- abonnerSge prod verbose (ippPrm params) (ippAccord params) (ippTypes params)
   return $ InscriptionResult siteId created sgeResults Nothing
@@ -54,8 +43,8 @@ inscrirePrm conn prod verbose mSession params = do
 
     resoudreSite = case ippRattachement params of
       Standalone         -> creerOuTrouver conn prm
-      ParPce pceT force  -> rattacherAuPce conn prod verbose mSession prm (Pce pceT) force
-      ParSite uuid force -> rattacherAuSite conn prod verbose mSession prm (SiteId uuid) force
+      ParPce pceT force  -> rattacherAuPce conn prod verbose mGetCpPce prm (Pce pceT) force
+      ParSite uuid force -> rattacherAuSite conn prod verbose mGetCpPce prm (SiteId uuid) force
       ParPrm _ _         -> fail "ParPrm invalide dans inscrirePrm"
 
 
@@ -69,25 +58,25 @@ creerOuTrouver conn prm = do
       return (sid, True)
 
 
-rattacherAuPce :: Connection -> Bool -> Bool -> Maybe AdictSession -> Prm -> Pce -> Bool -> IO (SiteId, Bool)
-rattacherAuPce conn prod verbose mSession prm pce@(Pce pceT) force = do
+rattacherAuPce :: Connection -> Bool -> Bool -> Maybe GetCodePostal -> Prm -> Pce -> Bool -> IO (SiteId, Bool)
+rattacherAuPce conn prod verbose mGetCpPce prm pce@(Pce pceT) force = do
   mPceSite <- lookupByPce conn pce
   targetSiteId <- maybe (fail $ "PCE " <> T.unpack pceT <> " non inscrit dans le registre") return mPceSite
   verifierConflitPrm conn prm targetSiteId
-  verifierAdresseSiNecessaire verbose prod mSession (unPrm prm) pceT force
+  verifierAdresseSiNecessaire verbose prod mGetCpPce (unPrm prm) pceT force
   mPrmSite <- lookupByPrm conn prm
   when (isNothing mPrmSite) $ linkPrm conn targetSiteId prm
   return (targetSiteId, isNothing mPrmSite)
 
 
-rattacherAuSite :: Connection -> Bool -> Bool -> Maybe AdictSession -> Prm -> SiteId -> Bool -> IO (SiteId, Bool)
-rattacherAuSite conn prod verbose mSession prm siteId force = do
+rattacherAuSite :: Connection -> Bool -> Bool -> Maybe GetCodePostal -> Prm -> SiteId -> Bool -> IO (SiteId, Bool)
+rattacherAuSite conn prod verbose mGetCpPce prm siteId force = do
   mSite <- lookupBySiteId conn siteId
   site  <- maybe (fail $ "Site non trouvé dans le registre : " <> show siteId) return mSite
   verifierConflitPrm conn prm siteId
-  case (srPce site, mSession) of
-    (Just (Pce pceT), Just session) -> checkAdresses verbose prod session (unPrm prm) pceT force
-    _                               -> return ()
+  case (srPce site, mGetCpPce) of
+    (Just (Pce pceT), Just getCpPce) -> checkAdresses verbose prod getCpPce (unPrm prm) pceT force
+    _                                -> return ()
   mPrmSite <- lookupByPrm conn prm
   when (isNothing mPrmSite) $ linkPrm conn siteId prm
   return (siteId, isNothing mPrmSite)
@@ -102,17 +91,18 @@ verifierConflitPrm conn prm targetSiteId = do
     _ -> return ()
 
 
-verifierAdresseSiNecessaire :: Bool -> Bool -> Maybe AdictSession -> Text -> Text -> Bool -> IO ()
+verifierAdresseSiNecessaire :: Bool -> Bool -> Maybe GetCodePostal -> Text -> Text -> Bool -> IO ()
 verifierAdresseSiNecessaire _ _ _ _ _ True    = return ()
-verifierAdresseSiNecessaire verbose prod (Just s) p c False = checkAdresses verbose prod s p c False
+verifierAdresseSiNecessaire verbose prod (Just getCpPce) prmT pceT False =
+  checkAdresses verbose prod getCpPce prmT pceT False
 verifierAdresseSiNecessaire _ _ Nothing _ _ False =
-  fail "Session ADICT requise pour la vérification d'adresse (--pce)"
+  fail "GetCodePostal PCE requis pour la vérification d'adresse (--pce)"
 
 
-checkAdresses :: Bool -> Bool -> AdictSession -> Text -> Text -> Bool -> IO ()
+checkAdresses :: Bool -> Bool -> GetCodePostal -> Text -> Text -> Bool -> IO ()
 checkAdresses _ _ _ _ _ True = return ()
-checkAdresses verbose prod session prmT pceT False = do
-  verif <- verifierAdresses verbose prod session prmT pceT
+checkAdresses verbose prod getCpPce prmT pceT False = do
+  verif <- verifierCoherence verbose (codePostalPrm verbose prod) getCpPce prmT pceT
   case verif of
     CodePostauxIdentiques -> return ()
     Mismatch cpP cpC ->
@@ -123,14 +113,9 @@ checkAdresses verbose prod session prmT pceT False = do
       fail $ "Vérification d'adresse impossible : " <> e
 
 
-logV :: Bool -> String -> IO ()
-logV True  msg = hPutStrLn stderr $ "[verbose] " <> msg
-logV False _   = return ()
-
-
 abonnerSge :: Bool -> Bool -> Text -> Accord -> [TypeFlux] -> IO [(TypeFlux, Either (String, String) SgeAbonnement)]
 abonnerSge prod verbose prmT accord types = do
-  actifMap <- rechercherServicesActifs prod verbose prmT
+  actifMap <- rechercherServicesActifs verbose prod prmT
   forM types $ \t -> do
     r <- case Map.lookup (typeFluxToStr t) actifMap of
            Just sid -> do
@@ -142,45 +127,8 @@ abonnerSge prod verbose prmT accord types = do
              return $ fmap (const SgeRenouvele) result
            Nothing  -> do
              logV verbose $ "SGE souscrire " <> typeFluxToStr t
-             fmap (const SgeNouveau)  <$> subscribeSge prod prmT accord t
+             fmap (const SgeNouveau) <$> subscribeSge prod prmT accord t
     return (t, r)
-
-
-rechercherServicesActifs :: Bool -> Bool -> Text -> IO (Map.Map String String)
-rechercherServicesActifs prod verbose prmT = do
-  logV verbose $ "SGE RechercherServicesAccesDonnees → PRM " <> T.unpack prmT
-  req <- if prod then RSD.initType prmStr else RSD.initTypeTest prmStr
-  resp <- (if prod then RSD.wsRequest else RSD.wsRequestTest) req
-            :: IO (Either (String, String) RechercherServicesAccesDonneesReponseType)
-  case resp of
-    Left (code, lbl) -> do
-      logV verbose $ "SGE RechercherServicesAccesDonnees erreur : " <> code <> " " <> lbl
-      return Map.empty
-    Right r -> do
-      let services = maybe [] servicesSouscritsType_serviceSouscrit
-                       (rechercherServicesAccesDonneesReponseType_servicesSouscrits r)
-          pairs = mapMaybe toPair services
-      logV verbose $ "SGE services actifs : "
-        <> show [ (c, e, sid)
-                | s <- services
-                , let e   = concatMap (\x -> [simpleText15 x]) (serviceSouscritType_etatCode s)
-                      sid = simpleText15 (serviceSouscritType_serviceSouscritId s)
-                      c   = maybe "?" simpleText (serviceSouscritType_mesuresTypeCode s)
-                ]
-      return (Map.fromList pairs)
-  where
-    prmStr = T.unpack prmT
-    toPair s =
-      let etats = map simpleText15 (serviceSouscritType_etatCode s)
-      in if "ACTIF" `notElem` etats then Nothing
-         else case serviceSouscritType_mesuresTypeCode s of
-           Nothing   -> Nothing
-           Just code ->
-             let codeStr = simpleText code
-                 sidStr  = simpleText15 (serviceSouscritType_serviceSouscritId s)
-             in Just (codeStr, sidStr)
-    simpleText  (MesureTypeCodeType (Xsd.XsdString s)) = s
-    simpleText15 (Chaine15Type (Xsd.XsdString s))      = s
 
 
 renouvelerSge :: Bool -> Text -> Accord -> String -> IO (Either (String, String) ())
@@ -207,6 +155,11 @@ subscribeSge prod prmT accord t = do
       AccordDenomination d -> AccordPersonneMoraleDenominationSociale (T.unpack d)
     mkInit = if prod then initType else initTypeTest
     mkWs   = if prod then wsRequest else wsRequestTest
+
+
+logV :: Bool -> String -> IO ()
+logV True  msg = hPutStrLn stderr $ "[verbose] " <> msg
+logV False _   = return ()
 
 
 unPrm :: Prm -> Text
