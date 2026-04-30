@@ -132,6 +132,7 @@ pceParser = CmdInscrirePce
   <$> (InscriptionPceParams
         <$> (T.pack <$> argument str (metavar "PCE" <> help "Identifiant PCE (14 chiffres)"))
         <*> (T.pack <$> strOption (long "cp" <> metavar "CODE_POSTAL" <> help "Code postal du site"))
+        <*> optional (T.pack <$> strOption (long "email" <> metavar "EMAIL" <> help "Courriel du titulaire"))
         <*> accordParser
         <*> pure Standalone)
   <*> optional rattachementPceParser

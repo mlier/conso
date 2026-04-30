@@ -46,6 +46,7 @@ data InscriptionPrmParams = InscriptionPrmParams
 data InscriptionPceParams = InscriptionPceParams
   { ipePce          :: Text
   , ipeCodePostal   :: Text
+  , ipeEmail        :: Maybe Text
   , ipeAccord       :: Accord
   , ipeRattachement :: Rattachement
   } deriving (Show)

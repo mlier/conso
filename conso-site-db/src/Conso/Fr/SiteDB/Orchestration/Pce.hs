@@ -14,7 +14,11 @@ import Database.SQLite.Simple (Connection)
 
 import Conso.Fr.Gaz.Adict.Adict (AdictSession)
 import Conso.Fr.Gaz.Adict.DroitAcces (declarerDroitAcces)
-import Conso.Fr.Gaz.Adict.Types (DemandeAccesIn(..), RetourDemandeAcces(..))
+import Conso.Fr.Gaz.Adict.DroitsAcces (rechercherDroitsAcces)
+import Conso.Fr.Gaz.Adict.Types
+  ( DemandeAccesIn(..), RetourDemandeAcces(..)
+  , FiltreAcces(..), DroitAcces(..), EtatDroitAcces(..)
+  )
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Registry.Operations
@@ -28,7 +32,7 @@ import Conso.Fr.SiteDB.Orchestration.Adresses (verifierAdresses)
 inscrirePce :: Connection -> Bool -> Bool -> AdictSession -> InscriptionPceParams -> IO InscriptionResult
 inscrirePce conn prod verbose session params = do
   (siteId, created) <- resoudreSite
-  adictResult <- declarerAcces session (ipePce params) (ipeCodePostal params) (ipeAccord params)
+  adictResult <- gererDroitAcces session (ipePce params) (ipeCodePostal params) (ipeEmail params) (ipeAccord params)
   return $ InscriptionResult siteId created [] (Just adictResult)
   where
     pce = Pce (ipePce params)
@@ -97,8 +101,31 @@ checkAdresses verbose prod session prmT pceT False = do
       fail $ "Vérification d'adresse impossible : " <> e
 
 
-declarerAcces :: AdictSession -> Text -> Text -> Accord -> IO (Either String Text)
-declarerAcces session pceT cp accord = do
+gererDroitAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> IO (Either String Text)
+gererDroitAcces session pceT cp mEmail accord = do
+  mActif <- droitActif session pceT
+  case mActif of
+    Just idActif -> return $ Right idActif
+    Nothing      -> declarerAcces session pceT cp mEmail accord
+
+
+droitActif :: AdictSession -> Text -> IO (Maybe Text)
+droitActif session pceT = do
+  let filtre = FiltreAcces
+        { fa_role_tiers             = []
+        , fa_id_pce                 = [pceT]
+        , fa_statut_controle_preuve = []
+        , fa_etat_droit_acces       = [EtatActive]
+        }
+  result <- rechercherDroitsAcces session filtre
+  return $ case result of
+    Left _    -> Nothing
+    Right []  -> Nothing
+    Right (d:_) -> da_id_droit_acces d
+
+
+declarerAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> IO (Either String Text)
+declarerAcces session pceT cp mEmail accord = do
   today <- localDay . zonedTimeToLocalTime <$> getZonedTime
   let debut = formatTime defaultTimeLocale "%Y-%m-%d" today
       fin   = formatTime defaultTimeLocale "%Y-%m-%d" (addGregorianYearsRollOver 3 today)
@@ -107,7 +134,7 @@ declarerAcces session pceT cp accord = do
         , din_raison_sociale                    = raisonSociale
         , din_nom_titulaire                     = nomTitulaire
         , din_code_postal                       = cp
-        , din_courriel_titulaire                = Nothing
+        , din_courriel_titulaire                = mEmail
         , din_numero_telephone_mobile_titulaire = Nothing
         , din_date_debut_droit_acces            = Just (T.pack debut)
         , din_date_fin_droit_acces              = Just (T.pack fin)
