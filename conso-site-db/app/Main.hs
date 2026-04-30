@@ -23,7 +23,7 @@ import Display (afficherResultat, afficherSites)
 
 data GlobalOpts = GlobalOpts
   { optConfigDir :: Maybe FilePath
-  , optProd      :: Bool
+  , optSandbox   :: Bool
   , optVerbose   :: Bool
   , optCommand   :: Command
   }
@@ -48,7 +48,7 @@ main = do
   opts <- execParser (info (globalParser <**> helper) (progDesc "Registre des sites de consommation"))
   home <- getHomeDirectory
   let configDir = fromMaybe (home </> ".conso") (optConfigDir opts)
-      prod      = optProd opts
+      prod      = not (optSandbox opts)
       verbose   = optVerbose opts
   runCommand configDir prod verbose (optCommand opts)
     `catch` \e -> putStrLn $ "Erreur : " <> displayException (e :: SomeException)
@@ -103,7 +103,7 @@ resolveRattPce (Just (RPce _ _))   = Standalone
 globalParser :: Parser GlobalOpts
 globalParser = GlobalOpts
   <$> optional (strOption (long "config-dir" <> metavar "DIR" <> help "Répertoire de config (défaut : ~/.conso)"))
-  <*> switch (long "prod" <> help "Utiliser les serveurs de production (défaut : homologation/sandbox)")
+  <*> switch (long "sandbox" <> help "Utiliser les serveurs sandbox/homologation (défaut : production)")
   <*> switch (long "verbose" <> short 'v' <> help "Afficher les détails des appels API")
   <*> subparser
     (  command "inscrire" (info inscrireParser (progDesc "Inscrire un PRM ou PCE"))
