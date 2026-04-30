@@ -4,6 +4,7 @@ module Main where
 import Control.Exception (catch, SomeException, displayException)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
+import Data.Maybe (fromMaybe)
 import Options.Applicative
 import System.Directory (getHomeDirectory)
 import System.FilePath ((</>))
@@ -23,6 +24,7 @@ import Display (afficherResultat, afficherSites)
 data GlobalOpts = GlobalOpts
   { optConfigDir :: Maybe FilePath
   , optProd      :: Bool
+  , optVerbose   :: Bool
   , optCommand   :: Command
   }
 
@@ -45,14 +47,15 @@ main :: IO ()
 main = do
   opts <- execParser (info (globalParser <**> helper) (progDesc "Registre des sites de consommation"))
   home <- getHomeDirectory
-  let configDir = maybe (home </> ".conso") id (optConfigDir opts)
+  let configDir = fromMaybe (home </> ".conso") (optConfigDir opts)
       prod      = optProd opts
-  runCommand configDir prod (optCommand opts)
+      verbose   = optVerbose opts
+  runCommand configDir prod verbose (optCommand opts)
     `catch` \e -> putStrLn $ "Erreur : " <> displayException (e :: SomeException)
 
 
-runCommand :: FilePath -> Bool -> Command -> IO ()
-runCommand configDir prod (CmdInscrirePrm params mRatt) = do
+runCommand :: FilePath -> Bool -> Bool -> Command -> IO ()
+runCommand configDir prod verbose (CmdInscrirePrm params mRatt) = do
   let rattachement = resolveRattPrm mRatt
       params' = params { ippRattachement = rattachement }
   mSession <- case rattachement of
@@ -60,18 +63,18 @@ runCommand configDir prod (CmdInscrirePrm params mRatt) = do
     ParSite _ _ -> Just <$> initSession prod False False
     _           -> return Nothing
   withRegistry configDir $ \conn -> do
-    result <- inscrirePrm conn prod mSession params'
+    result <- inscrirePrm conn prod verbose mSession params'
     afficherResultat result
 
-runCommand configDir prod (CmdInscrirePce params mRatt) = do
+runCommand configDir prod verbose (CmdInscrirePce params mRatt) = do
   let rattachement = resolveRattPce mRatt
       params' = params { ipeRattachement = rattachement }
   session <- initSession prod False False
   withRegistry configDir $ \conn -> do
-    result <- inscrirePce conn prod session params'
+    result <- inscrirePce conn prod verbose session params'
     afficherResultat result
 
-runCommand configDir _ CmdLister =
+runCommand configDir _ _ CmdLister =
   withRegistry configDir $ \conn -> do
     sites <- listSites conn
     afficherSites sites
@@ -101,6 +104,7 @@ globalParser :: Parser GlobalOpts
 globalParser = GlobalOpts
   <$> optional (strOption (long "config-dir" <> metavar "DIR" <> help "Répertoire de config (défaut : ~/.conso)"))
   <*> switch (long "prod" <> help "Utiliser les serveurs de production (défaut : homologation/sandbox)")
+  <*> switch (long "verbose" <> short 'v' <> help "Afficher les détails des appels API")
   <*> subparser
     (  command "inscrire" (info inscrireParser (progDesc "Inscrire un PRM ou PCE"))
     <> command "lister"   (info (pure CmdLister) (progDesc "Lister les sites inscrits"))

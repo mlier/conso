@@ -25,8 +25,8 @@ import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Adresses (verifierAdresses)
 
 
-inscrirePce :: Connection -> Bool -> AdictSession -> InscriptionPceParams -> IO InscriptionResult
-inscrirePce conn prod session params = do
+inscrirePce :: Connection -> Bool -> Bool -> AdictSession -> InscriptionPceParams -> IO InscriptionResult
+inscrirePce conn prod verbose session params = do
   (siteId, created) <- resoudreSite
   adictResult <- declarerAcces session (ipePce params) (ipeCodePostal params) (ipeAccord params)
   return $ InscriptionResult siteId created [] (Just adictResult)
@@ -35,8 +35,8 @@ inscrirePce conn prod session params = do
 
     resoudreSite = case ipeRattachement params of
       Standalone         -> creerOuTrouver conn pce
-      ParPrm prmT force  -> rattacherAuPrm conn prod session pce (Prm prmT) force
-      ParSite uuid force -> rattacherAuSite conn prod session pce (SiteId uuid) force
+      ParPrm prmT force  -> rattacherAuPrm conn prod verbose session pce (Prm prmT) force
+      ParSite uuid force -> rattacherAuSite conn prod verbose session pce (SiteId uuid) force
       ParPce _ _         -> fail "ParPce invalide dans inscrirePce"
 
 
@@ -50,24 +50,24 @@ creerOuTrouver conn pce = do
       return (sid, True)
 
 
-rattacherAuPrm :: Connection -> Bool -> AdictSession -> Pce -> Prm -> Bool -> IO (SiteId, Bool)
-rattacherAuPrm conn prod session pce@(Pce pceT) prm@(Prm prmT) force = do
+rattacherAuPrm :: Connection -> Bool -> Bool -> AdictSession -> Pce -> Prm -> Bool -> IO (SiteId, Bool)
+rattacherAuPrm conn prod verbose session pce@(Pce pceT) prm@(Prm prmT) force = do
   mPrmSite <- lookupByPrm conn prm
   targetSiteId <- maybe (fail $ "PRM " <> T.unpack prmT <> " non inscrit dans le registre") return mPrmSite
   verifierConflitPce conn pce targetSiteId
-  checkAdresses prod session prmT pceT force
+  checkAdresses verbose prod session prmT pceT force
   mPceSite <- lookupByPce conn pce
   when (isNothing mPceSite) $ linkPce conn targetSiteId pce
   return (targetSiteId, isNothing mPceSite)
 
 
-rattacherAuSite :: Connection -> Bool -> AdictSession -> Pce -> SiteId -> Bool -> IO (SiteId, Bool)
-rattacherAuSite conn prod session pce@(Pce pceT) siteId force = do
+rattacherAuSite :: Connection -> Bool -> Bool -> AdictSession -> Pce -> SiteId -> Bool -> IO (SiteId, Bool)
+rattacherAuSite conn prod verbose session pce@(Pce pceT) siteId force = do
   mSite <- lookupBySiteId conn siteId
   site  <- maybe (fail $ "Site non trouvé dans le registre : " <> show siteId) return mSite
   verifierConflitPce conn pce siteId
   case srPrm site of
-    Just (Prm prmT) -> checkAdresses prod session prmT pceT force
+    Just (Prm prmT) -> checkAdresses verbose prod session prmT pceT force
     Nothing         -> return ()
   mPceSite <- lookupByPce conn pce
   when (isNothing mPceSite) $ linkPce conn siteId pce
@@ -83,10 +83,10 @@ verifierConflitPce conn pce targetSiteId = do
     _ -> return ()
 
 
-checkAdresses :: Bool -> AdictSession -> Text -> Text -> Bool -> IO ()
-checkAdresses _ _ _ _ True = return ()
-checkAdresses prod session prmT pceT False = do
-  verif <- verifierAdresses prod session prmT pceT
+checkAdresses :: Bool -> Bool -> AdictSession -> Text -> Text -> Bool -> IO ()
+checkAdresses _ _ _ _ _ True = return ()
+checkAdresses verbose prod session prmT pceT False = do
+  verif <- verifierAdresses verbose prod session prmT pceT
   case verif of
     CodePostauxIdentiques -> return ()
     Mismatch cpP cpC ->
