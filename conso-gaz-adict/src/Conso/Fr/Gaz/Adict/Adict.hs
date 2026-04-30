@@ -52,7 +52,10 @@ module Conso.Fr.Gaz.Adict.Adict
   , myHomeDirectory
   ) where
 
+import           Control.Concurrent                             ( threadDelay )
+import           Control.Concurrent.MVar
 import           Control.Exception                              ( try, SomeException )
+import           Control.Monad                                  ( when )
 import           Control.Monad.Trans.Except                    ( runExceptT, ExceptT )
 import           Data.Maybe                                     ( mapMaybe )
 import           Data.Aeson
@@ -147,8 +150,9 @@ data AdictSession = AdictSession
     { sessionConfig    :: Adict
     , sessionToken     :: IORef (Maybe TokenState)
     , sessionManager   :: Manager
-    , sessionDebugReq  :: Bool  -- ^ @True@ = log des requêtes HTTP sur stderr (@DEBUG=1@)
-    , sessionVerbose   :: Bool  -- ^ @True@ = log des corps de réponse sur stderr (@CONSO_VERBOSE=1@)
+    , sessionDebugReq  :: Bool     -- ^ @True@ = log des requêtes HTTP sur stderr (@DEBUG=1@)
+    , sessionVerbose   :: Bool     -- ^ @True@ = log des corps de réponse sur stderr (@CONSO_VERBOSE=1@)
+    , sessionLastCall  :: MVar UTCTime  -- ^ Horodatage du dernier appel HTTP (rate limiting 1/s)
     }
 
 -- | Initialise une session ADICT en lisant la configuration depuis
@@ -165,9 +169,19 @@ initSession prod debugReq verbose = do
 --   @debugReq@ : log des requêtes HTTP ; @verbose@ : log des corps de réponse.
 initSessionWith :: Bool -> Bool -> Adict -> IO AdictSession
 initSessionWith debugReq verbose cfg = do
-    tokenRef <- newIORef Nothing
-    mgr      <- if debugReq then newDebugTlsManager else newTlsManager
-    return $ AdictSession cfg tokenRef mgr debugReq verbose
+    tokenRef    <- newIORef Nothing
+    lastCallRef <- newMVar (UTCTime (ModifiedJulianDay 0) 0)
+    mgr         <- if debugReq then newDebugTlsManager else newTlsManager
+    return $ AdictSession cfg tokenRef mgr debugReq verbose lastCallRef
+
+rateLimitAdict :: MVar UTCTime -> IO ()
+rateLimitAdict mvar = do
+    now      <- getCurrentTime
+    prevCall <- takeMVar mvar
+    let elapsed = diffUTCTime now prevCall
+        waitUs  = round ((1.1 - (realToFrac elapsed :: Double)) * 1e6) :: Int
+    when (waitUs > 0) $ threadDelay waitUs
+    putMVar mvar =<< getCurrentTime
 
 -- | Manager TLS qui écrit chaque requête (méthode, URL, en-têtes, corps)
 --   sur stderr avant de l'envoyer.  Utile pour diagnostiquer les erreurs OAuth2.
@@ -356,6 +370,7 @@ adictGet session apiPath = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
@@ -381,6 +396,7 @@ adictGetNDJSON session apiPath = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
@@ -421,6 +437,7 @@ adictGetRaw session apiPath = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
@@ -439,6 +456,7 @@ adictPut session apiPath body = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             putStrLn $ "URL : " ++ url
             putStrLn $ "Body : " ++ show (encode body)
@@ -474,6 +492,7 @@ adictPost session apiPath body = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
@@ -506,6 +525,7 @@ adictPostNDJSON session apiPath body = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             initReq <- parseRequest url
             let req = initReq
@@ -542,6 +562,7 @@ adictPatch session apiPath = do
     case tokResult of
         Left  e   -> return $ Left e
         Right tok -> do
+            rateLimitAdict (sessionLastCall session)
             let url = buildUrl (sessionConfig session) apiPath
             putStrLn $ "URL : " ++ url
             initReq <- parseRequest url
