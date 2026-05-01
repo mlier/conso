@@ -66,14 +66,26 @@ data GazInjection = GazInjection
   , giRawJson        :: Text         -- ^ JSON brut de la ligne NDJSON
   } deriving (Show)
 
--- | Informations contractuelles GRDF pour stockage SQLite.
+-- | Informations contractuelles GRDF pour stockage SQLite (série temporelle).
+-- Une ligne est insérée uniquement quand les données changent.
 data GazInfosContractuelles = GazInfosContractuelles
-  { icDateDebut       :: Maybe Text -- ^ Date de début du contrat
-  , icDateFin         :: Maybe Text -- ^ Date de fin du contrat
-  , icSegmentClient   :: Maybe Text -- ^ Segment client (T1, T2, …)
-  , icNumCompteur     :: Maybe Text -- ^ Numéro de compteur
-  , icTarif           :: Maybe Text -- ^ Tarif applicable
-  , icRawJson         :: Text       -- ^ JSON brut complet
+  { icDateMes                   :: Maybe Text -- ^ Date de mise en service
+  , icTarifAcheminement         :: Maybe Text -- ^ Tarif d'acheminement (T1, T2, …)
+  , icDatePublication           :: Maybe Text -- ^ Date de publication des données
+  , icConsoJournalierePlafond   :: Maybe Text -- ^ Consommation journalière plafond
+  , icCarActuelle               :: Maybe Text -- ^ CAR actuelle
+  , icCarFuture                 :: Maybe Text -- ^ CAR future
+  , icCja                       :: Maybe Text -- ^ CJA
+  , icCjaJournaliere            :: Maybe Text -- ^ CJA journalière
+  , icCjaMensuelle              :: Maybe Text -- ^ CJA mensuelle
+  , icProfilTypeActuel          :: Maybe Text -- ^ Profil type actuel (ex. P012)
+  , icProfilTypeFutur           :: Maybe Text -- ^ Profil type futur
+  , icDateDebutProfilTypeActuel :: Maybe Text -- ^ Début validité profil actuel
+  , icDateFinProfilTypeActuel   :: Maybe Text -- ^ Fin validité profil actuel
+  , icModulationAssiette        :: Maybe Text -- ^ Modulation assiette
+  , icModulationN1              :: Maybe Text -- ^ Modulation N-1
+  , icModulationN2              :: Maybe Text -- ^ Modulation N-2
+  , icModulationN3              :: Maybe Text -- ^ Modulation N-3
   } deriving (Show, Eq)
 
 -- | Informations techniques GRDF pour stockage SQLite.

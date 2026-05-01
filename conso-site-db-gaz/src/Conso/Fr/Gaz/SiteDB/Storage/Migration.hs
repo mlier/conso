@@ -79,17 +79,28 @@ gazMigrations =
       , "CREATE INDEX IF NOT EXISTS idx_gaz_injections_dates \
         \  ON gaz_injections(date_debut, date_fin)"
 
-        -- Informations contractuelles
+        -- Informations contractuelles (série temporelle — 1 ligne par changement)
       , "CREATE TABLE IF NOT EXISTS gaz_infos_contractuelles (\
-        \  id              INTEGER PRIMARY KEY AUTOINCREMENT,\
-        \  date_debut      TEXT,\
-        \  date_fin        TEXT,\
-        \  segment_client  TEXT,\
-        \  num_compteur    TEXT,\
-        \  tarif           TEXT,\
-        \  raw_json        TEXT NOT NULL,\
-        \  date_ingestion  TEXT NOT NULL,\
-        \  ingestion_id    INTEGER REFERENCES gaz_ingestion_log(id)\
+        \  id                              INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  date_ingestion                  TEXT NOT NULL,\
+        \  ingestion_id                    INTEGER REFERENCES gaz_ingestion_log(id),\
+        \  date_mes                        TEXT,\
+        \  tarif_acheminement              TEXT,\
+        \  date_publication                TEXT,\
+        \  conso_journaliere_plafond       TEXT,\
+        \  car_actuelle                    TEXT,\
+        \  car_future                      TEXT,\
+        \  cja                             TEXT,\
+        \  cja_journaliere                 TEXT,\
+        \  cja_mensuelle                   TEXT,\
+        \  profil_type_actuel              TEXT,\
+        \  profil_type_futur               TEXT,\
+        \  date_debut_profil_type_actuel   TEXT,\
+        \  date_fin_profil_type_actuel     TEXT,\
+        \  modulation_assiette             TEXT,\
+        \  modulation_n_1                  TEXT,\
+        \  modulation_n_2                  TEXT,\
+        \  modulation_n_3                  TEXT\
         \)"
 
         -- Informations techniques

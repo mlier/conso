@@ -16,6 +16,8 @@ module Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
   ) where
 
 import qualified Data.Aeson                    as A
+import qualified Data.Aeson.Key                as Key
+import qualified Data.Aeson.KeyMap             as KM
 import qualified Data.ByteString.Lazy          as LBS
 import           Data.Maybe                    (mapMaybe)
 import           Data.Text                     (Text)
@@ -99,15 +101,36 @@ toGazInjection td ir = do
     , giRawJson        = encodeText ir
     }
 
+-- | Extrait un champ texte depuis un sous-objet JSON (Maybe Value).
+getField :: Text -> Maybe A.Value -> Maybe Text
+getField key (Just (A.Object m)) = case KM.lookup (Key.fromText key) m of
+  Just (A.String t) -> Just t
+  Just (A.Number n) -> Just (T.pack (show n))
+  _                 -> Nothing
+getField _ _ = Nothing
+
 toGazInfosContractuelles :: RetourDonneesContractuelles -> GazInfosContractuelles
-toGazInfosContractuelles r = GazInfosContractuelles
-  { icDateDebut     = rdc_donnees r >>= dc_date_mes
-  , icDateFin       = Nothing
-  , icSegmentClient = Nothing
-  , icNumCompteur   = Nothing
-  , icTarif         = rdc_donnees r >>= dc_tarif_acheminement
-  , icRawJson       = encodeText r
-  }
+toGazInfosContractuelles r =
+  let dc = rdc_donnees r
+  in GazInfosContractuelles
+    { icDateMes                   = dc >>= dc_date_mes
+    , icTarifAcheminement         = dc >>= dc_tarif_acheminement
+    , icDatePublication           = dc >>= dc_date_publication
+    , icConsoJournalierePlafond   = dc >>= dc_consommation_journaliere_plafond
+    , icCarActuelle               = getField "car_actuelle"               (dc >>= dc_car)
+    , icCarFuture                 = getField "car_future"                 (dc >>= dc_car)
+    , icCja                       = getField "cja"                        (dc >>= dc_cja)
+    , icCjaJournaliere            = getField "cja_journaliere"            (dc >>= dc_cja)
+    , icCjaMensuelle              = getField "cja_mensuelle"              (dc >>= dc_cja)
+    , icProfilTypeActuel          = getField "profil_type_actuel"         (dc >>= dc_profil)
+    , icProfilTypeFutur           = getField "profil_type_futur"          (dc >>= dc_profil)
+    , icDateDebutProfilTypeActuel = getField "date_debut_profil_type_actuel" (dc >>= dc_profil)
+    , icDateFinProfilTypeActuel   = getField "date_fin_profil_type_actuel"   (dc >>= dc_profil)
+    , icModulationAssiette        = getField "assiette"                   (dc >>= dc_modulation)
+    , icModulationN1              = getField "modulation_n_1"             (dc >>= dc_modulation)
+    , icModulationN2              = getField "modulation_n_2"             (dc >>= dc_modulation)
+    , icModulationN3              = getField "modulation_n_3"             (dc >>= dc_modulation)
+    }
 
 toGazInfosTechniques :: RetourDonneesTechniques -> GazInfosTechniques
 toGazInfosTechniques r = GazInfosTechniques
@@ -117,16 +140,6 @@ toGazInfosTechniques r = GazInfosTechniques
   , itEtatCompteur = Nothing
   , itRawJson      = encodeText r
   }
-
--- | Compare les champs métier uniquement (exclut raw_json qui peut différer
--- même pour des données identiques selon la sérialisation API).
-memeChampsBusiness :: GazInfosContractuelles -> GazInfosContractuelles -> Bool
-memeChampsBusiness a b =
-  icDateDebut a == icDateDebut b &&
-  icDateFin   a == icDateFin   b &&
-  icSegmentClient a == icSegmentClient b &&
-  icNumCompteur   a == icNumCompteur   b &&
-  icTarif a == icTarif b
 
 memeChampsTech :: GazInfosTechniques -> GazInfosTechniques -> Bool
 memeChampsTech a b =
@@ -219,7 +232,7 @@ ingererInfosContractuelles session conn pce = do
       let nouvelles = toGazInfosContractuelles retour
       mDerniere <- derniereInfosContractuelles conn
       case mDerniere of
-        Just derniere | memeChampsBusiness nouvelles derniere ->
+        Just derniere | nouvelles == derniere ->
           return $ Right ContractuellesPasDeChangement
         _ -> do
           ingId <- logGazIngestion conn "donnees_contractuelles"

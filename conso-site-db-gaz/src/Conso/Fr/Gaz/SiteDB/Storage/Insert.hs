@@ -98,23 +98,30 @@ insertGazInjections :: Connection -> GazIngestionId -> [GazInjection] -> IO ()
 insertGazInjections conn ingId injections =
   withTransaction conn $ mapM_ (insertGazInjection conn ingId) injections
 
--- | Insère des informations contractuelles (INSERT simple — historique conservé).
+-- | Insère des informations contractuelles (INSERT simple — 1 ligne par changement).
 insertGazInfosContractuelles :: Connection -> GazIngestionId -> UTCTime -> GazInfosContractuelles -> IO ()
 insertGazInfosContractuelles conn ingId now ic = do
   let now' = formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" now
   execute conn
     "INSERT INTO gaz_infos_contractuelles \
-    \ (date_debut, date_fin, segment_client, num_compteur, tarif, \
-    \  raw_json, date_ingestion, ingestion_id) \
-    \ VALUES (?,?,?,?,?,?,?,?)"
-    ( icDateDebut ic
-    , icDateFin ic
-    , icSegmentClient ic
-    , icNumCompteur ic
-    , icTarif ic
-    , icRawJson ic
-    , now'
-    , ingId
+    \ (date_ingestion, ingestion_id,\
+    \  date_mes, tarif_acheminement, date_publication, conso_journaliere_plafond,\
+    \  car_actuelle, car_future,\
+    \  cja, cja_journaliere, cja_mensuelle,\
+    \  profil_type_actuel, profil_type_futur,\
+    \  date_debut_profil_type_actuel, date_fin_profil_type_actuel,\
+    \  modulation_assiette, modulation_n_1, modulation_n_2, modulation_n_3)\
+    \ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    (  ( now', ingId
+       , icDateMes ic, icTarifAcheminement ic, icDatePublication ic
+       , icConsoJournalierePlafond ic, icCarActuelle ic, icCarFuture ic
+       , icCja ic, icCjaJournaliere ic
+       )
+    :. ( icCjaMensuelle ic
+       , icProfilTypeActuel ic, icProfilTypeFutur ic
+       , icDateDebutProfilTypeActuel ic, icDateFinProfilTypeActuel ic
+       , icModulationAssiette ic, icModulationN1 ic, icModulationN2 ic, icModulationN3 ic
+       )
     )
 
 -- | Insère des informations techniques (INSERT simple — historique conservé).

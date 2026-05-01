@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 module Conso.Fr.Gaz.SiteDB.Storage.Query
   ( derniereIngestDate
   , derniereInfosContractuelles
@@ -29,23 +30,47 @@ derniereIngestDate conn endpoint = do
     _         -> Nothing
 
 
--- | Dernières informations contractuelles stockées (champs métier + raw_json).
+-- | Dernières informations contractuelles stockées (tous les champs métier).
 -- Utilisé pour détecter si les données ont changé avant d'insérer.
 derniereInfosContractuelles :: Connection -> IO (Maybe GazInfosContractuelles)
 derniereInfosContractuelles conn = do
   rows <- query_ conn
-    "SELECT date_debut, date_fin, segment_client, num_compteur, tarif, raw_json \
-    \FROM gaz_infos_contractuelles ORDER BY id DESC LIMIT 1"
-    :: IO [(Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text, Text)]
+    "SELECT date_mes, tarif_acheminement, date_publication, conso_journaliere_plafond,\
+    \       car_actuelle, car_future, cja, cja_journaliere, cja_mensuelle,\
+    \       profil_type_actuel, profil_type_futur,\
+    \       date_debut_profil_type_actuel, date_fin_profil_type_actuel,\
+    \       modulation_assiette, modulation_n_1, modulation_n_2, modulation_n_3\
+    \ FROM gaz_infos_contractuelles ORDER BY id DESC LIMIT 1"
+    :: IO [( Maybe Text, Maybe Text, Maybe Text, Maybe Text
+           , Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text
+           )
+           :.
+           ( Maybe Text, Maybe Text, Maybe Text, Maybe Text
+           , Maybe Text, Maybe Text, Maybe Text, Maybe Text
+           )]
   return $ case rows of
-    [(d1, d2, sc, nc, t, rj)] -> Just GazInfosContractuelles
-      { icDateDebut     = d1
-      , icDateFin       = d2
-      , icSegmentClient = sc
-      , icNumCompteur   = nc
-      , icTarif         = t
-      , icRawJson       = rj
-      }
+    [(mes, tar, pub, plaf, carA, carF, cja, cjaJ, cjaM)
+     :.
+     (pA, pF, dDP, dFP, mAss, mN1, mN2, mN3)]
+      -> Just GazInfosContractuelles
+          { icDateMes                   = mes
+          , icTarifAcheminement         = tar
+          , icDatePublication           = pub
+          , icConsoJournalierePlafond   = plaf
+          , icCarActuelle               = carA
+          , icCarFuture                 = carF
+          , icCja                       = cja
+          , icCjaJournaliere            = cjaJ
+          , icCjaMensuelle              = cjaM
+          , icProfilTypeActuel          = pA
+          , icProfilTypeFutur           = pF
+          , icDateDebutProfilTypeActuel = dDP
+          , icDateFinProfilTypeActuel   = dFP
+          , icModulationAssiette        = mAss
+          , icModulationN1              = mN1
+          , icModulationN2              = mN2
+          , icModulationN3              = mN3
+          }
     _ -> Nothing
 
 
