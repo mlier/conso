@@ -50,22 +50,25 @@ insertGazConso :: Connection -> GazIngestionId -> GazConso -> IO ()
 insertGazConso conn ingId c =
   execute conn
     "INSERT OR REPLACE INTO gaz_consos \
-    \ (date_debut, date_fin, periode, type_donnee, energie_kwh, \
-    \  volume_brut_m3, volume_converti, coeff_conversion, coeff_pta, \
-    \  raw_json, ingestion_id) \
-    \ VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-    (  ( gcDateDebut c
-       , gcDateFin c
-       , periodeGazToText (gcPeriode c)
-       , typeDonneeToText (gcTypeDonnee c)
-       , gcEnergie c
-       , gcVolumeBrut c
-       , gcVolumeConverti c
-       , gcCoeffConversion c
-       , gcCoeffPta c
+    \ (energie_kwh, volume_brut_m3, volume_converti, conversion, pta, pcs,\
+    \  flag_retour_zero, type_qualif, sens_flux, statut_conso,\
+    \  type_conso, journee_gaziere,\
+    \  debut, debut_raison, debut_libelle_raison, debut_qualite, debut_statut,\
+    \  debut_index_brut, debut_index_converti, fin,\
+    \  fin_raison, fin_libelle_raison, fin_qualite, fin_statut,\
+    \  fin_index_brut, fin_index_converti, ingestion_id)\
+    \ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    (  ( gcEnergie c, gcVolumeBrut c, gcVolumeConverti c
+       , gcConversion c, gcPta c, gcPcs c
+       , gcFlagRetourZero c, gcTypeQualif c, gcSensFlux c, gcStatutConso c
        )
-    :. ( gcRawJson c
-       , ingId
+    :. ( gcTypeConso c, gcJourneeGaziere c
+       , gcDebut c, gcDebutRaison c, gcDebutLibelleRaison c
+       , gcDebutQualite c, gcDebutStatut c
+       , gcDebutIndexBrut c, gcDebutIndexConverti c, gcFin c
+       )
+    :. ( gcFinRaison c, gcFinLibelleRaison c, gcFinQualite c, gcFinStatut c
+       , gcFinIndexBrut c, gcFinIndexConverti c, ingId
        )
     )
 

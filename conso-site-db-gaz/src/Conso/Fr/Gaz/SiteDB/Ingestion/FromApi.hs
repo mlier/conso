@@ -65,23 +65,41 @@ inferPeriode :: Maybe Text -> PeriodeGaz
 inferPeriode (Just v) | T.length v == 10 = PJournalier
 inferPeriode _                            = PMensuel
 
-toGazConso :: TypeDonnee -> ConsoRestit -> Maybe GazConso
-toGazConso td cr = do
+toGazConso :: ConsoRestit -> Maybe GazConso
+toGazConso cr = do
   let conso = cr_consommation cr
-      per   = cr_periode cr
-  d1 <- (conso >>= date_debut_consommation) <> (per >>= date_debut)
-  d2 <- (conso >>= date_fin_consommation)   <> (per >>= date_fin)
+      rDeb  = cr_releve_debut cr
+      rFin  = cr_releve_fin cr
+      coeff = conso >>= coeff_calcul
+  deb <- rDeb >>= rd_date_releve
+  fin <- rFin >>= rf_date_releve
   pure GazConso
-    { gcDateDebut       = d1
-    , gcDateFin         = d2
-    , gcPeriode         = inferPeriode (per >>= valeur)
-    , gcTypeDonnee      = td
-    , gcEnergie         = conso >>= energie
-    , gcVolumeBrut      = conso >>= volume_brut
-    , gcVolumeConverti  = conso >>= volume_converti
-    , gcCoeffConversion = (conso >>= coeff_calcul) >>= coeff_conversion
-    , gcCoeffPta        = (conso >>= coeff_calcul) >>= coeff_pta
-    , gcRawJson         = encodeText cr
+    { gcEnergie            = conso >>= energie
+    , gcVolumeBrut         = conso >>= volume_brut
+    , gcVolumeConverti     = conso >>= volume_converti
+    , gcConversion         = coeff >>= coeff_conversion
+    , gcPta                = coeff >>= coeff_pta
+    , gcPcs                = coeff >>= valeur_pcs
+    , gcFlagRetourZero     = conso >>= flag_retour_zero
+    , gcTypeQualif         = conso >>= type_qualif_conso
+    , gcSensFlux           = conso >>= sens_flux_gaz
+    , gcStatutConso        = conso >>= statut_conso
+    , gcTypeConso          = conso >>= type_conso
+    , gcJourneeGaziere     = conso >>= journee_gaziere
+    , gcDebut              = deb
+    , gcDebutRaison        = rDeb >>= rd_raison_releve
+    , gcDebutLibelleRaison = rDeb >>= rd_libelle_raison_releve
+    , gcDebutQualite       = rDeb >>= rd_qualite_releve
+    , gcDebutStatut        = rDeb >>= rd_statut_releve
+    , gcDebutIndexBrut     = (rDeb >>= rd_index_brut_debut)     >>= valeur_index
+    , gcDebutIndexConverti = (rDeb >>= rd_index_converti_debut) >>= valeur_index
+    , gcFin                = fin
+    , gcFinRaison          = rFin >>= rf_raison_releve
+    , gcFinLibelleRaison   = rFin >>= rf_libelle_raison_releve
+    , gcFinQualite         = rFin >>= rf_qualite_releve
+    , gcFinStatut          = rFin >>= rf_statut_releve
+    , gcFinIndexBrut       = (rFin >>= rf_index_brut_fin)     >>= valeur_index
+    , gcFinIndexConverti   = (rFin >>= rf_index_converti_fin) >>= valeur_index
     }
 
 toGazInjection :: TypeDonnee -> InjectionRestit -> Maybe GazInjection
@@ -198,7 +216,7 @@ ingererConsosPubliees session conn pce dateDebut dateFin = do
   consulterConsosPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right consos -> do
-      let rows = mapMaybe (toGazConso TDPubliee) consos
+      let rows = mapMaybe toGazConso consos
       ingId <- logGazIngestion conn "donnees_consos_publiees"
                  (Just dateDebut) (Just dateFin) Nothing (Just "PUBLIEE") now (length rows)
       insertGazConsos conn ingId rows
@@ -212,7 +230,7 @@ ingererConsosInfos session conn pce dateDebut dateFin = do
   consulterConsosInfos session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right consos -> do
-      let rows = mapMaybe (toGazConso TDInformative) consos
+      let rows = mapMaybe toGazConso consos
       ingId <- logGazIngestion conn "donnees_consos_informatives"
                  (Just dateDebut) (Just dateFin) Nothing (Just "INFORMATIVE") now (length rows)
       insertGazConsos conn ingId rows

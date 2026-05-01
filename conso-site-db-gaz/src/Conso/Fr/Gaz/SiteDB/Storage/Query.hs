@@ -120,21 +120,21 @@ derniereInfosTechniques conn = do
 
 -- | Retourne les plages de dates manquantes dans gaz_consos entre deux bornes.
 -- Génère la séquence de dates attendues (un enregistrement par jour ou par mois)
--- et la compare aux date_debut effectivement stockées.
+-- et la compare aux dates de début de relevé effectivement stockées.
 detectionTrous :: Connection -> Text -> Text -> PeriodeGaz -> IO [(Text, Text)]
 detectionTrous conn dateDebutStr dateFinStr periode = do
   let parseD s = parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack s) :: Maybe Day
   case (parseD dateDebutStr, parseD dateFinStr) of
     (Nothing, _) -> return []
     (_, Nothing) -> return []
-    (Just debut, Just fin) -> do
+    (Just deb, Just fin) -> do
       let fmt       = formatTime defaultTimeLocale "%Y-%m-%d"
-          attendues = map (T.pack . fmt) (genererDates periode debut fin)
+          attendues = map (T.pack . fmt) (genererDates periode deb fin)
       rows <- query conn
-        "SELECT DISTINCT date_debut FROM gaz_consos \
-        \WHERE periode = ? AND date_debut >= ? AND date_debut <= ? \
-        \ORDER BY date_debut"
-        (periodeGazToText periode, dateDebutStr, dateFinStr)
+        "SELECT DISTINCT SUBSTR(debut, 1, 10) FROM gaz_consos \
+        \WHERE SUBSTR(debut, 1, 10) >= ? AND SUBSTR(debut, 1, 10) <= ? \
+        \ORDER BY debut"
+        (dateDebutStr, dateFinStr)
         :: IO [Only Text]
       let stockees   = map (\(Only d) -> d) rows
           manquantes = filter (`notElem` stockees) attendues

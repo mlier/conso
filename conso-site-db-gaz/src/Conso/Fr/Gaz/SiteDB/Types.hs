@@ -42,16 +42,35 @@ periodeGazToText PMensuel    = "M"
 
 -- | Enregistrement de consommation gaz pour stockage SQLite.
 data GazConso = GazConso
-  { gcDateDebut        :: Text          -- ^ Date début (YYYY-MM-DD)
-  , gcDateFin          :: Text          -- ^ Date fin (YYYY-MM-DD)
-  , gcPeriode          :: PeriodeGaz    -- ^ Granularité (J ou M)
-  , gcTypeDonnee       :: TypeDonnee    -- ^ Qualité (PUBLIEE/INFORMATIVE)
-  , gcEnergie          :: Maybe Double  -- ^ Énergie en kWh
-  , gcVolumeBrut       :: Maybe Double  -- ^ Volume brut en m³
-  , gcVolumeConverti   :: Maybe Double  -- ^ Volume converti en m³
-  , gcCoeffConversion  :: Maybe Double  -- ^ Coefficient de conversion PCS
-  , gcCoeffPta         :: Maybe Double  -- ^ Coefficient PTA
-  , gcRawJson          :: Text          -- ^ JSON brut de la ligne NDJSON
+  -- Consommation
+  { gcEnergie             :: Maybe Double
+  , gcVolumeBrut          :: Maybe Double
+  , gcVolumeConverti      :: Maybe Double
+  , gcConversion          :: Maybe Double
+  , gcPta                 :: Maybe Double
+  , gcPcs                 :: Maybe Double
+  , gcFlagRetourZero      :: Maybe Bool
+  , gcTypeQualif          :: Maybe Text
+  , gcSensFlux            :: Maybe Text
+  , gcStatutConso         :: Maybe Text
+  , gcTypeConso           :: Maybe Text
+  , gcJourneeGaziere      :: Maybe Text
+  -- Relevé début (NOT NULL — clé unique)
+  , gcDebut               :: Text
+  , gcDebutRaison         :: Maybe Text
+  , gcDebutLibelleRaison  :: Maybe Text
+  , gcDebutQualite        :: Maybe Text
+  , gcDebutStatut         :: Maybe Text
+  , gcDebutIndexBrut      :: Maybe Double
+  , gcDebutIndexConverti  :: Maybe Double
+  -- Relevé fin (NOT NULL — clé unique)
+  , gcFin                 :: Text
+  , gcFinRaison           :: Maybe Text
+  , gcFinLibelleRaison    :: Maybe Text
+  , gcFinQualite          :: Maybe Text
+  , gcFinStatut           :: Maybe Text
+  , gcFinIndexBrut        :: Maybe Double
+  , gcFinIndexConverti    :: Maybe Double
   } deriving (Show)
 
 -- | Enregistrement d'injection gaz pour stockage SQLite.
