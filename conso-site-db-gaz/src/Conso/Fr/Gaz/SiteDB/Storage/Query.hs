@@ -40,7 +40,7 @@ derniereInfosContractuelles conn = do
     \       profil_type_actuel, profil_type_futur,\
     \       date_debut_profil_type_actuel, date_fin_profil_type_actuel,\
     \       modulation_assiette, modulation_n_1, modulation_n_2, modulation_n_3\
-    \ FROM gaz_infos_contractuelles ORDER BY id DESC LIMIT 1"
+    \ FROM gaz_info_contractuelle ORDER BY id DESC LIMIT 1"
     :: IO [( Maybe Text, Maybe Text, Maybe Text, Maybe Text
            , Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text
            )
@@ -84,7 +84,7 @@ derniereInfosTechniques conn = do
     \       identifiant_pitd, libelle_pitd,\
     \       regime_propriete_compteur, regime_propriete_convertisseur,\
     \       regime_propriete_enregistreur, regime_propriete_poste\
-    \ FROM gaz_infos_techniques ORDER BY id DESC LIMIT 1"
+    \ FROM gaz_info_technique ORDER BY id DESC LIMIT 1"
     :: IO [( Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text
            , Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text )
            :.
@@ -118,7 +118,7 @@ derniereInfosTechniques conn = do
     _ -> Nothing
 
 
--- | Retourne les plages de dates manquantes dans gaz_consos entre deux bornes.
+-- | Retourne les plages de dates manquantes dans gaz_conso entre deux bornes.
 -- Génère la séquence de dates attendues (un enregistrement par jour ou par mois)
 -- et la compare aux dates de début de relevé effectivement stockées.
 detectionTrous :: Connection -> Text -> Text -> PeriodeGaz -> IO [(Text, Text)]
@@ -131,7 +131,7 @@ detectionTrous conn dateDebutStr dateFinStr periode = do
       let fmt       = formatTime defaultTimeLocale "%Y-%m-%d"
           attendues = map (T.pack . fmt) (genererDates periode deb fin)
       rows <- query conn
-        "SELECT DISTINCT SUBSTR(debut, 1, 10) FROM gaz_consos \
+        "SELECT DISTINCT SUBSTR(debut, 1, 10) FROM gaz_conso \
         \WHERE SUBSTR(debut, 1, 10) >= ? AND SUBSTR(debut, 1, 10) <= ? \
         \ORDER BY debut"
         (dateDebutStr, dateFinStr)

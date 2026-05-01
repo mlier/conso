@@ -41,8 +41,8 @@ gazMigrations =
       , "CREATE INDEX IF NOT EXISTS idx_gaz_ingestion_endpoint \
         \  ON gaz_ingestion_log(endpoint, date_ingestion)"
 
-        -- Consommations (publiées + informatives)
-      , "CREATE TABLE IF NOT EXISTS gaz_consos (\
+        -- Consommations publiées
+      , "CREATE TABLE IF NOT EXISTS gaz_conso (\
         \  id                    INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  energie_kwh           REAL,\
         \  volume_brut_m3        REAL,\
@@ -73,11 +73,11 @@ gazMigrations =
         \  ingestion_id          INTEGER REFERENCES gaz_ingestion_log(id),\
         \  UNIQUE(debut, fin)\
         \)"
-      , "CREATE INDEX IF NOT EXISTS idx_gaz_consos_debut \
-        \  ON gaz_consos(debut)"
+      , "CREATE INDEX IF NOT EXISTS idx_gaz_conso_debut \
+        \  ON gaz_conso(debut)"
 
-        -- Consommations informatives (même schéma que gaz_consos, flux séparé)
-      , "CREATE TABLE IF NOT EXISTS gaz_consos_informatives (\
+        -- Consommations informatives (même schéma, flux séparé)
+      , "CREATE TABLE IF NOT EXISTS gaz_conso_informative (\
         \  id                    INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  energie_kwh           REAL,\
         \  volume_brut_m3        REAL,\
@@ -108,11 +108,11 @@ gazMigrations =
         \  ingestion_id          INTEGER REFERENCES gaz_ingestion_log(id),\
         \  UNIQUE(debut, fin)\
         \)"
-      , "CREATE INDEX IF NOT EXISTS idx_gaz_consos_inf_debut \
-        \  ON gaz_consos_informatives(debut)"
+      , "CREATE INDEX IF NOT EXISTS idx_gaz_conso_informative_debut \
+        \  ON gaz_conso_informative(debut)"
 
         -- Injections publiées
-      , "CREATE TABLE IF NOT EXISTS gaz_injections (\
+      , "CREATE TABLE IF NOT EXISTS gaz_injection (\
         \  id                INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  date_debut        TEXT NOT NULL,\
         \  date_fin          TEXT NOT NULL,\
@@ -125,11 +125,11 @@ gazMigrations =
         \  ingestion_id      INTEGER REFERENCES gaz_ingestion_log(id),\
         \  UNIQUE(date_debut, date_fin, type_donnee, periode)\
         \)"
-      , "CREATE INDEX IF NOT EXISTS idx_gaz_injections_dates \
-        \  ON gaz_injections(date_debut, date_fin)"
+      , "CREATE INDEX IF NOT EXISTS idx_gaz_injection_dates \
+        \  ON gaz_injection(date_debut, date_fin)"
 
         -- Informations contractuelles (série temporelle — 1 ligne par changement)
-      , "CREATE TABLE IF NOT EXISTS gaz_infos_contractuelles (\
+      , "CREATE TABLE IF NOT EXISTS gaz_info_contractuelle (\
         \  id                              INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  date_ingestion                  TEXT NOT NULL,\
         \  ingestion_id                    INTEGER REFERENCES gaz_ingestion_log(id),\
@@ -153,7 +153,7 @@ gazMigrations =
         \)"
 
         -- Informations techniques
-      , "CREATE TABLE IF NOT EXISTS gaz_infos_techniques (\
+      , "CREATE TABLE IF NOT EXISTS gaz_info_technique (\
         \  id                              INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  date_ingestion                  TEXT NOT NULL,\
         \  ingestion_id                    INTEGER REFERENCES gaz_ingestion_log(id),\

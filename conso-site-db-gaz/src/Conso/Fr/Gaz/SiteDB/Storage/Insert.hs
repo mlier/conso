@@ -51,7 +51,7 @@ logGazIngestion conn endpoint mDateDebut mDateFin mPeriode mType now nbLignes = 
 insertGazConso :: Connection -> GazIngestionId -> GazConso -> IO ()
 insertGazConso conn ingId c =
   execute conn
-    "INSERT OR REPLACE INTO gaz_consos \
+    "INSERT OR REPLACE INTO gaz_conso \
     \ (energie_kwh, volume_brut_m3, volume_converti, conversion, pta, pcs,\
     \  flag_retour_zero, type_qualif, sens_flux, statut_conso,\
     \  type_conso, journee_gaziere,\
@@ -83,7 +83,7 @@ insertGazConsos conn ingId consos =
 insertGazConsoInformative :: Connection -> GazIngestionId -> GazConso -> IO ()
 insertGazConsoInformative conn ingId c =
   execute conn
-    "INSERT OR REPLACE INTO gaz_consos_informatives \
+    "INSERT OR REPLACE INTO gaz_conso_informative \
     \ (energie_kwh, volume_brut_m3, volume_converti, conversion, pta, pcs,\
     \  flag_retour_zero, type_qualif, sens_flux, statut_conso,\
     \  type_conso, journee_gaziere,\
@@ -115,7 +115,7 @@ insertGazConsosInformatives conn ingId consos =
 insertGazInjection :: Connection -> GazIngestionId -> GazInjection -> IO ()
 insertGazInjection conn ingId i =
   execute conn
-    "INSERT OR REPLACE INTO gaz_injections \
+    "INSERT OR REPLACE INTO gaz_injection \
     \ (date_debut, date_fin, periode, type_donnee, energie_kwh, \
     \  volume_brut_m3, volume_converti, raw_json, ingestion_id) \
     \ VALUES (?,?,?,?,?,?,?,?,?)"
@@ -140,7 +140,7 @@ insertGazInfosContractuelles :: Connection -> GazIngestionId -> UTCTime -> GazIn
 insertGazInfosContractuelles conn ingId now ic = do
   let now' = formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" now
   execute conn
-    "INSERT INTO gaz_infos_contractuelles \
+    "INSERT INTO gaz_info_contractuelle \
     \ (date_ingestion, ingestion_id,\
     \  date_mes, tarif_acheminement, date_publication, conso_journaliere_plafond,\
     \  car_actuelle, car_future,\
@@ -166,7 +166,7 @@ insertGazInfosTechniques :: Connection -> GazIngestionId -> UTCTime -> GazInfosT
 insertGazInfosTechniques conn ingId now it = do
   let now' = formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" now
   execute conn
-    "INSERT INTO gaz_infos_techniques \
+    "INSERT INTO gaz_info_technique \
     \ (date_ingestion, ingestion_id,\
     \  numero_rue, nom_rue, complement_adresse, code_postal, commune,\
     \  client_sensible_mig, code_calibre, code_debit,\
