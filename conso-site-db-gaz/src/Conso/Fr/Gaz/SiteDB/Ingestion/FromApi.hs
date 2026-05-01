@@ -1,25 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase        #-}
-{-|
-Module      : Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
-Description : Ingestion des données gaz depuis l'API GRDF ADICT
-
-Orchestre l'appel aux endpoints ADICT, l'ouverture de la base site et
-l'insertion des données gaz dans les tables @gaz_*@.
-
-Ce module dépend directement de @conso-gaz-adict@ : il appelle les webservices
-ADICT et convertit les réponses en types SQLite avant insertion.
-
-Usage typique :
-
-@
-session <- initSession True False     -- production
-report  <- ingestFromAdict session "~\/.conso" "~\/.conso\/sites"
-             (Pce "12345678901234") "2024-01-01" "2024-12-31"
-@
--}
 module Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
-  ( AdictIngestReport(..)
+  ( -- * Types
+    AdictIngestReport(..)
+  , ChangementInfosContract(..)
+  , ChangementInfosTech(..)
+    -- * Ingestion par endpoint
+  , ingererConsosPubliees
+  , ingererConsosInfos
+  , ingererInjections
+  , ingererInfosContractuelles
+  , ingererInfosTechniques
+    -- * Ingestion complète (wrapper commode)
   , ingestFromAdict
   ) where
 
@@ -31,25 +23,27 @@ import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as TE
 import           Data.Time                     (getCurrentTime)
 
-import           Conso.Fr.Gaz.Adict.Adict
-    ( AdictError(..), AdictSession )
-import           Conso.Fr.Gaz.Adict.ConsosInfos
-    ( consulterConsosInfos )
+import           Database.SQLite.Simple        (Connection)
+
+import           Conso.Fr.Gaz.Adict.Adict      (AdictError(..), AdictSession)
+import           Conso.Fr.Gaz.Adict.ConsosInfos (consulterConsosInfos)
 import           Conso.Fr.Gaz.Adict.ConsosPubliees
-    ( PeriodeParam(..), consulterConsosPubliees )
+    (PeriodeParam(..), consulterConsosPubliees)
 import           Conso.Fr.Gaz.Adict.DonneesContractuelles
-    ( consulterDonneesContractuelles )
+    (consulterDonneesContractuelles)
 import           Conso.Fr.Gaz.Adict.DonneesTechniques
-    ( consulterDonneesTechniques )
+    (consulterDonneesTechniques)
 import           Conso.Fr.Gaz.Adict.InjectionsPubliees
-    ( consulterInjectionsPubliees )
+    (consulterInjectionsPubliees)
 import           Conso.Fr.Gaz.Adict.Types
 
-import           Conso.Fr.SiteDB.Types                        (Pce(..))
-import           Conso.Fr.SiteDB.Registry                     (openRegistry, lookupOrCreateByPce)
-import           Conso.Fr.Gaz.SiteDB.Storage.Connection       (openSiteDbGaz)
-import           Conso.Fr.Gaz.SiteDB.Types
+import           Conso.Fr.SiteDB.Types                  (Pce(..))
+import           Conso.Fr.SiteDB.Registry               (openRegistry, lookupOrCreateByPce)
+import           Conso.Fr.Gaz.SiteDB.Storage.Connection (openSiteDbGaz)
 import           Conso.Fr.Gaz.SiteDB.Storage.Insert
+import           Conso.Fr.Gaz.SiteDB.Storage.Query
+    (derniereInfosContractuelles, derniereInfosTechniques)
+import           Conso.Fr.Gaz.SiteDB.Types
 
 
 -- ---------------------------------------------------------------------------
@@ -65,14 +59,10 @@ adictErrorToText (AuthError msg)            = "Auth error: " <> msg
 adictErrorToText (NetworkError msg)         = "Network error: " <> msg
 adictErrorToText (FunctionalError code msg) = "Erreur métier " <> code <> ": " <> msg
 
--- | Infère la granularité depuis la valeur de période ADICT.
--- Une valeur de 10 caractères (\"YYYY-MM-DD\") correspond à une journée gazière.
 inferPeriode :: Maybe Text -> PeriodeGaz
 inferPeriode (Just v) | T.length v == 10 = PJournalier
 inferPeriode _                            = PMensuel
 
--- | Convertit un 'ConsoRestit' ADICT en 'GazConso' SQLite.
--- Retourne 'Nothing' si les dates sont absentes (ligne inutilisable).
 toGazConso :: TypeDonnee -> ConsoRestit -> Maybe GazConso
 toGazConso td cr = do
   let conso = cr_consommation cr
@@ -92,8 +82,6 @@ toGazConso td cr = do
     , gcRawJson         = encodeText cr
     }
 
--- | Convertit un 'InjectionRestit' ADICT en 'GazInjection' SQLite.
--- Retourne 'Nothing' si les dates sont absentes.
 toGazInjection :: TypeDonnee -> InjectionRestit -> Maybe GazInjection
 toGazInjection td ir = do
   let inj = ir_injection ir
@@ -111,7 +99,6 @@ toGazInjection td ir = do
     , giRawJson        = encodeText ir
     }
 
--- | Convertit un 'RetourDonneesContractuelles' en 'GazInfosContractuelles'.
 toGazInfosContractuelles :: RetourDonneesContractuelles -> GazInfosContractuelles
 toGazInfosContractuelles r = GazInfosContractuelles
   { icDateDebut     = rdc_donnees r >>= dc_date_mes
@@ -122,8 +109,6 @@ toGazInfosContractuelles r = GazInfosContractuelles
   , icRawJson       = encodeText r
   }
 
--- | Convertit un 'RetourDonneesTechniques' en 'GazInfosTechniques'.
--- Les caractéristiques détaillées sont conservées dans le JSON brut.
 toGazInfosTechniques :: RetourDonneesTechniques -> GazInfosTechniques
 toGazInfosTechniques r = GazInfosTechniques
   { itTypeCompteur = Nothing
@@ -133,43 +118,59 @@ toGazInfosTechniques r = GazInfosTechniques
   , itRawJson      = encodeText r
   }
 
+-- | Compare les champs métier uniquement (exclut raw_json qui peut différer
+-- même pour des données identiques selon la sérialisation API).
+memeChampsBusiness :: GazInfosContractuelles -> GazInfosContractuelles -> Bool
+memeChampsBusiness a b =
+  icDateDebut a == icDateDebut b &&
+  icDateFin   a == icDateFin   b &&
+  icSegmentClient a == icSegmentClient b &&
+  icNumCompteur   a == icNumCompteur   b &&
+  icTarif a == icTarif b
+
+memeChampsTech :: GazInfosTechniques -> GazInfosTechniques -> Bool
+memeChampsTech a b =
+  itTypeCompteur a == itTypeCompteur b &&
+  itPression     a == itPression     b &&
+  itDateReleve   a == itDateReleve   b &&
+  itEtatCompteur a == itEtatCompteur b
+
 
 -- ---------------------------------------------------------------------------
--- Rapport
+-- Types de résultat
 
--- | Rapport d'une opération d'ingestion ADICT.
+data ChangementInfosContract
+  = ContractuellesPasDeChangement
+  | ContractuellesNouvellesInfos GazInfosContractuelles
+  deriving (Show)
+
+data ChangementInfosTech
+  = TechniquesPasDeChangement
+  | TechniquesNouvellesInfos GazInfosTechniques
+  deriving (Show)
+
 data AdictIngestReport = AdictIngestReport
   { airPce            :: Pce
-  , airConsosPubliees :: Either Text Int   -- ^ nb insérés ou erreur
+  , airConsosPubliees :: Either Text Int
   , airConsosInfos    :: Either Text Int
   , airInjections     :: Either Text Int
-  , airInfosContract  :: Either Text Bool  -- ^ True si inséré
-  , airInfosTech      :: Either Text Bool
+  , airInfosContract  :: Either Text ChangementInfosContract
+  , airInfosTech      :: Either Text ChangementInfosTech
   } deriving (Show)
 
 
 -- ---------------------------------------------------------------------------
--- Ingestion
+-- Ingestion par endpoint
 
--- | Ingère toutes les données ADICT pour un PCE sur une période.
--- Ouvre/crée le site via le registre, puis insère chaque type de donnée.
-ingestFromAdict
-  :: AdictSession
-  -> FilePath -- ^ Répertoire de configuration (contient @registry.db@)
-  -> FilePath -- ^ Répertoire des bases SQLite site
-  -> Pce      -- ^ PCE à ingérer
-  -> Text     -- ^ Date de début (YYYY-MM-DD)
-  -> Text     -- ^ Date de fin (YYYY-MM-DD)
-  -> IO AdictIngestReport
-ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
-  reg    <- openRegistry configDir
-  siteId <- lookupOrCreateByPce reg pce
-  conn   <- openSiteDbGaz siteDbDir siteId
-  now    <- getCurrentTime
-  let pceText (Pce t) = t
+pceText :: Pce -> Text
+pceText (Pce t) = t
 
-  -- Consommations publiées
-  rPub <- consulterConsosPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
+-- | Ingère les consommations publiées pour un PCE sur une plage de dates.
+ingererConsosPubliees
+  :: AdictSession -> Connection -> Pce -> Text -> Text -> IO (Either Text Int)
+ingererConsosPubliees session conn pce dateDebut dateFin = do
+  now <- getCurrentTime
+  consulterConsosPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right consos -> do
       let rows = mapMaybe (toGazConso TDPubliee) consos
@@ -178,8 +179,12 @@ ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
       insertGazConsos conn ingId rows
       return $ Right (length rows)
 
-  -- Consommations informatives
-  rInfo <- consulterConsosInfos session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
+-- | Ingère les consommations informatives pour un PCE sur une plage de dates.
+ingererConsosInfos
+  :: AdictSession -> Connection -> Pce -> Text -> Text -> IO (Either Text Int)
+ingererConsosInfos session conn pce dateDebut dateFin = do
+  now <- getCurrentTime
+  consulterConsosInfos session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right consos -> do
       let rows = mapMaybe (toGazConso TDInformative) consos
@@ -188,8 +193,12 @@ ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
       insertGazConsos conn ingId rows
       return $ Right (length rows)
 
-  -- Injections publiées
-  rInj <- consulterInjectionsPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
+-- | Ingère les injections publiées pour un PCE sur une plage de dates.
+ingererInjections
+  :: AdictSession -> Connection -> Pce -> Text -> Text -> IO (Either Text Int)
+ingererInjections session conn pce dateDebut dateFin = do
+  now <- getCurrentTime
+  consulterInjectionsPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err  -> return $ Left (adictErrorToText err)
     Right injs -> do
       let rows = mapMaybe (toGazInjection TDPubliee) injs
@@ -198,24 +207,68 @@ ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
       insertGazInjections conn ingId rows
       return $ Right (length rows)
 
-  -- Informations contractuelles
-  rCont <- consulterDonneesContractuelles session (pceText pce) [] >>= \case
+-- | Ingère les informations contractuelles — stocke uniquement si les champs
+-- métier ont changé par rapport à la dernière valeur connue.
+ingererInfosContractuelles
+  :: AdictSession -> Connection -> Pce -> IO (Either Text ChangementInfosContract)
+ingererInfosContractuelles session conn pce = do
+  now <- getCurrentTime
+  consulterDonneesContractuelles session (pceText pce) [] >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right retour -> do
-      let info = toGazInfosContractuelles retour
-      ingId <- logGazIngestion conn "donnees_contractuelles"
-                 Nothing Nothing Nothing Nothing now 1
-      insertGazInfosContractuelles conn ingId now info
-      return $ Right True
+      let nouvelles = toGazInfosContractuelles retour
+      mDerniere <- derniereInfosContractuelles conn
+      case mDerniere of
+        Just derniere | memeChampsBusiness nouvelles derniere ->
+          return $ Right ContractuellesPasDeChangement
+        _ -> do
+          ingId <- logGazIngestion conn "donnees_contractuelles"
+                     Nothing Nothing Nothing Nothing now 1
+          insertGazInfosContractuelles conn ingId now nouvelles
+          return $ Right (ContractuellesNouvellesInfos nouvelles)
 
-  -- Informations techniques
-  rTech <- consulterDonneesTechniques session (pceText pce) >>= \case
+-- | Ingère les informations techniques — stocke uniquement si les champs
+-- métier ont changé par rapport à la dernière valeur connue.
+ingererInfosTechniques
+  :: AdictSession -> Connection -> Pce -> IO (Either Text ChangementInfosTech)
+ingererInfosTechniques session conn pce = do
+  now <- getCurrentTime
+  consulterDonneesTechniques session (pceText pce) >>= \case
     Left  err    -> return $ Left (adictErrorToText err)
     Right retour -> do
-      let info = toGazInfosTechniques retour
-      ingId <- logGazIngestion conn "donnees_techniques"
-                 Nothing Nothing Nothing Nothing now 1
-      insertGazInfosTechniques conn ingId now info
-      return $ Right True
+      let nouvelles = toGazInfosTechniques retour
+      mDerniere <- derniereInfosTechniques conn
+      case mDerniere of
+        Just derniere | memeChampsTech nouvelles derniere ->
+          return $ Right TechniquesPasDeChangement
+        _ -> do
+          ingId <- logGazIngestion conn "donnees_techniques"
+                     Nothing Nothing Nothing Nothing now 1
+          insertGazInfosTechniques conn ingId now nouvelles
+          return $ Right (TechniquesNouvellesInfos nouvelles)
 
+
+-- ---------------------------------------------------------------------------
+-- Wrapper : ingestion complète sur une plage unique (compatibilité)
+
+-- | Ingère toutes les données ADICT pour un PCE sur une période.
+-- Ouvre/crée le site via le registre, puis insère chaque type de donnée.
+-- Utilise la même plage de dates pour tous les endpoints temporels.
+ingestFromAdict
+  :: AdictSession
+  -> FilePath -- ^ Répertoire de configuration (contient registry.db)
+  -> FilePath -- ^ Répertoire des bases SQLite site
+  -> Pce
+  -> Text     -- ^ Date de début (YYYY-MM-DD)
+  -> Text     -- ^ Date de fin (YYYY-MM-DD)
+  -> IO AdictIngestReport
+ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
+  reg    <- openRegistry configDir
+  siteId <- lookupOrCreateByPce reg pce
+  conn   <- openSiteDbGaz siteDbDir siteId
+  rPub   <- ingererConsosPubliees      session conn pce dateDebut dateFin
+  rInfo  <- ingererConsosInfos         session conn pce dateDebut dateFin
+  rInj   <- ingererInjections          session conn pce dateDebut dateFin
+  rCont  <- ingererInfosContractuelles session conn pce
+  rTech  <- ingererInfosTechniques     session conn pce
   return $ AdictIngestReport pce rPub rInfo rInj rCont rTech

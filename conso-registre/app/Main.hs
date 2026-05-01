@@ -23,10 +23,10 @@ import Conso.Fr.Elec.SiteDB.Cli
 import Conso.Fr.Gaz.SiteDB.Orchestration.Adresse (codePostalPce)
 import Conso.Fr.Gaz.SiteDB.Storage.Delete (deleteGazData)
 import Conso.Fr.Gaz.SiteDB.Cli
-  ( GazCommand(..), initSession
-  , gazInscrirePceParser, gazSupprimerPceParser, runGazCommand )
+  ( GazCommand(..), GazCommandResult(..), initSession
+  , gazInscrirePceParser, gazSupprimerPceParser, gazIngererParser, runGazCommand )
 
-import Display (afficherResultat, afficherSites, afficherDesinscription)
+import Display (afficherResultat, afficherSites, afficherDesinscription, afficherIngererGaz)
 
 
 -- ---------------------------------------------------------------------------
@@ -85,8 +85,9 @@ runCommand configDir prod verbose siteDbDir (CmdGaz cmd) = do
   withRegistry configDir $ \conn -> do
     result <- runGazCommand conn siteDbDir prod verbose session mGetCpPrm cmd
     case result of
-      Left  r -> afficherResultat r
-      Right r -> afficherDesinscription r
+      GazInscrit    r -> afficherResultat r
+      GazDesinscrit r -> afficherDesinscription r
+      GazIngere     r -> afficherIngererGaz r
 
 runCommand configDir prod verbose siteDbDir (CmdSupprimerTout siteId) = do
   let callbacks = DesinscriptionCallbacks
@@ -111,6 +112,7 @@ globalParser = GlobalOpts
     (  command "lister"    (info (pure CmdLister <**> helper)   (progDesc "Lister les sites inscrits"))
     <> command "inscrire"  (info (inscrireParser  <**> helper)   (progDesc "Inscrire un PRM ou PCE"))
     <> command "supprimer" (info (supprimerParser <**> helper)   (progDesc "Supprimer un PRM, PCE ou site"))
+    <> command "ingerer"   (info (ingererParser   <**> helper)   (progDesc "Ingérer les données depuis les APIs"))
     )
 
 inscrireParser :: Parser Command
@@ -118,6 +120,11 @@ inscrireParser = subparser
   (  command "prm" (info (CmdElec <$> elecInscrirePrmParser <**> helper) (progDesc "Inscrire un PRM (Enedis SGE)"))
   <> command "pce" (info (CmdGaz  <$> gazInscrirePceParser  <**> helper) (progDesc "Inscrire un PCE (GRDF ADICT)"))
   )
+
+ingererParser :: Parser Command
+ingererParser = subparser
+  ( command "gaz" (info (CmdGaz <$> gazIngererParser <**> helper)
+      (progDesc "Ingérer les données GRDF ADICT pour tous les PCEs inscrits")) )
 
 supprimerParser :: Parser Command
 supprimerParser = subparser

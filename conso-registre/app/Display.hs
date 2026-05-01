@@ -3,6 +3,7 @@ module Display
   ( afficherResultat
   , afficherSites
   , afficherDesinscription
+  , afficherIngererGaz
   ) where
 
 import Data.Text (Text)
@@ -13,6 +14,10 @@ import Data.Foldable (forM_)
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Desinscription (DesinscriptionResult(..))
+import Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
+  ( IngererGazReport(..), PceIngestionReport(..) )
+import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
+  ( ChangementInfosContract(..), ChangementInfosTech(..) )
 
 
 afficherResultat :: InscriptionResult -> IO ()
@@ -62,3 +67,43 @@ afficherSite sr = do
 
 pad :: Int -> String -> String
 pad n s = take n (s <> repeat ' ')
+
+
+afficherIngererGaz :: IngererGazReport -> IO ()
+afficherIngererGaz r = do
+  putStrLn $ "=== Ingestion gaz : " <> show (igrTotal r) <> " PCE(s) traité(s) ==="
+  mapM_ afficherPceReport (igrDetails r)
+  mapM_ afficherErreurPce (igrErrors r)
+
+afficherPceReport :: PceIngestionReport -> IO ()
+afficherPceReport r = do
+  let Pce pce = pirPce r
+  putStrLn $ "\n--- PCE " <> T.unpack pce <> " ---"
+  putStrLn $ "  Consos publiées   : " <> afficherNb (pirConsoPub r)
+  putStrLn $ "  Consos informatives: " <> afficherNb (pirConsoInfo r)
+  putStrLn $ "  Injections        : " <> afficherNb (pirInjections r)
+  putStrLn $ "  Contractuelles    : " <> afficherChangementContract (pirContractuelles r)
+  putStrLn $ "  Techniques        : " <> afficherChangementTech (pirTechniques r)
+  case pirTrous r of
+    []    -> return ()
+    trous -> do
+      putStrLn $ "  Trous détectés (" <> show (length trous) <> ") :"
+      mapM_ (\(d1, d2) -> putStrLn $ "    " <> T.unpack d1 <> " → " <> T.unpack d2) trous
+
+afficherErreurPce :: (Pce, Text) -> IO ()
+afficherErreurPce (Pce pce, err) =
+  putStrLn $ "\n  ERREUR PCE " <> T.unpack pce <> " : " <> T.unpack err
+
+afficherNb :: Either Text Int -> String
+afficherNb (Left err) = "ERREUR — " <> T.unpack err
+afficherNb (Right n)  = show n <> " ligne(s)"
+
+afficherChangementContract :: Either Text ChangementInfosContract -> String
+afficherChangementContract (Left err)                        = "ERREUR — " <> T.unpack err
+afficherChangementContract (Right ContractuellesPasDeChangement)  = "inchangées"
+afficherChangementContract (Right (ContractuellesNouvellesInfos _)) = "mise à jour stockée"
+
+afficherChangementTech :: Either Text ChangementInfosTech -> String
+afficherChangementTech (Left err)                      = "ERREUR — " <> T.unpack err
+afficherChangementTech (Right TechniquesPasDeChangement)    = "inchangées"
+afficherChangementTech (Right (TechniquesNouvellesInfos _)) = "mise à jour stockée"

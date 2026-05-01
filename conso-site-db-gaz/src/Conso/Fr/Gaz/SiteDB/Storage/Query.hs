@@ -1,0 +1,97 @@
+{-# LANGUAGE OverloadedStrings #-}
+module Conso.Fr.Gaz.SiteDB.Storage.Query
+  ( derniereIngestDate
+  , derniereInfosContractuelles
+  , derniereInfosTechniques
+  , detectionTrous
+  ) where
+
+import           Data.Text                     (Text)
+import qualified Data.Text                     as T
+import           Data.Time
+  ( Day, parseTimeM, defaultTimeLocale
+  , addDays, addGregorianMonthsRollOver, formatTime )
+import           Database.SQLite.Simple
+
+import           Conso.Fr.Gaz.SiteDB.Types
+
+
+-- | MAX(date_fin) dans gaz_ingestion_log pour un endpoint donné.
+-- Retourne Nothing si aucune ingestion n'a encore eu lieu pour cet endpoint.
+derniereIngestDate :: Connection -> Text -> IO (Maybe Text)
+derniereIngestDate conn endpoint = do
+  rows <- query conn
+    "SELECT MAX(date_fin) FROM gaz_ingestion_log \
+    \WHERE endpoint = ? AND date_fin IS NOT NULL"
+    (Only endpoint) :: IO [Only (Maybe Text)]
+  return $ case rows of
+    [Only mv] -> mv
+    _         -> Nothing
+
+
+-- | Dernières informations contractuelles stockées (champs métier + raw_json).
+-- Utilisé pour détecter si les données ont changé avant d'insérer.
+derniereInfosContractuelles :: Connection -> IO (Maybe GazInfosContractuelles)
+derniereInfosContractuelles conn = do
+  rows <- query_ conn
+    "SELECT date_debut, date_fin, segment_client, num_compteur, tarif, raw_json \
+    \FROM gaz_infos_contractuelles ORDER BY id DESC LIMIT 1"
+    :: IO [(Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text, Text)]
+  return $ case rows of
+    [(d1, d2, sc, nc, t, rj)] -> Just GazInfosContractuelles
+      { icDateDebut     = d1
+      , icDateFin       = d2
+      , icSegmentClient = sc
+      , icNumCompteur   = nc
+      , icTarif         = t
+      , icRawJson       = rj
+      }
+    _ -> Nothing
+
+
+-- | Dernières informations techniques stockées (champs métier + raw_json).
+derniereInfosTechniques :: Connection -> IO (Maybe GazInfosTechniques)
+derniereInfosTechniques conn = do
+  rows <- query_ conn
+    "SELECT type_compteur, pression, date_releve, etat_compteur, raw_json \
+    \FROM gaz_infos_techniques ORDER BY id DESC LIMIT 1"
+    :: IO [(Maybe Text, Maybe Text, Maybe Text, Maybe Text, Text)]
+  return $ case rows of
+    [(tc, p, dr, ec, rj)] -> Just GazInfosTechniques
+      { itTypeCompteur = tc
+      , itPression     = p
+      , itDateReleve   = dr
+      , itEtatCompteur = ec
+      , itRawJson      = rj
+      }
+    _ -> Nothing
+
+
+-- | Retourne les plages de dates manquantes dans gaz_consos entre deux bornes.
+-- Génère la séquence de dates attendues (un enregistrement par jour ou par mois)
+-- et la compare aux date_debut effectivement stockées.
+detectionTrous :: Connection -> Text -> Text -> PeriodeGaz -> IO [(Text, Text)]
+detectionTrous conn dateDebutStr dateFinStr periode = do
+  let parseD s = parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack s) :: Maybe Day
+  case (parseD dateDebutStr, parseD dateFinStr) of
+    (Nothing, _) -> return []
+    (_, Nothing) -> return []
+    (Just debut, Just fin) -> do
+      let fmt       = formatTime defaultTimeLocale "%Y-%m-%d"
+          attendues = map (T.pack . fmt) (genererDates periode debut fin)
+      rows <- query conn
+        "SELECT DISTINCT date_debut FROM gaz_consos \
+        \WHERE periode = ? AND date_debut >= ? AND date_debut <= ? \
+        \ORDER BY date_debut"
+        (periodeGazToText periode, dateDebutStr, dateFinStr)
+        :: IO [Only Text]
+      let stockees   = map (\(Only d) -> d) rows
+          manquantes = filter (`notElem` stockees) attendues
+      return (map (\d -> (d, d)) manquantes)
+
+
+genererDates :: PeriodeGaz -> Day -> Day -> [Day]
+genererDates PJournalier debut fin =
+  takeWhile (<= fin) $ iterate (addDays 1) debut
+genererDates PMensuel debut fin =
+  takeWhile (<= fin) $ iterate (addGregorianMonthsRollOver 1) debut

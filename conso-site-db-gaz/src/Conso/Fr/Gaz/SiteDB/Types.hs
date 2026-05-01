@@ -74,7 +74,7 @@ data GazInfosContractuelles = GazInfosContractuelles
   , icNumCompteur     :: Maybe Text -- ^ Numéro de compteur
   , icTarif           :: Maybe Text -- ^ Tarif applicable
   , icRawJson         :: Text       -- ^ JSON brut complet
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 -- | Informations techniques GRDF pour stockage SQLite.
 data GazInfosTechniques = GazInfosTechniques
@@ -83,4 +83,4 @@ data GazInfosTechniques = GazInfosTechniques
   , itDateReleve      :: Maybe Text -- ^ Date du dernier relevé
   , itEtatCompteur    :: Maybe Text -- ^ État du compteur
   , itRawJson         :: Text       -- ^ JSON brut complet
-  } deriving (Show)
+  } deriving (Show, Eq)

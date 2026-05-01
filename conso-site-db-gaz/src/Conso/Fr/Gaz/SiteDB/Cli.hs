@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Conso.Fr.Gaz.SiteDB.Cli
   ( GazCommand(..)
+  , GazCommandResult(..)
   , GazRattachement(..)
   , gazInscrirePceParser
   , gazSupprimerPceParser
+  , gazIngererParser
   , runGazCommand
   , AdictSession
   , initSession
@@ -16,12 +18,14 @@ import Database.SQLite.Simple (Connection)
 
 import Conso.Fr.Gaz.Adict.Adict (AdictSession, initSession)
 
-import Conso.Fr.SiteDB.Types (SiteId(..))
+import Conso.Fr.SiteDB.Types (SiteId(..), Pce(..))
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Desinscription
   ( DesinscriptionCallbacks(..), DesinscriptionResult, desinscrirePce )
 
 import Conso.Fr.Gaz.SiteDB.Orchestration.Inscription (inscrirePce)
+import Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
+  ( IngererGazParams(..), IngererGazReport, ingererGaz )
 import Conso.Fr.Gaz.SiteDB.Storage.Delete (deleteGazData)
 
 
@@ -33,19 +37,24 @@ data GazRattachement
 data GazCommand
   = GazInscrirePce InscriptionPceParams (Maybe GazRattachement)
   | GazSupprimerPce SiteId
-  deriving (Show)
+  | GazIngerer IngererGazParams
+
+data GazCommandResult
+  = GazInscrit InscriptionResult
+  | GazDesinscrit DesinscriptionResult
+  | GazIngere IngererGazReport
 
 
 runGazCommand :: Connection -> FilePath -> Bool -> Bool
               -> AdictSession
-              -> Maybe GetCodePostal  -- ^ code postal PRM (depuis conso-site-db-elec)
+              -> Maybe GetCodePostal
               -> GazCommand
-              -> IO (Either InscriptionResult DesinscriptionResult)
+              -> IO GazCommandResult
 runGazCommand conn _siteDbDir prod verbose session mGetCpPrm (GazInscrirePce params mRatt) = do
   let rattachement = resolveRattPce mRatt
       params' = params { ipeRattachement = rattachement }
   result <- inscrirePce conn prod verbose session mGetCpPrm params'
-  return (Left result)
+  return (GazInscrit result)
 runGazCommand conn siteDbDir _prod _verbose _session _mGetCpPrm (GazSupprimerPce siteId) = do
   let callbacks = DesinscriptionCallbacks
         { cbDeleteElec  = \_ -> return ()
@@ -53,7 +62,10 @@ runGazCommand conn siteDbDir _prod _verbose _session _mGetCpPrm (GazSupprimerPce
         , cbArreterSge  = \_ -> return []
         }
   result <- desinscrirePce conn siteDbDir callbacks siteId
-  return (Right result)
+  return (GazDesinscrit result)
+runGazCommand conn siteDbDir _prod _verbose session _mGetCpPrm (GazIngerer params) = do
+  report <- ingererGaz conn session siteDbDir params
+  return (GazIngere report)
 
 
 resolveRattPce :: Maybe GazRattachement -> Rattachement
@@ -76,6 +88,13 @@ gazInscrirePceParser = GazInscrirePce
 
 gazSupprimerPceParser :: Parser GazCommand
 gazSupprimerPceParser = GazSupprimerPce <$> uuidArg "UUID du site dont le PCE doit être supprimé"
+
+gazIngererParser :: Parser GazCommand
+gazIngererParser = GazIngerer . IngererGazParams <$>
+  optional (some (Pce . T.pack <$>
+    strOption (long "pce" <> metavar "PCE"
+               <> help "Filtrer sur ce PCE (répétable, défaut : tous)")))
+
 
 
 accordParser :: Parser Accord
