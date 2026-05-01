@@ -88,11 +88,29 @@ data GazInfosContractuelles = GazInfosContractuelles
   , icModulationN3              :: Maybe Text -- ^ Modulation N-3
   } deriving (Show, Eq)
 
--- | Informations techniques GRDF pour stockage SQLite.
+-- | Informations techniques GRDF pour stockage SQLite (série temporelle).
+-- Une ligne est insérée uniquement quand les données changent.
 data GazInfosTechniques = GazInfosTechniques
-  { itTypeCompteur    :: Maybe Text -- ^ Type de compteur
-  , itPression        :: Maybe Text -- ^ Domaine de pression (BP, MP, …)
-  , itDateReleve      :: Maybe Text -- ^ Date du dernier relevé
-  , itEtatCompteur    :: Maybe Text -- ^ État du compteur
-  , itRawJson         :: Text       -- ^ JSON brut complet
+  -- Situation compteur
+  { itNumeroRue                    :: Maybe Text
+  , itNomRue                       :: Maybe Text
+  , itComplementAdresse            :: Maybe Text
+  , itCodePostal                   :: Maybe Text
+  , itCommune                      :: Maybe Text
+  -- Caractéristiques compteur
+  , itClientSensibleMig            :: Maybe Text
+  , itCodeCalibre                  :: Maybe Text
+  , itCodeDebit                    :: Maybe Text
+  , itCodeDebitNormalise           :: Maybe Text
+  , itFrequence                    :: Maybe Text
+  , itMatriculeCompteur            :: Maybe Text
+  , itPressionLivraison            :: Maybe Text
+  -- PITD
+  , itIdentifiantPitd              :: Maybe Text
+  , itLibellePitd                  :: Maybe Text
+  -- Régime de propriété
+  , itRegimeProprieteCompteur      :: Maybe Text
+  , itRegimeProprieteConvertisseur :: Maybe Text
+  , itRegimeProprieteEnregistreur  :: Maybe Text
+  , itRegimeProprietePoste         :: Maybe Text
   } deriving (Show, Eq)

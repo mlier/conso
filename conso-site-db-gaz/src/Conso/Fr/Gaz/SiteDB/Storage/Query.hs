@@ -74,21 +74,47 @@ derniereInfosContractuelles conn = do
     _ -> Nothing
 
 
--- | Dernières informations techniques stockées (champs métier + raw_json).
+-- | Dernières informations techniques stockées (tous les champs métier).
 derniereInfosTechniques :: Connection -> IO (Maybe GazInfosTechniques)
 derniereInfosTechniques conn = do
   rows <- query_ conn
-    "SELECT type_compteur, pression, date_releve, etat_compteur, raw_json \
-    \FROM gaz_infos_techniques ORDER BY id DESC LIMIT 1"
-    :: IO [(Maybe Text, Maybe Text, Maybe Text, Maybe Text, Text)]
+    "SELECT numero_rue, nom_rue, complement_adresse, code_postal, commune,\
+    \       client_sensible_mig, code_calibre, code_debit, code_debit_normalise, frequence,\
+    \       matricule_compteur, pression_livraison,\
+    \       identifiant_pitd, libelle_pitd,\
+    \       regime_propriete_compteur, regime_propriete_convertisseur,\
+    \       regime_propriete_enregistreur, regime_propriete_poste\
+    \ FROM gaz_infos_techniques ORDER BY id DESC LIMIT 1"
+    :: IO [( Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text
+           , Maybe Text, Maybe Text, Maybe Text, Maybe Text, Maybe Text )
+           :.
+           ( Maybe Text, Maybe Text
+           , Maybe Text, Maybe Text
+           , Maybe Text, Maybe Text, Maybe Text, Maybe Text )]
   return $ case rows of
-    [(tc, p, dr, ec, rj)] -> Just GazInfosTechniques
-      { itTypeCompteur = tc
-      , itPression     = p
-      , itDateReleve   = dr
-      , itEtatCompteur = ec
-      , itRawJson      = rj
-      }
+    [(nr, nomR, compl, cp, com, csm, cc, cd, cdn, freq)
+     :.
+     (mc, pl, ipitd, lpitd, rpc, rpconv, rpenr, rpposte)]
+      -> Just GazInfosTechniques
+          { itNumeroRue                    = nr
+          , itNomRue                       = nomR
+          , itComplementAdresse            = compl
+          , itCodePostal                   = cp
+          , itCommune                      = com
+          , itClientSensibleMig            = csm
+          , itCodeCalibre                  = cc
+          , itCodeDebit                    = cd
+          , itCodeDebitNormalise           = cdn
+          , itFrequence                    = freq
+          , itMatriculeCompteur            = mc
+          , itPressionLivraison            = pl
+          , itIdentifiantPitd              = ipitd
+          , itLibellePitd                  = lpitd
+          , itRegimeProprieteCompteur      = rpc
+          , itRegimeProprieteConvertisseur = rpconv
+          , itRegimeProprieteEnregistreur  = rpenr
+          , itRegimeProprietePoste         = rpposte
+          }
     _ -> Nothing
 
 

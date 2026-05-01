@@ -130,14 +130,21 @@ insertGazInfosTechniques conn ingId now it = do
   let now' = formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" now
   execute conn
     "INSERT INTO gaz_infos_techniques \
-    \ (type_compteur, pression, date_releve, etat_compteur, \
-    \  raw_json, date_ingestion, ingestion_id) \
-    \ VALUES (?,?,?,?,?,?,?)"
-    ( itTypeCompteur it
-    , itPression it
-    , itDateReleve it
-    , itEtatCompteur it
-    , itRawJson it
-    , now'
-    , ingId
+    \ (date_ingestion, ingestion_id,\
+    \  numero_rue, nom_rue, complement_adresse, code_postal, commune,\
+    \  client_sensible_mig, code_calibre, code_debit,\
+    \  code_debit_normalise, frequence, matricule_compteur, pression_livraison,\
+    \  identifiant_pitd, libelle_pitd,\
+    \  regime_propriete_compteur, regime_propriete_convertisseur,\
+    \  regime_propriete_enregistreur, regime_propriete_poste)\
+    \ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    (  ( now', ingId
+       , itNumeroRue it, itNomRue it, itComplementAdresse it, itCodePostal it, itCommune it
+       , itClientSensibleMig it, itCodeCalibre it, itCodeDebit it
+       )
+    :. ( itCodeDebitNormalise it, itFrequence it, itMatriculeCompteur it, itPressionLivraison it
+       , itIdentifiantPitd it, itLibellePitd it
+       , itRegimeProprieteCompteur it, itRegimeProprieteConvertisseur it
+       , itRegimeProprieteEnregistreur it, itRegimeProprietePoste it
+       )
     )

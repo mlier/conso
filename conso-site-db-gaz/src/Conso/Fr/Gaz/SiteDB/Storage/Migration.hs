@@ -105,14 +105,27 @@ gazMigrations =
 
         -- Informations techniques
       , "CREATE TABLE IF NOT EXISTS gaz_infos_techniques (\
-        \  id              INTEGER PRIMARY KEY AUTOINCREMENT,\
-        \  type_compteur   TEXT,\
-        \  pression        TEXT,\
-        \  date_releve     TEXT,\
-        \  etat_compteur   TEXT,\
-        \  raw_json        TEXT NOT NULL,\
-        \  date_ingestion  TEXT NOT NULL,\
-        \  ingestion_id    INTEGER REFERENCES gaz_ingestion_log(id)\
+        \  id                              INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  date_ingestion                  TEXT NOT NULL,\
+        \  ingestion_id                    INTEGER REFERENCES gaz_ingestion_log(id),\
+        \  numero_rue                      TEXT,\
+        \  nom_rue                         TEXT,\
+        \  complement_adresse              TEXT,\
+        \  code_postal                     TEXT,\
+        \  commune                         TEXT,\
+        \  client_sensible_mig             TEXT,\
+        \  code_calibre                    TEXT,\
+        \  code_debit                      TEXT,\
+        \  code_debit_normalise            TEXT,\
+        \  frequence                       TEXT,\
+        \  matricule_compteur              TEXT,\
+        \  pression_livraison              TEXT,\
+        \  identifiant_pitd                TEXT,\
+        \  libelle_pitd                    TEXT,\
+        \  regime_propriete_compteur       TEXT,\
+        \  regime_propriete_convertisseur  TEXT,\
+        \  regime_propriete_enregistreur   TEXT,\
+        \  regime_propriete_poste          TEXT\
         \)"
       ])
   ]

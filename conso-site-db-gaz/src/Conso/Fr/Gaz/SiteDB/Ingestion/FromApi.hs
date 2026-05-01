@@ -133,20 +133,32 @@ toGazInfosContractuelles r =
     }
 
 toGazInfosTechniques :: RetourDonneesTechniques -> GazInfosTechniques
-toGazInfosTechniques r = GazInfosTechniques
-  { itTypeCompteur = Nothing
-  , itPression     = Nothing
-  , itDateReleve   = Nothing
-  , itEtatCompteur = Nothing
-  , itRawJson      = encodeText r
-  }
-
-memeChampsTech :: GazInfosTechniques -> GazInfosTechniques -> Bool
-memeChampsTech a b =
-  itTypeCompteur a == itTypeCompteur b &&
-  itPression     a == itPression     b &&
-  itDateReleve   a == itDateReleve   b &&
-  itEtatCompteur a == itEtatCompteur b
+toGazInfosTechniques r =
+  let dt     = rdt_donnees r
+      sit    = dt >>= dt_situation_compteur
+      carac  = dt >>= dt_caracteristiques_compteur
+      pitd   = dt >>= dt_pitd
+      regime = dt >>= dt_regime_propriete
+  in GazInfosTechniques
+    { itNumeroRue                    = sit >>= numero_rue
+    , itNomRue                       = sit >>= nom_rue
+    , itComplementAdresse            = sit >>= complement_adresse
+    , itCodePostal                   = sit >>= scd_code_postal
+    , itCommune                      = sit >>= commune
+    , itClientSensibleMig            = getField "client_sensible_mig"           carac
+    , itCodeCalibre                  = getField "code_calibre"                  carac
+    , itCodeDebit                    = getField "code_debit"                    carac
+    , itCodeDebitNormalise           = getField "code_debit_normalise"          carac
+    , itFrequence                    = getField "frequence"                     carac
+    , itMatriculeCompteur            = getField "matricule_compteur"            carac
+    , itPressionLivraison            = getField "pression_livraison"            carac
+    , itIdentifiantPitd              = pitd >>= identifiant_pitd
+    , itLibellePitd                  = pitd >>= libelle_pitd
+    , itRegimeProprieteCompteur      = getField "regime_propriete_compteur"      regime
+    , itRegimeProprieteConvertisseur = getField "regime_propriete_convertisseur" regime
+    , itRegimeProprieteEnregistreur  = getField "regime_propriete_enregistreur"  regime
+    , itRegimeProprietePoste         = getField "regime_propriete_poste"         regime
+    }
 
 
 -- ---------------------------------------------------------------------------
@@ -252,7 +264,7 @@ ingererInfosTechniques session conn pce = do
       let nouvelles = toGazInfosTechniques retour
       mDerniere <- derniereInfosTechniques conn
       case mDerniere of
-        Just derniere | memeChampsTech nouvelles derniere ->
+        Just derniere | nouvelles == derniere ->
           return $ Right TechniquesPasDeChangement
         _ -> do
           ingId <- logGazIngestion conn "donnees_techniques"
