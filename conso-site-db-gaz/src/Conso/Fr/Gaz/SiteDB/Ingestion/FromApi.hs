@@ -233,7 +233,7 @@ ingererConsosInfos session conn pce dateDebut dateFin = do
       let rows = mapMaybe toGazConso consos
       ingId <- logGazIngestion conn "donnees_consos_informatives"
                  (Just dateDebut) (Just dateFin) Nothing (Just "INFORMATIVE") now (length rows)
-      insertGazConsos conn ingId rows
+      insertGazConsosInformatives conn ingId rows
       return $ Right (length rows)
 
 -- | Ingère les injections publiées pour un PCE sur une plage de dates.

@@ -76,6 +76,41 @@ gazMigrations =
       , "CREATE INDEX IF NOT EXISTS idx_gaz_consos_debut \
         \  ON gaz_consos(debut)"
 
+        -- Consommations informatives (même schéma que gaz_consos, flux séparé)
+      , "CREATE TABLE IF NOT EXISTS gaz_consos_informatives (\
+        \  id                    INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  energie_kwh           REAL,\
+        \  volume_brut_m3        REAL,\
+        \  volume_converti       REAL,\
+        \  conversion            REAL,\
+        \  pta                   REAL,\
+        \  pcs                   REAL,\
+        \  flag_retour_zero      INTEGER,\
+        \  type_qualif           TEXT,\
+        \  sens_flux             TEXT,\
+        \  statut_conso          TEXT,\
+        \  type_conso            TEXT,\
+        \  journee_gaziere       TEXT,\
+        \  debut                 TEXT NOT NULL,\
+        \  debut_raison          TEXT,\
+        \  debut_libelle_raison  TEXT,\
+        \  debut_qualite         TEXT,\
+        \  debut_statut          TEXT,\
+        \  debut_index_brut      REAL,\
+        \  debut_index_converti  REAL,\
+        \  fin                   TEXT NOT NULL,\
+        \  fin_raison            TEXT,\
+        \  fin_libelle_raison    TEXT,\
+        \  fin_qualite           TEXT,\
+        \  fin_statut            TEXT,\
+        \  fin_index_brut        REAL,\
+        \  fin_index_converti    REAL,\
+        \  ingestion_id          INTEGER REFERENCES gaz_ingestion_log(id),\
+        \  UNIQUE(debut, fin)\
+        \)"
+      , "CREATE INDEX IF NOT EXISTS idx_gaz_consos_inf_debut \
+        \  ON gaz_consos_informatives(debut)"
+
         -- Injections publiées
       , "CREATE TABLE IF NOT EXISTS gaz_injections (\
         \  id                INTEGER PRIMARY KEY AUTOINCREMENT,\
