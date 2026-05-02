@@ -80,10 +80,17 @@ afficherPceReport r = do
   let Pce pce = pirPce r
   putStrLn $ "\n--- PCE " <> T.unpack pce <> " ---"
   putStrLn $ "  Consos publiées   : " <> afficherNb (pirConsoPub r)
+             <> afficherDate (pirDerniereConsoPub r)
   putStrLn $ "  Consos informatives: " <> afficherNb (pirConsoInfo r)
-  putStrLn $ "  Injections        : " <> afficherNb (pirInjections r)
+             <> afficherDate (pirDerniereConsoInfo r)
+  putStrLn $ "  Injections        : " <>
+    if pirAvecInjections r
+      then afficherNb (pirInjections r) <> afficherDate (pirDerniereInj r)
+      else "non souscrit"
   putStrLn $ "  Contractuelles    : " <> afficherChangementContract (pirContractuelles r)
+             <> afficherDate (pirDerniereContract r)
   putStrLn $ "  Techniques        : " <> afficherChangementTech (pirTechniques r)
+             <> afficherDate (pirDerniereTech r)
   afficherTrous "Trous consos pub  " (pirTrousConso r)
   afficherTrous "Trous consos info " (pirTrousInfo  r)
   afficherTrous "Trous injections  " (pirTrousInj   r)
@@ -99,6 +106,10 @@ afficherTrous label trous = do
 afficherErreurPce :: (Pce, Text) -> IO ()
 afficherErreurPce (Pce pce, err) =
   putStrLn $ "\n  ERREUR PCE " <> T.unpack pce <> " : " <> T.unpack err
+
+afficherDate :: Maybe Text -> String
+afficherDate Nothing  = ""
+afficherDate (Just d) = "  [dernière : " <> T.unpack d <> "]"
 
 afficherNb :: Either Text Int -> String
 afficherNb (Left err) = "ERREUR — " <> T.unpack err

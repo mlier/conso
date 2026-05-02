@@ -83,7 +83,8 @@ gazInscrirePceParser = GazInscrirePce
         <*> (T.pack <$> strOption (long "cp" <> metavar "CODE_POSTAL" <> help "Code postal du site"))
         <*> optional (T.pack <$> strOption (long "email" <> metavar "EMAIL" <> help "Courriel du titulaire"))
         <*> accordParser
-        <*> pure Standalone)
+        <*> pure Standalone
+        <*> switch (long "avec-injections" <> help "Inclure le périmètre données d'injection dans le droit d'accès GRDF"))
   <*> optional rattachementPceParser
 
 gazSupprimerPceParser :: Parser GazCommand

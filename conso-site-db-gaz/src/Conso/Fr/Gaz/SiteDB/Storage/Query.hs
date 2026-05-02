@@ -5,6 +5,7 @@ module Conso.Fr.Gaz.SiteDB.Storage.Query
   , derniereInfosContractuelles
   , derniereInfosTechniques
   , detectionTrousContinu
+  , derniereDate
   ) where
 
 import           Data.Text                     (Text)
@@ -128,3 +129,13 @@ detectionTrousContinu conn dateDebutStr dateFinStr table =
       \  WHERE SUBSTR(debut,1,10) >= ? AND SUBSTR(debut,1,10) <= ?\
       \) WHERE fin != next_debut AND next_debut IS NOT NULL")
     (dateDebutStr, dateFinStr)
+
+
+derniereDate :: Connection -> Text -> Text -> IO (Maybe Text)
+derniereDate conn table col = do
+  rows <- query_ conn
+            (Query $ "SELECT SUBSTR(MAX(" <> col <> "),1,10) FROM " <> table)
+            :: IO [Only (Maybe Text)]
+  return $ case rows of
+    [Only mv] -> mv
+    _         -> Nothing

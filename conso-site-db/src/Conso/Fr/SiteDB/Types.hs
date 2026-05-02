@@ -35,8 +35,9 @@ type SiteLabel = Text
 
 -- | Référence complète d'un site telle que stockée dans le registre.
 data SiteRef = SiteRef
-  { srSiteId :: SiteId
-  , srPrm    :: Maybe Prm
-  , srPce    :: Maybe Pce
-  , srLabel  :: Maybe SiteLabel
+  { srSiteId              :: SiteId
+  , srPrm                 :: Maybe Prm
+  , srPce                 :: Maybe Pce
+  , srLabel               :: Maybe SiteLabel
+  , srGazAvecInjections   :: Bool
   } deriving (Eq, Show)

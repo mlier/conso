@@ -39,15 +39,21 @@ data TrouBackfill = TrouBackfill
   } deriving (Show)
 
 data PceIngestionReport = PceIngestionReport
-  { pirPce            :: Pce
-  , pirConsoPub       :: Either Text Int
-  , pirConsoInfo      :: Either Text Int
-  , pirInjections     :: Either Text Int
-  , pirContractuelles :: Either Text ChangementInfosContract
-  , pirTechniques     :: Either Text ChangementInfosTech
-  , pirTrousConso     :: [TrouBackfill]
-  , pirTrousInfo      :: [TrouBackfill]
-  , pirTrousInj       :: [TrouBackfill]
+  { pirPce                :: Pce
+  , pirConsoPub           :: Either Text Int
+  , pirConsoInfo          :: Either Text Int
+  , pirAvecInjections     :: Bool
+  , pirInjections         :: Either Text Int
+  , pirContractuelles     :: Either Text ChangementInfosContract
+  , pirTechniques         :: Either Text ChangementInfosTech
+  , pirTrousConso         :: [TrouBackfill]
+  , pirTrousInfo          :: [TrouBackfill]
+  , pirTrousInj           :: [TrouBackfill]
+  , pirDerniereConsoPub   :: Maybe Text
+  , pirDerniereConsoInfo  :: Maybe Text
+  , pirDerniereInj        :: Maybe Text
+  , pirDerniereContract   :: Maybe Text
+  , pirDerniereTech       :: Maybe Text
   } deriving (Show)
 
 data IngererGazReport = IngererGazReport
@@ -73,12 +79,12 @@ ingererGaz regConn session siteDbDir params = do
   let pcesSites = mapMaybe pceAvecSite sites
       pcesSites' = case igpPceFilter params of
         Nothing   -> pcesSites
-        Just filt -> filter (\(_, p) -> p `elem` filt) pcesSites
+        Just filt -> filter (\(_, p, _) -> p `elem` filt) pcesSites
   resultats <- mapM (ingererUnPce session siteDbDir) pcesSites'
   let (erreurs, details) = partitionner resultats
   return $ IngererGazReport (length pcesSites') details erreurs
   where
-    pceAvecSite sr = fmap (\p -> (srSiteId sr, p)) (srPce sr)
+    pceAvecSite sr = fmap (\p -> (srSiteId sr, p, srGazAvecInjections sr)) (srPce sr)
 
 comblerTrous
   :: (Text -> Text -> IO (Either Text Int))
@@ -95,38 +101,69 @@ partitionner = foldr step ([], [])
     step (Right d) (es, ds) = (es, d:ds)
 
 ingererUnPce
-  :: AdictSession -> FilePath -> (SiteId, Pce)
+  :: AdictSession -> FilePath -> (SiteId, Pce, Bool)
   -> IO (Either (Pce, Text) PceIngestionReport)
-ingererUnPce session siteDbDir (siteId, pce) =
-  catch (Right <$> ingererUnPceUnsafe session siteDbDir siteId pce)
+ingererUnPce session siteDbDir (siteId, pce, avecInj) =
+  catch (Right <$> ingererUnPceUnsafe session siteDbDir siteId pce avecInj)
         (\e -> return $ Left (pce, T.pack (displayException (e :: SomeException))))
 
 ingererUnPceUnsafe
-  :: AdictSession -> FilePath -> SiteId -> Pce -> IO PceIngestionReport
-ingererUnPceUnsafe session siteDbDir siteId pce = do
+  :: AdictSession -> FilePath -> SiteId -> Pce -> Bool -> IO PceIngestionReport
+ingererUnPceUnsafe session siteDbDir siteId pce avecInj = do
   conn  <- openSiteDbGaz siteDbDir siteId
   today <- T.pack . formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
 
-  debutPub  <- dateDebut conn "donnees_consos_publiees"   today 5
+  debutPub  <- dateDebut conn "donnees_consos_publiees"     today 5
   debutInfo <- dateDebut conn "donnees_consos_informatives" today 3
   debutInj  <- dateDebut conn "donnees_injections_publiees" today 5
 
-  rPub  <- ingererConsosPubliees      session conn pce debutPub  today
-  rInfo <- ingererConsosInfos         session conn pce debutInfo today
-  rInj  <- ingererInjections          session conn pce debutInj  today
+  rPub  <- if debutPub  >= today then return (Right 0)
+             else ingererConsosPubliees session conn pce debutPub  today
+  rInfo <- if debutInfo >= today then return (Right 0)
+             else ingererConsosInfos    session conn pce debutInfo today
+  rInj  <- if not avecInj then return (Right 0)
+             else if debutInj >= today then return (Right 0)
+             else ingererInjections session conn pce debutInj today
   rCont <- ingererInfosContractuelles session conn pce
   rTech <- ingererInfosTechniques     session conn pce
 
   trousConso <- detectionTrousContinu conn debutPub  today "gaz_conso"
   trousInfo  <- detectionTrousContinu conn debutInfo today "gaz_conso_informative"
-  trousInj   <- detectionTrousContinu conn debutInj  today "gaz_injection"
+  trousInj   <- if avecInj
+                  then detectionTrousContinu conn debutInj today "gaz_injection"
+                  else return []
 
   rTrousConso <- comblerTrous (ingererConsosPubliees session conn pce) trousConso
   rTrousInfo  <- comblerTrous (ingererConsosInfos    session conn pce) trousInfo
-  rTrousInj   <- comblerTrous (ingererInjections     session conn pce) trousInj
+  rTrousInj   <- if avecInj
+                   then comblerTrous (ingererInjections session conn pce) trousInj
+                   else return []
 
-  return $ PceIngestionReport pce rPub rInfo rInj rCont rTech
-             rTrousConso rTrousInfo rTrousInj
+  dConsoPub  <- derniereDate conn "gaz_conso"              "fin"
+  dConsoInfo <- derniereDate conn "gaz_conso_informative"  "fin"
+  dInj       <- if avecInj
+                  then derniereDate conn "gaz_injection" "fin"
+                  else return Nothing
+  dContract  <- derniereDate conn "gaz_info_contractuelle" "date_ingestion"
+  dTech      <- derniereDate conn "gaz_info_technique"     "date_ingestion"
+
+  return $ PceIngestionReport
+    { pirPce                = pce
+    , pirConsoPub           = rPub
+    , pirConsoInfo          = rInfo
+    , pirAvecInjections     = avecInj
+    , pirInjections         = rInj
+    , pirContractuelles     = rCont
+    , pirTechniques         = rTech
+    , pirTrousConso         = rTrousConso
+    , pirTrousInfo          = rTrousInfo
+    , pirTrousInj           = rTrousInj
+    , pirDerniereConsoPub   = dConsoPub
+    , pirDerniereConsoInfo  = dConsoInfo
+    , pirDerniereInj        = dInj
+    , pirDerniereContract   = dContract
+    , pirDerniereTech       = dTech
+    }
 
 -- | Calcule la date de début pour un endpoint :
 -- - Si une ingestion précédente existe, repart de sa date_fin

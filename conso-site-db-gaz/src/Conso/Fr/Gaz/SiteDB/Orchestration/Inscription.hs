@@ -22,7 +22,8 @@ import Conso.Fr.Gaz.Adict.Types
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Registry.Operations
-  ( lookupByPce, lookupByPrm, lookupBySiteId, createSite, linkPce )
+  ( lookupByPce, lookupByPrm, lookupBySiteId, createSite, linkPce
+  , setGazAvecInjections )
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Adresses (verifierCoherence)
 
@@ -36,7 +37,8 @@ inscrirePce :: Connection -> Bool -> Bool
             -> IO InscriptionResult
 inscrirePce conn prod verbose session mGetCpPrm params = do
   (siteId, created) <- resoudreSite
-  adictResult <- gererDroitAcces session (ipePce params) (ipeCodePostal params) (ipeEmail params) (ipeAccord params)
+  setGazAvecInjections conn siteId (ipeAvecInjections params)
+  adictResult <- gererDroitAcces session (ipePce params) (ipeCodePostal params) (ipeEmail params) (ipeAccord params) (ipeAvecInjections params)
   return $ InscriptionResult siteId created [] (Just adictResult)
   where
     pce = Pce (ipePce params)
@@ -106,12 +108,12 @@ checkAdresses verbose _prod session (Just getCpPrm) prmT pceT False = do
 checkAdresses _ _ _ Nothing _ _ False = return ()
 
 
-gererDroitAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> IO (Either String Text)
-gererDroitAcces session pceT cp mEmail accord = do
+gererDroitAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> Bool -> IO (Either String Text)
+gererDroitAcces session pceT cp mEmail accord avecInj = do
   mActif <- droitActif session pceT
   case mActif of
     Just idActif -> return $ Right idActif
-    Nothing      -> declarerAcces session pceT cp mEmail accord
+    Nothing      -> declarerAcces session pceT cp mEmail accord avecInj
 
 
 droitActif :: AdictSession -> Text -> IO (Maybe Text)
@@ -129,11 +131,13 @@ droitActif session pceT = do
     Right (d:_) -> da_id_droit_acces d
 
 
-declarerAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> IO (Either String Text)
-declarerAcces session pceT cp mEmail accord = do
+declarerAcces :: AdictSession -> Text -> Text -> Maybe Text -> Accord -> Bool -> IO (Either String Text)
+declarerAcces session pceT cp mEmail accord avecInj = do
   today <- localDay . zonedTimeToLocalTime <$> getZonedTime
   let debut = formatTime defaultTimeLocale "%Y-%m-%d" today
       fin   = formatTime defaultTimeLocale "%Y-%m-%d" (addGregorianYearsRollOver 3 today)
+      injDebut = if avecInj then Just (T.pack debut) else Nothing
+      injFin   = if avecInj then Just (T.pack fin)   else Nothing
       demande = DemandeAccesIn
         { din_role_tiers                        = "AUTORISE_CONTRAT_FOURNITURE"
         , din_raison_sociale                    = raisonSociale
@@ -145,8 +149,8 @@ declarerAcces session pceT cp mEmail accord = do
         , din_date_fin_droit_acces              = Just (T.pack fin)
         , din_perim_donnees_conso_debut         = Just (T.pack debut)
         , din_perim_donnees_conso_fin           = Just (T.pack fin)
-        , din_perim_donnees_inj_debut           = Nothing
-        , din_perim_donnees_inj_fin             = Nothing
+        , din_perim_donnees_inj_debut           = injDebut
+        , din_perim_donnees_inj_fin             = injFin
         , din_perim_donnees_contractuelles      = Just "true"
         , din_perim_donnees_techniques          = Just "true"
         , din_perim_donnees_informatives        = Just "true"

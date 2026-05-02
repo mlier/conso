@@ -49,11 +49,12 @@ data InscriptionPrmParams = InscriptionPrmParams
   } deriving (Show)
 
 data InscriptionPceParams = InscriptionPceParams
-  { ipePce          :: Text
-  , ipeCodePostal   :: Text
-  , ipeEmail        :: Maybe Text
-  , ipeAccord       :: Accord
-  , ipeRattachement :: Rattachement
+  { ipePce              :: Text
+  , ipeCodePostal       :: Text
+  , ipeEmail            :: Maybe Text
+  , ipeAccord           :: Accord
+  , ipeRattachement     :: Rattachement
+  , ipeAvecInjections   :: Bool
   } deriving (Show)
 
 data SgeAbonnement = SgeNouveau | SgeRenouvele deriving (Show)

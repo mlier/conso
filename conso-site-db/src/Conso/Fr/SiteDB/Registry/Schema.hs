@@ -29,11 +29,12 @@ registryMigrations =
 
         -- Table principale du registre
       , "CREATE TABLE IF NOT EXISTS site_registry (\
-        \  uuid       TEXT PRIMARY KEY,\
-        \  prm        TEXT UNIQUE,\
-        \  pce        TEXT UNIQUE,\
-        \  label      TEXT,\
-        \  created_at TEXT NOT NULL\
+        \  uuid                  TEXT PRIMARY KEY,\
+        \  prm                   TEXT UNIQUE,\
+        \  pce                   TEXT UNIQUE,\
+        \  label                 TEXT,\
+        \  created_at            TEXT NOT NULL,\
+        \  gaz_avec_injections   INTEGER NOT NULL DEFAULT 0\
         \)"
       , "CREATE INDEX IF NOT EXISTS idx_registry_prm \
         \  ON site_registry(prm)"

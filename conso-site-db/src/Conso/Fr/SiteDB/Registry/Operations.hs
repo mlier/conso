@@ -19,6 +19,7 @@ module Conso.Fr.SiteDB.Registry.Operations
   , unlinkPce
   , deleteFromRegistry
   , listSites
+  , setGazAvecInjections
   ) where
 
 import           Database.SQLite.Simple
@@ -82,14 +83,15 @@ lookupOrCreateByPce conn pce = do
 lookupBySiteId :: Connection -> SiteId -> IO (Maybe SiteRef)
 lookupBySiteId conn (SiteId uuid) = do
   rows <- query conn
-    "SELECT uuid, prm, pce, label FROM site_registry WHERE uuid = ?"
-    (Only (UUID.toText uuid)) :: IO [(Text, Maybe Text, Maybe Text, Maybe Text)]
+    "SELECT uuid, prm, pce, label, gaz_avec_injections FROM site_registry WHERE uuid = ?"
+    (Only (UUID.toText uuid)) :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int)]
   return $ case rows of
-    [(u, p, c, l)] -> Just SiteRef
-      { srSiteId = SiteId (parseUuid u)
-      , srPrm    = Prm <$> p
-      , srPce    = Pce <$> c
-      , srLabel  = l
+    [(u, p, c, l, gi)] -> Just SiteRef
+      { srSiteId            = SiteId (parseUuid u)
+      , srPrm               = Prm <$> p
+      , srPce               = Pce <$> c
+      , srLabel             = l
+      , srGazAvecInjections = gi /= 0
       }
     _ -> Nothing
   where
@@ -130,17 +132,25 @@ deleteFromRegistry conn (SiteId uuid) =
 listSites :: Connection -> IO [SiteRef]
 listSites conn = do
   rows <- query_ conn
-    "SELECT uuid, prm, pce, label FROM site_registry ORDER BY created_at"
-    :: IO [(Text, Maybe Text, Maybe Text, Maybe Text)]
+    "SELECT uuid, prm, pce, label, gaz_avec_injections FROM site_registry ORDER BY created_at"
+    :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int)]
   return [ SiteRef
-             { srSiteId = SiteId (parseUuid u)
-             , srPrm    = Prm <$> p
-             , srPce    = Pce <$> c
-             , srLabel  = l
+             { srSiteId            = SiteId (parseUuid u)
+             , srPrm               = Prm <$> p
+             , srPce               = Pce <$> c
+             , srLabel             = l
+             , srGazAvecInjections = gi /= 0
              }
-         | (u, p, c, l) <- rows
+         | (u, p, c, l, gi) <- rows
          ]
   where
     parseUuid t = case UUID.fromText t of
       Just u  -> u
       Nothing -> error $ "UUID invalide dans le registre : " ++ T.unpack t
+
+-- | Met à jour le flag injection gaz d'un site.
+setGazAvecInjections :: Connection -> SiteId -> Bool -> IO ()
+setGazAvecInjections conn (SiteId uuid) v =
+  execute conn
+    "UPDATE site_registry SET gaz_avec_injections = ? WHERE uuid = ?"
+    (if v then (1 :: Int) else 0, UUID.toText uuid)
