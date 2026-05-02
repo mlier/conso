@@ -12,33 +12,16 @@ module Conso.Fr.Gaz.SiteDB.Types
   , GazInjection(..)
   , GazInfosContractuelles(..)
   , GazInfosTechniques(..)
-  , TypeDonnee(..)
   , PeriodeGaz(..)
-  , typeDonneeToText
-  , periodeGazToText
   ) where
 
 import Data.Text (Text)
 
--- | Type de donnée (qualité de la restitution).
-data TypeDonnee
-  = TDPubliee     -- ^ Donnée publiée définitive
-  | TDInformative -- ^ Donnée informative (provisoire)
-  deriving (Eq, Ord, Show)
-
-typeDonneeToText :: TypeDonnee -> Text
-typeDonneeToText TDPubliee     = "PUBLIEE"
-typeDonneeToText TDInformative = "INFORMATIVE"
-
--- | Granularité temporelle de la période.
+-- | Granularité temporelle de la période (utilisée par detectionTrous).
 data PeriodeGaz
   = PJournalier -- ^ Données journalières
   | PMensuel    -- ^ Données mensuelles
   deriving (Eq, Ord, Show)
-
-periodeGazToText :: PeriodeGaz -> Text
-periodeGazToText PJournalier = "J"
-periodeGazToText PMensuel    = "M"
 
 -- | Enregistrement de consommation gaz pour stockage SQLite.
 data GazConso = GazConso
@@ -75,14 +58,35 @@ data GazConso = GazConso
 
 -- | Enregistrement d'injection gaz pour stockage SQLite.
 data GazInjection = GazInjection
-  { giDateDebut      :: Text         -- ^ Date début (YYYY-MM-DD)
-  , giDateFin        :: Text         -- ^ Date fin (YYYY-MM-DD)
-  , giPeriode        :: PeriodeGaz   -- ^ Granularité (J ou M)
-  , giTypeDonnee     :: TypeDonnee   -- ^ Qualité
-  , giEnergie        :: Maybe Double -- ^ Énergie injectée en kWh
-  , giVolumeBrut     :: Maybe Double -- ^ Volume brut en m³
-  , giVolumeConverti :: Maybe Double -- ^ Volume converti en m³
-  , giRawJson        :: Text         -- ^ JSON brut de la ligne NDJSON
+  -- Injection
+  { giEnergie            :: Maybe Double
+  , giVolumeBrut         :: Maybe Double
+  , giVolumeConverti     :: Maybe Double
+  , giConversion         :: Maybe Double
+  , giPta                :: Maybe Double
+  , giPcs                :: Maybe Double
+  , giFlagRetourZero     :: Maybe Bool
+  , giTypeQualif         :: Maybe Text
+  , giSensFlux           :: Maybe Text
+  , giStatut             :: Maybe Text
+  , giTypeInjection      :: Maybe Text
+  , giJourneeGaziere     :: Maybe Text
+  -- Relevé début (NOT NULL — clé unique)
+  , giDebut              :: Text
+  , giDebutRaison        :: Maybe Text
+  , giDebutLibelleRaison :: Maybe Text
+  , giDebutQualite       :: Maybe Text
+  , giDebutStatut        :: Maybe Text
+  , giDebutIndexBrut     :: Maybe Double
+  , giDebutIndexConverti :: Maybe Double
+  -- Relevé fin (NOT NULL — clé unique)
+  , giFin                :: Text
+  , giFinRaison          :: Maybe Text
+  , giFinLibelleRaison   :: Maybe Text
+  , giFinQualite         :: Maybe Text
+  , giFinStatut          :: Maybe Text
+  , giFinIndexBrut       :: Maybe Double
+  , giFinIndexConverti   :: Maybe Double
   } deriving (Show)
 
 -- | Informations contractuelles GRDF pour stockage SQLite (série temporelle).

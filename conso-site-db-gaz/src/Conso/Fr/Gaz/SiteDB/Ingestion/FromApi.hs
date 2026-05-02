@@ -18,11 +18,9 @@ module Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
 import qualified Data.Aeson                    as A
 import qualified Data.Aeson.Key                as Key
 import qualified Data.Aeson.KeyMap             as KM
-import qualified Data.ByteString.Lazy          as LBS
 import           Data.Maybe                    (mapMaybe)
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
-import qualified Data.Text.Encoding            as TE
 import           Data.Time                     (getCurrentTime)
 
 import           Database.SQLite.Simple        (Connection)
@@ -51,19 +49,12 @@ import           Conso.Fr.Gaz.SiteDB.Types
 -- ---------------------------------------------------------------------------
 -- Helpers de conversion
 
-encodeText :: A.ToJSON a => a -> Text
-encodeText = TE.decodeUtf8 . LBS.toStrict . A.encode
-
 adictErrorToText :: AdictError -> Text
 adictErrorToText (HttpError code body)      = "HTTP " <> T.pack (show code) <> ": " <> body
 adictErrorToText (ParseError msg)           = "Parse error: " <> msg
 adictErrorToText (AuthError msg)            = "Auth error: " <> msg
 adictErrorToText (NetworkError msg)         = "Network error: " <> msg
 adictErrorToText (FunctionalError code msg) = "Erreur métier " <> code <> ": " <> msg
-
-inferPeriode :: Maybe Text -> PeriodeGaz
-inferPeriode (Just v) | T.length v == 10 = PJournalier
-inferPeriode _                            = PMensuel
 
 toGazConso :: ConsoRestit -> Maybe GazConso
 toGazConso cr = do
@@ -102,21 +93,41 @@ toGazConso cr = do
     , gcFinIndexConverti   = (rFin >>= rf_index_converti_fin) >>= valeur_index
     }
 
-toGazInjection :: TypeDonnee -> InjectionRestit -> Maybe GazInjection
-toGazInjection td ir = do
-  let inj = ir_injection ir
-      per = ir_periode ir
-  d1 <- (inj >>= date_debut_injection) <> (per >>= date_debut)
-  d2 <- (inj >>= date_fin_injection)   <> (per >>= date_fin)
+toGazInjection :: InjectionRestit -> Maybe GazInjection
+toGazInjection ir = do
+  let inj   = ir_injection ir
+      rDeb  = ir_releve_debut ir
+      rFin  = ir_releve_fin ir
+      coeff = inj >>= inj_coeff_calcul
+  deb <- rDeb >>= rd_date_releve
+  fin <- rFin >>= rf_date_releve
   pure GazInjection
-    { giDateDebut      = d1
-    , giDateFin        = d2
-    , giPeriode        = inferPeriode (per >>= valeur)
-    , giTypeDonnee     = td
-    , giEnergie        = inj >>= inj_energie
-    , giVolumeBrut     = inj >>= inj_volume_brut
-    , giVolumeConverti = inj >>= inj_volume_converti
-    , giRawJson        = encodeText ir
+    { giEnergie            = inj >>= inj_energie
+    , giVolumeBrut         = inj >>= inj_volume_brut
+    , giVolumeConverti     = inj >>= inj_volume_converti
+    , giConversion         = coeff >>= coeff_conversion
+    , giPta                = coeff >>= coeff_pta
+    , giPcs                = coeff >>= valeur_pcs
+    , giFlagRetourZero     = inj >>= inj_flag_retour_zero
+    , giTypeQualif         = inj >>= type_qualif_injection
+    , giSensFlux           = inj >>= inj_sens_flux_gaz
+    , giStatut             = inj >>= statut_injection
+    , giTypeInjection      = inj >>= type_injection
+    , giJourneeGaziere     = inj >>= inj_journee_gaziere
+    , giDebut              = deb
+    , giDebutRaison        = rDeb >>= rd_raison_releve
+    , giDebutLibelleRaison = rDeb >>= rd_libelle_raison_releve
+    , giDebutQualite       = rDeb >>= rd_qualite_releve
+    , giDebutStatut        = rDeb >>= rd_statut_releve
+    , giDebutIndexBrut     = (rDeb >>= rd_index_brut_debut)     >>= valeur_index
+    , giDebutIndexConverti = (rDeb >>= rd_index_converti_debut) >>= valeur_index
+    , giFin                = fin
+    , giFinRaison          = rFin >>= rf_raison_releve
+    , giFinLibelleRaison   = rFin >>= rf_libelle_raison_releve
+    , giFinQualite         = rFin >>= rf_qualite_releve
+    , giFinStatut          = rFin >>= rf_statut_releve
+    , giFinIndexBrut       = (rFin >>= rf_index_brut_fin)     >>= valeur_index
+    , giFinIndexConverti   = (rFin >>= rf_index_converti_fin) >>= valeur_index
     }
 
 -- | Extrait un champ texte depuis un sous-objet JSON (Maybe Value).
@@ -244,7 +255,7 @@ ingererInjections session conn pce dateDebut dateFin = do
   consulterInjectionsPubliees session (pceText pce) (ByDateRange dateDebut dateFin) >>= \case
     Left  err  -> return $ Left (adictErrorToText err)
     Right injs -> do
-      let rows = mapMaybe (toGazInjection TDPubliee) injs
+      let rows = mapMaybe toGazInjection injs
       ingId <- logGazIngestion conn "donnees_injections_publiees"
                  (Just dateDebut) (Just dateFin) Nothing (Just "PUBLIEE") now (length rows)
       insertGazInjections conn ingId rows

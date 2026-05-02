@@ -23,6 +23,7 @@ import           Database.SQLite.Simple
 import           Data.Text              (Text)
 import           Data.Time              (UTCTime, formatTime, defaultTimeLocale)
 import           Conso.Fr.Gaz.SiteDB.Types
+    (GazConso(..), GazInjection(..), GazInfosContractuelles(..), GazInfosTechniques(..))
 
 -- | Identifiant d'une entrée dans @gaz_ingestion_log@.
 type GazIngestionId = Int
@@ -116,18 +117,26 @@ insertGazInjection :: Connection -> GazIngestionId -> GazInjection -> IO ()
 insertGazInjection conn ingId i =
   execute conn
     "INSERT OR REPLACE INTO gaz_injection \
-    \ (date_debut, date_fin, periode, type_donnee, energie_kwh, \
-    \  volume_brut_m3, volume_converti, raw_json, ingestion_id) \
-    \ VALUES (?,?,?,?,?,?,?,?,?)"
-    ( giDateDebut i
-    , giDateFin i
-    , periodeGazToText (giPeriode i)
-    , typeDonneeToText (giTypeDonnee i)
-    , giEnergie i
-    , giVolumeBrut i
-    , giVolumeConverti i
-    , giRawJson i
-    , ingId
+    \ (energie_kwh, volume_brut_m3, volume_converti, conversion, pta, pcs,\
+    \  flag_retour_zero, type_qualif, sens_flux, statut,\
+    \  type_injection, journee_gaziere,\
+    \  debut, debut_raison, debut_libelle_raison, debut_qualite, debut_statut,\
+    \  debut_index_brut, debut_index_converti, fin,\
+    \  fin_raison, fin_libelle_raison, fin_qualite, fin_statut,\
+    \  fin_index_brut, fin_index_converti, ingestion_id)\
+    \ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    (  ( giEnergie i, giVolumeBrut i, giVolumeConverti i
+       , giConversion i, giPta i, giPcs i
+       , giFlagRetourZero i, giTypeQualif i, giSensFlux i, giStatut i
+       )
+    :. ( giTypeInjection i, giJourneeGaziere i
+       , giDebut i, giDebutRaison i, giDebutLibelleRaison i
+       , giDebutQualite i, giDebutStatut i
+       , giDebutIndexBrut i, giDebutIndexConverti i, giFin i
+       )
+    :. ( giFinRaison i, giFinLibelleRaison i, giFinQualite i, giFinStatut i
+       , giFinIndexBrut i, giFinIndexConverti i, ingId
+       )
     )
 
 -- | Insère une liste d'injections dans une transaction atomique.
