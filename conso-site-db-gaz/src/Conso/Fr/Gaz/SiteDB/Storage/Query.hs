@@ -4,14 +4,10 @@ module Conso.Fr.Gaz.SiteDB.Storage.Query
   ( derniereIngestDate
   , derniereInfosContractuelles
   , derniereInfosTechniques
-  , detectionTrous
+  , detectionTrousContinu
   ) where
 
 import           Data.Text                     (Text)
-import qualified Data.Text                     as T
-import           Data.Time
-  ( Day, parseTimeM, defaultTimeLocale
-  , addDays, addGregorianMonthsRollOver, formatTime )
 import           Database.SQLite.Simple
 
 import           Conso.Fr.Gaz.SiteDB.Types
@@ -118,31 +114,17 @@ derniereInfosTechniques conn = do
     _ -> Nothing
 
 
--- | Retourne les plages de dates manquantes dans gaz_conso entre deux bornes.
--- Génère la séquence de dates attendues (un enregistrement par jour ou par mois)
--- et la compare aux dates de début de relevé effectivement stockées.
-detectionTrous :: Connection -> Text -> Text -> PeriodeGaz -> IO [(Text, Text)]
-detectionTrous conn dateDebutStr dateFinStr periode = do
-  let parseD s = parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack s) :: Maybe Day
-  case (parseD dateDebutStr, parseD dateFinStr) of
-    (Nothing, _) -> return []
-    (_, Nothing) -> return []
-    (Just deb, Just fin) -> do
-      let fmt       = formatTime defaultTimeLocale "%Y-%m-%d"
-          attendues = map (T.pack . fmt) (genererDates periode deb fin)
-      rows <- query conn
-        "SELECT DISTINCT SUBSTR(debut, 1, 10) FROM gaz_conso \
-        \WHERE SUBSTR(debut, 1, 10) >= ? AND SUBSTR(debut, 1, 10) <= ? \
-        \ORDER BY debut"
-        (dateDebutStr, dateFinStr)
-        :: IO [Only Text]
-      let stockees   = map (\(Only d) -> d) rows
-          manquantes = filter (`notElem` stockees) attendues
-      return (map (\d -> (d, d)) manquantes)
-
-
-genererDates :: PeriodeGaz -> Day -> Day -> [Day]
-genererDates PJournalier debut fin =
-  takeWhile (<= fin) $ iterate (addDays 1) debut
-genererDates PMensuel debut fin =
-  takeWhile (<= fin) $ iterate (addGregorianMonthsRollOver 1) debut
+-- | Détecte les ruptures de continuité dans une table gaz (fin != debut_suivant).
+-- Le nom de table est contrôlé : toujours l'une des 3 constantes gaz_*.
+-- Retourne des paires (YYYY-MM-DD, YYYY-MM-DD) correspondant aux bornes du trou.
+detectionTrousContinu :: Connection -> Text -> Text -> Text -> IO [(Text, Text)]
+detectionTrousContinu conn dateDebutStr dateFinStr table =
+  query conn
+    (Query $
+      "SELECT SUBSTR(fin,1,10), SUBSTR(next_debut,1,10) \
+      \FROM (\
+      \  SELECT fin, LEAD(debut) OVER (ORDER BY debut) AS next_debut \
+      \  FROM " <> table <> " \
+      \  WHERE SUBSTR(debut,1,10) >= ? AND SUBSTR(debut,1,10) <= ?\
+      \) WHERE fin != next_debut AND next_debut IS NOT NULL")
+    (dateDebutStr, dateFinStr)

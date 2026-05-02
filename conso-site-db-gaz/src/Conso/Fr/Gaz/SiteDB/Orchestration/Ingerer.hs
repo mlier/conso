@@ -3,6 +3,7 @@ module Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
   ( IngererGazParams(..)
   , IngererGazReport(..)
   , PceIngestionReport(..)
+  , TrouBackfill(..)
   , ingererGaz
   ) where
 
@@ -22,7 +23,6 @@ import           Conso.Fr.SiteDB.Registry.Operations (listSites)
 import           Conso.Fr.Gaz.SiteDB.Storage.Connection (openSiteDbGaz)
 import           Conso.Fr.Gaz.SiteDB.Storage.Query
 import           Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
-import           Conso.Fr.Gaz.SiteDB.Types     (PeriodeGaz(..))
 
 
 -- ---------------------------------------------------------------------------
@@ -32,6 +32,12 @@ data IngererGazParams = IngererGazParams
   { igpPceFilter :: Maybe [Pce]  -- ^ Nothing = tous les PCEs du registre
   }
 
+data TrouBackfill = TrouBackfill
+  { tbDebut    :: Text
+  , tbFin      :: Text
+  , tbBackfill :: Either Text Int
+  } deriving (Show)
+
 data PceIngestionReport = PceIngestionReport
   { pirPce            :: Pce
   , pirConsoPub       :: Either Text Int
@@ -39,7 +45,9 @@ data PceIngestionReport = PceIngestionReport
   , pirInjections     :: Either Text Int
   , pirContractuelles :: Either Text ChangementInfosContract
   , pirTechniques     :: Either Text ChangementInfosTech
-  , pirTrous          :: [(Text, Text)]
+  , pirTrousConso     :: [TrouBackfill]
+  , pirTrousInfo      :: [TrouBackfill]
+  , pirTrousInj       :: [TrouBackfill]
   } deriving (Show)
 
 data IngererGazReport = IngererGazReport
@@ -72,6 +80,13 @@ ingererGaz regConn session siteDbDir params = do
   where
     pceAvecSite sr = fmap (\p -> (srSiteId sr, p)) (srPce sr)
 
+comblerTrous
+  :: (Text -> Text -> IO (Either Text Int))
+  -> [(Text, Text)]
+  -> IO [TrouBackfill]
+comblerTrous ingerer trous =
+  mapM (\(d1, d2) -> TrouBackfill d1 d2 <$> ingerer d1 d2) trous
+
 partitionner :: [Either (Pce, Text) PceIngestionReport]
              -> ([(Pce, Text)], [PceIngestionReport])
 partitionner = foldr step ([], [])
@@ -102,9 +117,16 @@ ingererUnPceUnsafe session siteDbDir siteId pce = do
   rCont <- ingererInfosContractuelles session conn pce
   rTech <- ingererInfosTechniques     session conn pce
 
-  trous <- detectionTrous conn debutPub today PJournalier
+  trousConso <- detectionTrousContinu conn debutPub  today "gaz_conso"
+  trousInfo  <- detectionTrousContinu conn debutInfo today "gaz_conso_informative"
+  trousInj   <- detectionTrousContinu conn debutInj  today "gaz_injection"
 
-  return $ PceIngestionReport pce rPub rInfo rInj rCont rTech trous
+  rTrousConso <- comblerTrous (ingererConsosPubliees session conn pce) trousConso
+  rTrousInfo  <- comblerTrous (ingererConsosInfos    session conn pce) trousInfo
+  rTrousInj   <- comblerTrous (ingererInjections     session conn pce) trousInj
+
+  return $ PceIngestionReport pce rPub rInfo rInj rCont rTech
+             rTrousConso rTrousInfo rTrousInj
 
 -- | Calcule la date de début pour un endpoint :
 -- - Si une ingestion précédente existe, repart de sa date_fin

@@ -15,7 +15,7 @@ import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Desinscription (DesinscriptionResult(..))
 import Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
-  ( IngererGazReport(..), PceIngestionReport(..) )
+  ( IngererGazReport(..), PceIngestionReport(..), TrouBackfill(..) )
 import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
   ( ChangementInfosContract(..), ChangementInfosTech(..) )
 
@@ -84,11 +84,17 @@ afficherPceReport r = do
   putStrLn $ "  Injections        : " <> afficherNb (pirInjections r)
   putStrLn $ "  Contractuelles    : " <> afficherChangementContract (pirContractuelles r)
   putStrLn $ "  Techniques        : " <> afficherChangementTech (pirTechniques r)
-  case pirTrous r of
-    []    -> return ()
-    trous -> do
-      putStrLn $ "  Trous détectés (" <> show (length trous) <> ") :"
-      mapM_ (\(d1, d2) -> putStrLn $ "    " <> T.unpack d1 <> " → " <> T.unpack d2) trous
+  afficherTrous "Trous consos pub  " (pirTrousConso r)
+  afficherTrous "Trous consos info " (pirTrousInfo  r)
+  afficherTrous "Trous injections  " (pirTrousInj   r)
+
+afficherTrous :: String -> [TrouBackfill] -> IO ()
+afficherTrous _     []    = return ()
+afficherTrous label trous = do
+  putStrLn $ "  " <> label <> "(" <> show (length trous) <> ") :"
+  forM_ trous $ \tb ->
+    putStrLn $ "    " <> T.unpack (tbDebut tb) <> " → " <> T.unpack (tbFin tb)
+            <> " : " <> afficherNb (tbBackfill tb)
 
 afficherErreurPce :: (Pce, Text) -> IO ()
 afficherErreurPce (Pce pce, err) =

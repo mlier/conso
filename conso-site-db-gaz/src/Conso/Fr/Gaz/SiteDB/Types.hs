@@ -12,16 +12,9 @@ module Conso.Fr.Gaz.SiteDB.Types
   , GazInjection(..)
   , GazInfosContractuelles(..)
   , GazInfosTechniques(..)
-  , PeriodeGaz(..)
   ) where
 
 import Data.Text (Text)
-
--- | Granularité temporelle de la période (utilisée par detectionTrous).
-data PeriodeGaz
-  = PJournalier -- ^ Données journalières
-  | PMensuel    -- ^ Données mensuelles
-  deriving (Eq, Ord, Show)
 
 -- | Enregistrement de consommation gaz pour stockage SQLite.
 data GazConso = GazConso
