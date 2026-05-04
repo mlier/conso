@@ -24,7 +24,7 @@ import Conso.Fr.SiteDB.Orchestration.Desinscription
 import Conso.Fr.Elec.SiteDB.Orchestration.Inscription (inscrirePrm)
 import Conso.Fr.Elec.SiteDB.Orchestration.Adresse (arreterServicesSge)
 import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
-  ( IngererElecParams(..), IngererElecMode(..), IngererElecReport, ingererElec )
+  ( IngererElecParams(..), IngererElecReport, ingererElec )
 import Conso.Fr.Elec.SiteDB.Storage.Delete (deleteElecData)
 
 
@@ -95,13 +95,7 @@ elecIngererParser = ElecIngerer <$>
           strOption (long "prm" <> metavar "PRM"
                      <> help "Filtrer sur ce PRM (répétable, défaut : tous)")))
     <*> dayLimitParser
-    <*> postDownloadParser
-    <*> modeParser)
-
-modeParser :: Parser IngererElecMode
-modeParser =
-  flag' ModeBackfill (long "backfill" <> help "Détecter les trous et envoyer les demandes M023")
-  <|> pure ModeNormal
+    <*> postDownloadParser)
 
 dayLimitParser :: Parser DayLimit
 dayLimitParser =

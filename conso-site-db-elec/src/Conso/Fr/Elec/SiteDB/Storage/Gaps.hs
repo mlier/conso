@@ -15,6 +15,7 @@ les manquants consécutifs en intervalles 'Periode'.
 -}
 module Conso.Fr.Elec.SiteDB.Storage.Gaps
   ( detectCurveGaps
+  , detectCurveDayGaps
   , detectEnergyGaps
   , detectPmaxGaps
   ) where
@@ -55,6 +56,26 @@ detectCurveGaps conn gm gp em pas start end = do
       expected = generateTimestamps start end (pasToSeconds pas)
       missing  = filter (`Set.notMember` present) expected
   return $ groupConsecutive (pasToSeconds pas) missing
+
+-- ---------------------------------------------------------------------------
+-- Détection de trous dans les courbes de charge (par jour)
+
+-- | Retourne la liste des dates (jours) sans aucun point de courbe dans
+-- @elec_curve_points@ pour une grandeur métier donnée.
+detectCurveDayGaps
+  :: Connection
+  -> Text -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
+  -> Day  -- ^ Date de début (incluse)
+  -> Day  -- ^ Date de fin (incluse)
+  -> IO [Day]
+detectCurveDayGaps conn gm start end = do
+  rows <- query conn
+    "SELECT DISTINCT date(horodate) FROM elec_curve_points \
+    \ WHERE grandeur_metier = ? AND horodate >= ? AND horodate <= ?"
+    (gm, fmtDay start, fmtDay end)
+  let present  = Set.fromList $ mapMaybe (parseDay . fromOnly) rows
+      expected = [start .. end]
+  return $ filter (`Set.notMember` present) expected
 
 -- ---------------------------------------------------------------------------
 -- Détection de trous dans les énergies quotidiennes

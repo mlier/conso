@@ -24,6 +24,7 @@ module Conso.Fr.Elec.SiteDB.Storage.Query
   , queryBillingMeasures
   , queryPrmInfo
   , derniereHorodateCourbe
+  , derniereHorodateIndex
   , derniereDateEnergie
   , derniereDatePmax
   ) where
@@ -267,6 +268,10 @@ queryPrmInfo conn = do
 derniereHorodateCourbe :: Connection -> IO (Maybe Text)
 derniereHorodateCourbe conn = scalarQuery conn
   "SELECT SUBSTR(MAX(horodate),1,10) FROM elec_curve_points"
+
+derniereHorodateIndex :: Connection -> IO (Maybe Text)
+derniereHorodateIndex conn = scalarQuery conn
+  "SELECT SUBSTR(MAX(horodate),1,10) FROM elec_index_values"
 
 derniereDateEnergie :: Connection -> IO (Maybe Text)
 derniereDateEnergie conn = scalarQuery conn

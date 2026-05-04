@@ -170,6 +170,8 @@ afficherPrmReport r = do
   putStrLn $ "  Courbes           : " <> afficherDateElec (prirDerniereCourbe r)
   putStrLn $ "  Énergie           : " <> afficherDateElec (prirDerniereEnergie r)
   putStrLn $ "  Pmax              : " <> afficherDateElec (prirDernierePmax r)
+  putStrLn $ "  Index             : " <> afficherDateElec (prirDerniereIndex r)
+  afficherTrousDays "Trous courbes  " (prirTrousCourbes r)
   afficherTrousDays "Trous énergie  " (prirTrousEnergie r)
   afficherTrousDays "Trous Pmax     " (prirTrousPmax r)
   forM_ (prirErreurs r) $ \(f, e) ->

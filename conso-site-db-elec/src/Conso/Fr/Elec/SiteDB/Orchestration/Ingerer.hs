@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   ( IngererElecParams(..)
-  , IngererElecMode(..)
   , IngererElecReport(..)
   , PrmIngestionReport(..)
   , BackfillDemande(..)
@@ -10,15 +9,17 @@ module Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
 
 import           Control.Exception             (catch, SomeException, displayException)
 import           Data.Char                     (digitToInt)
+import           Data.Either                   (partitionEithers)
 import           Data.List                     (nub, sortBy)
 import           Data.Map.Strict               (Map)
 import qualified Data.Map.Strict               as Map
-import           Data.Maybe                    (mapMaybe)
+import           Data.Maybe                    (mapMaybe, catMaybes, maybeToList)
 import           Data.Ord                      (comparing)
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
 import           Data.Time
-  ( Day, getCurrentTime, utctDay, addGregorianYearsRollOver )
+  ( Day, getCurrentTime, utctDay, addGregorianYearsRollOver, addDays )
+import           Data.Time.Format              (parseTimeM, defaultTimeLocale)
 import qualified Data.ByteString               as BS
 
 import           Database.SQLite.Simple        (Connection)
@@ -34,14 +35,15 @@ import           Conso.Fr.SiteDB.Registry.Operations (listSites)
 import           Conso.Fr.Elec.SiteDB.Types.Common     (PrmId(..))
 import           Conso.Fr.Elec.SiteDB.Storage.Connection (openSiteDbElec)
 import           Conso.Fr.Elec.SiteDB.Storage.Query
-  ( derniereHorodateCourbe, derniereDateEnergie, derniereDatePmax )
+  ( derniereHorodateCourbe, derniereHorodateIndex
+  , derniereDateEnergie, derniereDatePmax )
 import           Conso.Fr.Elec.SiteDB.Storage.Gaps
-  ( detectEnergyGaps, detectPmaxGaps )
+  ( detectEnergyGaps, detectPmaxGaps, detectCurveDayGaps )
 import           Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
   ( ingestDirectory, IngestDirResult(..) )
 import           Conso.Fr.Elec.SiteDB.Ingestion.Batch  (IngestResult(..))
 import           Conso.Fr.Elec.SiteDB.Orchestration.Backfill
-  ( BackfillDemande(..), envoyerBackfill )
+  ( BackfillDemande(..), envoyerSiNonRecent )
 
 
 -- ---------------------------------------------------------------------------
@@ -57,16 +59,10 @@ lookbackCourbes = 2
 -- ---------------------------------------------------------------------------
 -- Types
 
-data IngererElecMode
-  = ModeNormal    -- ^ Télécharger SFTP + déchiffrer + ingérer
-  | ModeBackfill  -- ^ Détecter trous + envoyer demandes M023
-  deriving (Show, Eq)
-
 data IngererElecParams = IngererElecParams
   { iepPrmFilter    :: Maybe [Prm]
   , iepDayLimit     :: DayLimit
   , iepPostDownload :: PostDownload
-  , iepMode         :: IngererElecMode
   }
 
 data PrmIngestionReport = PrmIngestionReport
@@ -77,8 +73,10 @@ data PrmIngestionReport = PrmIngestionReport
   , prirDerniereCourbe  :: Maybe Text
   , prirDerniereEnergie :: Maybe Text
   , prirDernierePmax    :: Maybe Text
+  , prirDerniereIndex   :: Maybe Text
   , prirTrousEnergie    :: [Day]
   , prirTrousPmax       :: [Day]
+  , prirTrousCourbes    :: [Day]
   } deriving (Show)
 
 data IngererElecReport = IngererElecReport
@@ -88,12 +86,12 @@ data IngererElecReport = IngererElecReport
   , ierDetails         :: [PrmIngestionReport]
   , ierErrors          :: [(Prm, Text)]
   , ierBackfill        :: [BackfillDemande]
-  , ierErreursParser   :: [(Text, Text)]  -- ^ (fichier, message) — erreurs de parsing JSON
+  , ierErreursParser   :: [(Text, Text)]
   } deriving (Show)
 
 
 -- ---------------------------------------------------------------------------
--- Implémentation principale
+-- Pipeline principal
 
 ingererElec
   :: Connection
@@ -112,19 +110,6 @@ ingererElec regConn configDir siteDbDir params = do
         Nothing   -> prmsSites
         Just filt -> filter (\(p, _) -> p `elem` filt) prmsSites
 
-  case iepMode params of
-    ModeNormal   -> runNormal configDir siteDbDir params prmsSites' start3Ans today
-    ModeBackfill -> runBackfill siteDbDir prmsSites' start3Ans start2Ans today
-
-
--- ---------------------------------------------------------------------------
--- Mode normal : SFTP → déchiffrer → ingérer
-
-runNormal
-  :: FilePath -> FilePath -> IngererElecParams
-  -> [(Prm, SiteId)] -> Day -> Day
-  -> IO IngererElecReport
-runNormal configDir siteDbDir params prmsSites start3Ans today = do
   cfg <- getConfig
   _   <- loadRFiles cfg (iepPostDownload params) (iepDayLimit params)
   decryptDir (decryptConfigFromRFiles cfg) (localDir cfg)
@@ -137,76 +122,38 @@ runNormal configDir siteDbDir params prmsSites start3Ans today = do
       parseErrors  = Map.findWithDefault [] "?" byPrmRaw
       byPrm        = Map.delete "?" byPrmRaw
 
-  details <- mapM (buildReport siteDbDir byPrm start3Ans today) prmsSites
-  let (errPrms, okDetails) = partitionReports details
+  results <- mapM (buildAndBackfill siteDbDir byPrm start3Ans start2Ans today) prmsSites'
+  let (errPrms, okPairs)        = partitionEithers results
+      (okReports, allDemandes)  = unzip okPairs
 
   return $ IngererElecReport
     { ierFichiersTotal   = total
     , ierFichiersIgnores = ignores
     , ierFichiersErreur  = errors
-    , ierDetails         = sortBy (comparing ((\(Prm t) -> t) . prirPrm)) okDetails
+    , ierDetails         = sortBy (comparing ((\(Prm t) -> t) . prirPrm)) okReports
     , ierErrors          = errPrms
-    , ierBackfill        = []
+    , ierBackfill        = concat allDemandes
     , ierErreursParser   = parseErrors
     }
 
 
 -- ---------------------------------------------------------------------------
--- Mode backfill : détecter trous → envoyer M023
+-- Rapport + backfill par PRM (une seule connexion)
 
-runBackfill
-  :: FilePath -> [(Prm, SiteId)] -> Day -> Day -> Day
-  -> IO IngererElecReport
-runBackfill siteDbDir prmsSites start3Ans start2Ans today = do
-  demandes <- concat <$> mapM (backfillPrm siteDbDir start3Ans start2Ans today) prmsSites
-  return $ IngererElecReport
-    { ierFichiersTotal   = 0
-    , ierFichiersIgnores = 0
-    , ierFichiersErreur  = 0
-    , ierDetails         = []
-    , ierErrors          = []
-    , ierBackfill        = demandes
-    , ierErreursParser   = []
-    }
-
-backfillPrm
-  :: FilePath -> Day -> Day -> Day -> (Prm, SiteId)
-  -> IO [BackfillDemande]
-backfillPrm siteDbDir start3Ans start2Ans today (prm, siteId) =
-  catch (backfillPrmUnsafe siteDbDir start3Ans start2Ans today prm siteId)
-        (\e -> return
-          [ BackfillDemande prm "R65/R66" (T.pack (show start3Ans)) (T.pack (show today))
-              (Left (T.pack (displayException (e :: SomeException)))) ])
-
-backfillPrmUnsafe
-  :: FilePath -> Day -> Day -> Day -> Prm -> SiteId
-  -> IO [BackfillDemande]
-backfillPrmUnsafe siteDbDir start3Ans _start2Ans today prm siteId = do
-  conn      <- openSiteDbElec siteDbDir siteId
-  trousE    <- detectEnergyGaps conn "CONS" start3Ans today
-  trousP    <- detectPmaxGaps   conn "CONS" start3Ans today
-  let periodesEP = groupDays (nub (trousE ++ trousP))
-  demandesEP <- mapM (envoyerBackfill prm "R65/R66" "ENERGIE") periodesEP
-  return demandesEP
-
-
--- ---------------------------------------------------------------------------
--- Helpers
-
-buildReport
+buildAndBackfill
   :: FilePath
   -> Map Text [(Text, Text)]
-  -> Day -> Day
+  -> Day -> Day -> Day
   -> (Prm, SiteId)
-  -> IO (Either (Prm, Text) PrmIngestionReport)
-buildReport siteDbDir byPrm start3Ans today (prm@(Prm prmText), siteId) =
-  catch (Right <$> buildReportUnsafe siteDbDir byPrm start3Ans today prm prmText siteId)
+  -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillDemande]))
+buildAndBackfill siteDbDir byPrm start3Ans start2Ans today (prm, siteId) =
+  catch (Right <$> buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm siteId)
         (\e -> return $ Left (prm, T.pack (displayException (e :: SomeException))))
 
-buildReportUnsafe
-  :: FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Prm -> Text -> SiteId
-  -> IO PrmIngestionReport
-buildReportUnsafe siteDbDir byPrm start3Ans today prm prmText siteId = do
+buildAndBackfillUnsafe
+  :: FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Day -> Prm -> SiteId
+  -> IO (PrmIngestionReport, [BackfillDemande])
+buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm@(Prm prmText) siteId = do
   conn <- openSiteDbElec siteDbDir siteId
   let entries     = Map.findWithDefault [] prmText byPrm
       fichiersOk  = length [ () | (_, e) <- entries, e == "ok"   ]
@@ -216,21 +163,54 @@ buildReportUnsafe siteDbDir byPrm start3Ans today prm prmText siteId = do
   dCourbe  <- derniereHorodateCourbe conn
   dEnergie <- derniereDateEnergie conn
   dPmax    <- derniereDatePmax conn
+  dIndex   <- derniereHorodateIndex conn
 
-  trousE <- detectEnergyGaps conn "CONS" start3Ans today
-  trousP <- detectPmaxGaps   conn "CONS" start3Ans today
+  trousE <- detectEnergyGaps   conn "CONS" start3Ans today
+  trousP <- detectPmaxGaps     conn "CONS" start3Ans today
+  trousC <- detectCurveDayGaps conn "CONS" start2Ans today
 
-  return $ PrmIngestionReport
-    { prirPrm             = prm
-    , prirFichiersOk      = fichiersOk
-    , prirFichiersSkip    = fichiersSkp
-    , prirErreurs         = fichiersErr
-    , prirDerniereCourbe  = dCourbe
-    , prirDerniereEnergie = dEnergie
-    , prirDernierePmax    = dPmax
-    , prirTrousEnergie    = trousE
-    , prirTrousPmax       = trousP
-    }
+  let report = PrmIngestionReport
+        { prirPrm             = prm
+        , prirFichiersOk      = fichiersOk
+        , prirFichiersSkip    = fichiersSkp
+        , prirErreurs         = fichiersErr
+        , prirDerniereCourbe  = dCourbe
+        , prirDerniereEnergie = dEnergie
+        , prirDernierePmax    = dPmax
+        , prirDerniereIndex   = dIndex
+        , prirTrousEnergie    = trousE
+        , prirTrousPmax       = trousP
+        , prirTrousCourbes    = trousC
+        }
+
+  demandesEP <- mapMaybeM (envoyerSiNonRecent conn prm "R65/R66" "ENERGIE")
+                  (groupDays (nub (trousE ++ trousP)))
+  demandesC  <- mapMaybeM (envoyerSiNonRecent conn prm "R63" "COURBES")
+                  (groupDays (nub trousC))
+  demandesI  <- backfillIndexSiNecessaire conn prm start3Ans today dIndex
+
+  return (report, demandesEP ++ demandesC ++ demandesI)
+
+
+backfillIndexSiNecessaire
+  :: Connection -> Prm -> Day -> Day -> Maybe Text
+  -> IO [BackfillDemande]
+backfillIndexSiNecessaire conn prm start3Ans today mLastDate = do
+  let needsBackfill = case mLastDate of
+        Nothing -> True
+        Just t  -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t) of
+          Nothing -> True
+          Just d  -> addDays 90 d < today
+  if needsBackfill
+    then maybeToList <$> envoyerSiNonRecent conn prm "R64" "INDEX" (start3Ans, today)
+    else return []
+
+
+-- ---------------------------------------------------------------------------
+-- Helpers
+
+mapMaybeM :: Monad m => (a -> m (Maybe b)) -> [a] -> m [b]
+mapMaybeM f xs = catMaybes <$> mapM f xs
 
 groupByPrm :: [IngestDirResult] -> Map Text [(Text, Text)]
 groupByPrm = foldr step Map.empty
@@ -247,15 +227,7 @@ groupByPrm = foldr step Map.empty
     addResult path (IngestErr  (PrmId pid) e) m =
       Map.insertWith (<>) pid [(path, e)]      m
 
-partitionReports
-  :: [Either (Prm, Text) PrmIngestionReport]
-  -> ([(Prm, Text)], [PrmIngestionReport])
-partitionReports = foldr step ([], [])
-  where
-    step (Left  e) (es, ds) = (e:es, ds)
-    step (Right d) (es, ds) = (es, d:ds)
-
--- | Regroupe des jours isolés en périodes contiguës (un seul gap = 1 période).
+-- | Regroupe des jours isolés en périodes contiguës.
 groupDays :: [Day] -> [(Day, Day)]
 groupDays [] = []
 groupDays (d:ds) = go d d ds

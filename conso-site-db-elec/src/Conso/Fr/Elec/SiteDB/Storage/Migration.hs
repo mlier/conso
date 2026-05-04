@@ -174,6 +174,16 @@ migrations =
         \  date_ingestion      TEXT NOT NULL,\
         \  ingestion_id        INTEGER REFERENCES elec_ingestion_log(id)\
         \)"
+
+        -- Journal des demandes M023 de backfill (déduplication)
+      , "CREATE TABLE IF NOT EXISTS elec_backfill_log (\
+        \  id          INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  type_mesure TEXT NOT NULL,\
+        \  debut       TEXT NOT NULL,\
+        \  fin         TEXT NOT NULL,\
+        \  date_envoi  TEXT NOT NULL,\
+        \  affaire_id  TEXT\
+        \)"
       ])
 
   -- Exemple de migration future :
