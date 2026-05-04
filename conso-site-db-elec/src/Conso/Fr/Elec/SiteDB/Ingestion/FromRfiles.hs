@@ -37,7 +37,7 @@ import qualified Data.Aeson                 as Aeson
 import           Data.Aeson.Types           (parseMaybe)
 import qualified Data.ByteString.Lazy       as LBS
 import           System.FilePath            ((</>), takeFileName)
-import           System.Directory           (listDirectory)
+import           System.Directory           (listDirectory, doesDirectoryExist)
 import           Control.Exception          (try, SomeException)
 
 import           Conso.Fr.SiteDB.Types                               (Prm(..))
@@ -54,18 +54,27 @@ data IngestDirResult
   | FileErr  FilePath Text           -- ^ Erreur de lecture / parsing
   deriving (Show)
 
--- | Ingère tous les fichiers @.json@ présents dans @inputDir@.
--- Parcourt les fichiers (non récursif), détecte le CodeFlux de chacun,
+-- | Ingère tous les fichiers @.json@ présents dans @inputDir@ (récursif).
+-- Descend dans les sous-répertoires, détecte le CodeFlux de chacun,
 -- et appelle 'ingestFile' via le registre central pour trouver/créer le site.
 ingestDirectory
   :: FilePath  -- ^ Répertoire de configuration (contient @registry.db@)
   -> FilePath  -- ^ Répertoire des bases SQLite site (@{uuid}.db@)
-  -> FilePath  -- ^ Répertoire contenant les fichiers JSON déchiffrés
+  -> FilePath  -- ^ Répertoire racine contenant les fichiers JSON déchiffrés
   -> IO [IngestDirResult]
-ingestDirectory configDir siteDbDir inputDir = do
-  entries <- listDirectory inputDir
-  let jsonFiles = filter (T.isSuffixOf ".json" . T.pack) entries
-  mapM (ingestJsonFile configDir siteDbDir inputDir) jsonFiles
+ingestDirectory configDir siteDbDir = collectJson
+  where
+    collectJson dir = do
+      entries <- listDirectory dir
+      concat <$> mapM (processEntry dir) entries
+    processEntry dir name = do
+      let path = dir </> name
+      isDir <- doesDirectoryExist path
+      if isDir
+        then collectJson path
+        else if T.isSuffixOf ".json" (T.toLower (T.pack name))
+               then (:[]) <$> ingestJsonFile configDir siteDbDir dir name
+               else return []
 
 -- | Ingère un fichier JSON unique.
 -- Détecte le CodeFlux, ouvre/crée les bases nécessaires via le registre.

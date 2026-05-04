@@ -49,7 +49,7 @@ queryStats conn gm gp em deb fin = do
     "SELECT COALESCE(SUM(CAST(valeur AS REAL)), 0), \
     \       COALESCE(AVG(CAST(valeur AS REAL)), 0), \
     \       COALESCE(MAX(CAST(valeur AS REAL)), 0) \
-    \ FROM curve_points \
+    \ FROM elec_curve_points \
     \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
     \   AND etape_metier = ? \
     \   AND horodate >= ? AND horodate <= ?"

@@ -11,13 +11,13 @@ import Database.SQLite.Simple
 deleteElecData :: Connection -> IO ()
 deleteElecData conn = withTransaction conn $
   mapM_ deleteTable
-    [ "ingestion_log"
-    , "curve_points"
-    , "index_values"
-    , "daily_energy"
-    , "daily_pmax"
-    , "billing_measures"
-    , "prm_info"
+    [ "elec_ingestion_log"
+    , "elec_curve_points"
+    , "elec_index_values"
+    , "elec_daily_energy"
+    , "elec_daily_pmax"
+    , "elec_billing_measures"
+    , "elec_prm_info"
     ]
   where
     deleteTable t = do

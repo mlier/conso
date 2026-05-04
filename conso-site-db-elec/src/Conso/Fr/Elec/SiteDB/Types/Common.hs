@@ -144,14 +144,15 @@ data ModeCalcul
   = MESURE       -- ^ Valeur de mesure directe
   | DIFF_INDEX   -- ^ Différence d'index à minuit (C5\/P4)
   | INTEG_COURBE -- ^ Intégrale de la courbe de charge (C1-C4)
+  | TOUT         -- ^ Tous modes (R65 — énergie agrégée toutes sources)
   deriving (Eq, Ord, Show)
 
 -- | Mode de publication d'un flux R6X (champ @modePublication@ du header).
 data ModePublication
-  = MP_Ponctuel     -- ^ @P@ — publication unique (M023)
-  | MP_Quotidien    -- ^ @Q@ — service récurrent quotidien (R6X-REC)
-  | MP_Hebdomadaire -- ^ @H@ — service récurrent hebdomadaire
-  | MP_Mensuel      -- ^ @M@ — service récurrent mensuel
+  = MpPonctuel     -- ^ @P@ — publication unique (M023)
+  | MpQuotidien    -- ^ @Q@ — service récurrent quotidien (R6X-REC)
+  | MpHebdomadaire -- ^ @H@ — service récurrent hebdomadaire
+  | MpMensuel      -- ^ @M@ — service récurrent mensuel
   deriving (Eq, Ord, Show)
 
 -- | Intervalle temporel fonctionnel (bornes incluses).
@@ -204,6 +205,7 @@ instance FromJSON ModeCalcul where
     "MESURE"       -> pure MESURE
     "DIFF.INDEX"   -> pure DIFF_INDEX
     "INTEG.COURBE" -> pure INTEG_COURBE
+    "TOUT"         -> pure TOUT
     _              -> fail $ "ModeCalcul inconnu: " ++ T.unpack t
 
 instance FromJSON ContexteReleve where
@@ -288,6 +290,7 @@ modeCalculToText :: ModeCalcul -> Text
 modeCalculToText MESURE       = "MESURE"
 modeCalculToText DIFF_INDEX   = "DIFF_INDEX"
 modeCalculToText INTEG_COURBE = "INTEG_COURBE"
+modeCalculToText TOUT         = "TOUT"
 
 grandeurPhysiqueR63ToText :: GrandeurPhysiqueR63 -> Text
 grandeurPhysiqueR63ToText GP_PA  = "PA";  grandeurPhysiqueR63ToText GP_PRI = "PRI"
@@ -313,7 +316,8 @@ parseDateTimeText t =
       tryFmt fmt = parseTimeM True defaultTimeLocale fmt s
   in case      tryFmt "%Y-%m-%dT%H:%M:%S%z"
            <|> tryFmt "%Y-%m-%dT%H:%M:%S"
-           <|> fmap (\d -> UTCTime d 0) (tryFmt "%Y-%m-%d" :: Maybe Day) of
+           <|> tryFmt "%Y-%m-%d %H:%M:%S"
+           <|> fmap (`UTCTime` 0) (tryFmt "%Y-%m-%d" :: Maybe Day) of
     Just ut -> pure ut
     Nothing -> fail $ "Cannot parse datetime: " ++ s
 

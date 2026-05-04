@@ -23,6 +23,9 @@ module Conso.Fr.Elec.SiteDB.Storage.Query
   , queryDailyPmax
   , queryBillingMeasures
   , queryPrmInfo
+  , derniereHorodateCourbe
+  , derniereDateEnergie
+  , derniereDatePmax
   ) where
 
 import           Database.SQLite.Simple
@@ -32,7 +35,7 @@ import qualified Data.Text                      as T
 -- ---------------------------------------------------------------------------
 -- Types de résultat aplatis (lignes de la base)
 
--- | Ligne de résultat d'une requête sur @curve_points@.
+-- | Ligne de résultat d'une requête sur @elec_curve_points@.
 data CurveRow = CurveRow
   { crEtapeMetier      :: Text       -- ^ @etape_metier@ — @\"BRUT\"@ ou @\"BEST\"@
   , crGrandeurMetier   :: Text       -- ^ @grandeur_metier@ — @\"CONS\"@ ou @\"PROD\"@
@@ -52,7 +55,7 @@ instance FromRow CurveRow where
                      <*> field <*> field <*> field <*> field
                      <*> field <*> field <*> field
 
--- | Ligne de résultat d'une requête sur @index_values@.
+-- | Ligne de résultat d'une requête sur @elec_index_values@.
 data IndexRow = IndexRow
   { irEtapeMetier      :: Text       -- ^ @etape_metier@
   , irContexteReleve   :: Text       -- ^ @contexte_releve@ — @\"COL\"@, @\"TOP\"@, …
@@ -78,7 +81,7 @@ instance FromRow IndexRow where
                      <*> field <*> field <*> field <*> field
                      <*> field <*> field <*> field <*> field
 
--- | Ligne de résultat d'une requête sur @daily_energy@.
+-- | Ligne de résultat d'une requête sur @elec_daily_energy@.
 data EnergyRow = EnergyRow
   { erEtapeMetier      :: Text -- ^ @etape_metier@
   , erGrandeurMetier   :: Text -- ^ @grandeur_metier@
@@ -93,7 +96,7 @@ instance FromRow EnergyRow where
   fromRow = EnergyRow <$> field <*> field <*> field <*> field
                       <*> field <*> field <*> field
 
--- | Ligne de résultat d'une requête sur @daily_pmax@.
+-- | Ligne de résultat d'une requête sur @elec_daily_pmax@.
 data PmaxRow = PmaxRow
   { pmEtapeMetier      :: Text -- ^ @etape_metier@
   , pmGrandeurMetier   :: Text -- ^ @grandeur_metier@
@@ -107,7 +110,7 @@ instance FromRow PmaxRow where
   fromRow = PmaxRow <$> field <*> field <*> field
                     <*> field <*> field <*> field
 
--- | Ligne de résultat d'une requête sur @billing_measures@.
+-- | Ligne de résultat d'une requête sur @elec_billing_measures@.
 data BillingRow = BillingRow
   { brEtapeMetier       :: Text       -- ^ @etape_metier@ — @\"FACT\"@
   , brIdMotifReleve     :: Text       -- ^ @id_motif_releve@ — code du motif de relevé
@@ -137,7 +140,7 @@ instance FromRow BillingRow where
                        <*> field <*> field <*> field <*> field
                        <*> field <*> field <*> field
 
--- | Ligne de résultat d'une requête sur @prm_info@.
+-- | Ligne de résultat d'une requête sur @elec_prm_info@.
 data PrmInfoRow = PrmInfoRow
   { piId               :: Int        -- ^ @id@ — clé primaire auto-incrémentée
   , piSegment          :: Maybe Text -- ^ @segment@ — @\"C5\"@, @\"P4\"@, …
@@ -169,7 +172,7 @@ queryCurvePoints conn mEtape mGm mGp deb fin =
   query conn
     (Query $ "SELECT etape_metier, grandeur_metier, grandeur_physique, unite, \
              \  horodate, valeur, pas, nature, type_completion, iv, ec \
-             \ FROM curve_points \
+             \ FROM elec_curve_points \
              \ WHERE horodate >= ? AND horodate <= ?"
              <> whereClause [("etape_metier", mEtape), ("grandeur_metier", mGm)
                             ,("grandeur_physique", mGp)]
@@ -190,7 +193,7 @@ queryIndexValues conn mCtx mGp deb fin =
              \  id_calendrier, libelle_grille, id_classe_temporelle, \
              \  libelle_classe_temp, code_cadran, is_totalisateur, \
              \  horodate, valeur, iv \
-             \ FROM index_values \
+             \ FROM elec_index_values \
              \ WHERE horodate >= ? AND horodate <= ?"
              <> whereClause [("contexte_releve", mCtx), ("grandeur_physique", mGp)]
              <> " ORDER BY contexte_releve, grandeur_physique, horodate")
@@ -206,7 +209,7 @@ queryDailyEnergy conn mGm deb fin =
   query conn
     (Query $ "SELECT etape_metier, grandeur_metier, grandeur_physique, unite, \
              \  mode_calcul, date_mesure, valeur \
-             \ FROM daily_energy \
+             \ FROM elec_daily_energy \
              \ WHERE date_mesure >= ? AND date_mesure <= ?"
              <> whereClause [("grandeur_metier", mGm)]
              <> " ORDER BY grandeur_metier, grandeur_physique, date_mesure")
@@ -222,7 +225,7 @@ queryDailyPmax conn mGm deb fin =
   query conn
     (Query $ "SELECT etape_metier, grandeur_metier, grandeur_physique, unite, \
              \  horodate, valeur \
-             \ FROM daily_pmax \
+             \ FROM elec_daily_pmax \
              \ WHERE horodate >= ? AND horodate <= ?"
              <> whereClause [("grandeur_metier", mGm)]
              <> " ORDER BY grandeur_metier, grandeur_physique, horodate")
@@ -241,7 +244,7 @@ queryBillingMeasures conn mGm deb fin =
              \  code_calendrier, libelle_calendrier, id_classe_temporelle, \
              \  libelle_classe_temp, date_creation, dbt_mesure, fin_mesure, \
              \  quantite, code_nature, libelle_nature, code_statut, libelle_statut \
-             \ FROM billing_measures \
+             \ FROM elec_billing_measures \
              \ WHERE dbt_mesure <= ? AND fin_mesure >= ?"
              <> whereClause [("grandeur_metier", mGm)]
              <> " ORDER BY grandeur_metier, grandeur_physique, dbt_mesure")
@@ -253,10 +256,32 @@ queryPrmInfo conn = do
   rows <- query_ conn
     "SELECT id, segment, etat_contractuel, etat_alimentation, \
     \  puissance_souscrite, domaine_tension, raw_json, date_ingestion \
-    \ FROM prm_info ORDER BY id DESC LIMIT 1"
+    \ FROM elec_prm_info ORDER BY id DESC LIMIT 1"
   return $ case rows of
     []    -> Nothing
     (r:_) -> Just r
+
+-- ---------------------------------------------------------------------------
+-- Dernières dates disponibles par table
+
+derniereHorodateCourbe :: Connection -> IO (Maybe Text)
+derniereHorodateCourbe conn = scalarQuery conn
+  "SELECT SUBSTR(MAX(horodate),1,10) FROM elec_curve_points"
+
+derniereDateEnergie :: Connection -> IO (Maybe Text)
+derniereDateEnergie conn = scalarQuery conn
+  "SELECT MAX(date_mesure) FROM elec_daily_energy"
+
+derniereDatePmax :: Connection -> IO (Maybe Text)
+derniereDatePmax conn = scalarQuery conn
+  "SELECT MAX(date(horodate)) FROM elec_daily_pmax"
+
+scalarQuery :: Connection -> Query -> IO (Maybe Text)
+scalarQuery conn q = do
+  rows <- query_ conn q :: IO [Only (Maybe Text)]
+  return $ case rows of
+    [Only mv] -> mv
+    _         -> Nothing
 
 -- ---------------------------------------------------------------------------
 -- Helper : construction de clauses WHERE optionnelles

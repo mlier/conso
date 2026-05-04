@@ -100,10 +100,10 @@ instance FromJSON CodeFlux where
 
 instance FromJSON ModePublication where
   parseJSON = withText "ModePublication" $ \t -> case t of
-    "P" -> pure MP_Ponctuel
-    "Q" -> pure MP_Quotidien
-    "H" -> pure MP_Hebdomadaire
-    "M" -> pure MP_Mensuel
+    "P" -> pure MpPonctuel
+    "Q" -> pure MpQuotidien
+    "H" -> pure MpHebdomadaire
+    "M" -> pure MpMensuel
     _   -> fail $ "ModePublication inconnue: " ++ T.unpack t
 
 instance FromJSON TypePublication where

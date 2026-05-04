@@ -45,7 +45,7 @@ detectCurveGaps
   -> IO [Periode]
 detectCurveGaps conn gm gp em pas start end = do
   rows <- query conn
-    "SELECT horodate FROM curve_points \
+    "SELECT horodate FROM elec_curve_points \
     \ WHERE grandeur_metier = ? AND grandeur_physique = ? AND etape_metier = ? \
     \   AND horodate >= ? AND horodate <= ? \
     \ ORDER BY horodate"
@@ -59,7 +59,7 @@ detectCurveGaps conn gm gp em pas start end = do
 -- ---------------------------------------------------------------------------
 -- Détection de trous dans les énergies quotidiennes
 
--- | Retourne la liste des dates manquantes dans @daily_energy@ pour une grandeur.
+-- | Retourne la liste des dates manquantes dans @elec_daily_energy@ pour une grandeur.
 detectEnergyGaps
   :: Connection
   -> Text -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
@@ -68,7 +68,7 @@ detectEnergyGaps
   -> IO [Day]
 detectEnergyGaps conn gm start end = do
   rows <- query conn
-    "SELECT date_mesure FROM daily_energy \
+    "SELECT date_mesure FROM elec_daily_energy \
     \ WHERE grandeur_metier = ? \
     \   AND date_mesure >= ? AND date_mesure <= ? \
     \ ORDER BY date_mesure"
@@ -80,7 +80,7 @@ detectEnergyGaps conn gm start end = do
 -- ---------------------------------------------------------------------------
 -- Détection de trous dans les Pmax quotidiennes
 
--- | Retourne la liste des dates manquantes dans @daily_pmax@ pour une grandeur.
+-- | Retourne la liste des dates manquantes dans @elec_daily_pmax@ pour une grandeur.
 -- Groupe par date (une Pmax par jour, quel que soit l'horodate exact).
 detectPmaxGaps
   :: Connection
@@ -90,7 +90,7 @@ detectPmaxGaps
   -> IO [Day]
 detectPmaxGaps conn gm start end = do
   rows <- query conn
-    "SELECT date(horodate) FROM daily_pmax \
+    "SELECT date(horodate) FROM elec_daily_pmax \
     \ WHERE grandeur_metier = ? \
     \   AND horodate >= ? AND horodate <= ? \
     \ GROUP BY date(horodate) \

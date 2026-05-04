@@ -148,7 +148,14 @@ getConfig = do
     home <- myHomeDirectory
     wrapper <- either (error . show) id <$>
         decodeFileEither (home </> ".conso" </> "conso-env.yaml")
-    return (getRFilesConfig wrapper)
+    let cfg = getRFilesConfig wrapper
+        expand ('~':'/':rest) = home </> rest
+        expand p              = p
+    return cfg
+      { localDir   = expand (localDir cfg)
+      , knownHosts = expand (knownHosts cfg)
+      , keyFile    = fmap expand (keyFile cfg)
+      }
 
 
 -- ---------------------------------------------------------------------------

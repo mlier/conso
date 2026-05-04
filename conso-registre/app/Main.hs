@@ -17,8 +17,9 @@ import Conso.Fr.SiteDB.Orchestration.Desinscription
 import Conso.Fr.Elec.SiteDB.Orchestration.Adresse (codePostalPrm, arreterServicesSge)
 import Conso.Fr.Elec.SiteDB.Storage.Delete (deleteElecData)
 import Conso.Fr.Elec.SiteDB.Cli
-  ( ElecCommand(..), ElecRattachement(..)
-  , elecInscrirePrmParser, elecSupprimerPrmParser, runElecCommand )
+  ( ElecCommand(..), ElecCommandResult(..), ElecRattachement(..)
+  , elecInscrirePrmParser, elecSupprimerPrmParser, elecIngererParser
+  , runElecCommand )
 
 import Conso.Fr.Gaz.SiteDB.Orchestration.Adresse (codePostalPce)
 import Conso.Fr.Gaz.SiteDB.Storage.Delete (deleteGazData)
@@ -26,7 +27,9 @@ import Conso.Fr.Gaz.SiteDB.Cli
   ( GazCommand(..), GazCommandResult(..), initSession
   , gazInscrirePceParser, gazSupprimerPceParser, gazIngererParser, runGazCommand )
 
-import Display (afficherResultat, afficherSites, afficherDesinscription, afficherIngererGaz)
+import Display
+  ( afficherResultat, afficherSites, afficherDesinscription
+  , afficherIngererGaz, afficherIngererElec )
 
 
 -- ---------------------------------------------------------------------------
@@ -74,10 +77,11 @@ runCommand configDir prod verbose siteDbDir (CmdElec cmd) = do
     _                                      -> return Nothing
   let mGetCpPce = fmap codePostalPce mSession
   withRegistry configDir $ \conn -> do
-    result <- runElecCommand conn siteDbDir prod verbose mGetCpPce cmd
+    result <- runElecCommand conn configDir siteDbDir prod verbose mGetCpPce cmd
     case result of
-      Left  r -> afficherResultat r
-      Right r -> afficherDesinscription r
+      ElecInscrit    r -> afficherResultat r
+      ElecDesinscrit r -> afficherDesinscription r
+      ElecIngere     r -> afficherIngererElec r
 
 runCommand configDir prod verbose siteDbDir (CmdGaz cmd) = do
   session <- initSession prod False False
@@ -123,8 +127,11 @@ inscrireParser = subparser
 
 ingererParser :: Parser Command
 ingererParser = subparser
-  ( command "gaz" (info (CmdGaz <$> gazIngererParser <**> helper)
-      (progDesc "Ingérer les données GRDF ADICT pour tous les PCEs inscrits")) )
+  (  command "gaz"  (info (CmdGaz  <$> gazIngererParser  <**> helper)
+       (progDesc "Ingérer les données GRDF ADICT pour tous les PCEs inscrits"))
+  <> command "elec" (info (CmdElec <$> elecIngererParser <**> helper)
+       (progDesc "Ingérer les données Enedis via SFTP (R6x/C68)"))
+  )
 
 supprimerParser :: Parser Command
 supprimerParser = subparser

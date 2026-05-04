@@ -3,7 +3,7 @@
 Module      : Conso.Fr.Elec.SiteDB.Ingestion.Versioning
 Description : Consultation de l'historique d'ingestion par code flux
 
-Permet d'interroger @ingestion_log@ pour savoir si un flux a déjà été ingéré
+Permet d'interroger @elec_ingestion_log@ pour savoir si un flux a déjà été ingéré
 et avec quels paramètres. Utile pour éviter la ré-ingestion de fichiers déjà traités.
 -}
 module Conso.Fr.Elec.SiteDB.Ingestion.Versioning
@@ -19,7 +19,7 @@ import           Conso.Fr.Elec.SiteDB.Storage.Insert (IngestionId)
 
 -- | Informations sur la dernière ingestion d'un flux pour un PRM.
 data IngestionInfo = IngestionInfo
-  { ingestId              :: IngestionId -- ^ Identifiant de la ligne dans @ingestion_log@
+  { ingestId              :: IngestionId -- ^ Identifiant de la ligne dans @elec_ingestion_log@
   , ingestCodeFlux        :: Text        -- ^ Code flux ingéré (ex. @\"R63\"@)
   , ingestModePublication :: Text        -- ^ Mode de publication (@\"P\"@, @\"Q\"@, …)
   , ingestIdDemande       :: Text        -- ^ Identifiant de la demande SGE
@@ -35,7 +35,7 @@ getLastIngestion :: Connection -> CodeFlux -> IO (Maybe IngestionInfo)
 getLastIngestion conn cf = do
   rows <- query conn
     "SELECT id, code_flux, mode_publication, id_demande, date_ingestion \
-    \ FROM ingestion_log WHERE code_flux = ? ORDER BY id DESC LIMIT 1"
+    \ FROM elec_ingestion_log WHERE code_flux = ? ORDER BY id DESC LIMIT 1"
     (Only (codeFluxToText cf))
   return $ case rows of
     []    -> Nothing

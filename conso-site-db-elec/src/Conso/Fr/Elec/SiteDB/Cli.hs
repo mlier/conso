@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Conso.Fr.Elec.SiteDB.Cli
   ( ElecCommand(..)
+  , ElecCommandResult(..)
   , ElecRattachement(..)
   , elecInscrirePrmParser
   , elecSupprimerPrmParser
+  , elecIngererParser
   , runElecCommand
   ) where
 
@@ -12,13 +14,17 @@ import qualified Data.UUID as UUID
 import Options.Applicative
 import Database.SQLite.Simple (Connection)
 
-import Conso.Fr.SiteDB.Types (SiteId(..))
+import Conso.Fr.Elec.Sge.Rfiles.LoadRFiles (PostDownload(..), DayLimit(..))
+
+import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..))
 import Conso.Fr.SiteDB.Orchestration.Types
 import Conso.Fr.SiteDB.Orchestration.Desinscription
   ( DesinscriptionCallbacks(..), DesinscriptionResult, desinscrirePrm )
 
 import Conso.Fr.Elec.SiteDB.Orchestration.Inscription (inscrirePrm)
 import Conso.Fr.Elec.SiteDB.Orchestration.Adresse (arreterServicesSge)
+import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
+  ( IngererElecParams(..), IngererElecMode(..), IngererElecReport, ingererElec )
 import Conso.Fr.Elec.SiteDB.Storage.Delete (deleteElecData)
 
 
@@ -30,26 +36,34 @@ data ElecRattachement
 data ElecCommand
   = ElecInscrirePrm InscriptionPrmParams (Maybe ElecRattachement)
   | ElecSupprimerPrm SiteId
-  deriving (Show)
+  | ElecIngerer IngererElecParams
+
+data ElecCommandResult
+  = ElecInscrit    InscriptionResult
+  | ElecDesinscrit DesinscriptionResult
+  | ElecIngere     IngererElecReport
 
 
-runElecCommand :: Connection -> FilePath -> Bool -> Bool
-               -> Maybe GetCodePostal  -- ^ code postal PCE (depuis conso-site-db-gaz)
+runElecCommand :: Connection -> FilePath -> FilePath -> Bool -> Bool
+               -> Maybe GetCodePostal
                -> ElecCommand
-               -> IO (Either InscriptionResult DesinscriptionResult)
-runElecCommand conn _siteDbDir prod verbose mGetCpPce (ElecInscrirePrm params mRatt) = do
+               -> IO ElecCommandResult
+runElecCommand conn _configDir _siteDbDir prod verbose mGetCpPce (ElecInscrirePrm params mRatt) = do
   let rattachement = resolveRattPrm mRatt
       params' = params { ippRattachement = rattachement }
   result <- inscrirePrm conn prod verbose mGetCpPce params'
-  return (Left result)
-runElecCommand conn siteDbDir prod verbose _mGetCpPce (ElecSupprimerPrm siteId) = do
+  return (ElecInscrit result)
+runElecCommand conn _configDir siteDbDir prod verbose _mGetCpPce (ElecSupprimerPrm siteId) = do
   let callbacks = DesinscriptionCallbacks
         { cbDeleteElec  = deleteElecData
         , cbDeleteGaz   = \_ -> return ()
         , cbArreterSge  = arreterServicesSge verbose prod
         }
   result <- desinscrirePrm conn siteDbDir prod verbose callbacks siteId
-  return (Right result)
+  return (ElecDesinscrit result)
+runElecCommand conn configDir siteDbDir _prod _verbose _mGetCpPce (ElecIngerer params) = do
+  report <- ingererElec conn configDir siteDbDir params
+  return (ElecIngere report)
 
 
 resolveRattPrm :: Maybe ElecRattachement -> Rattachement
@@ -73,6 +87,32 @@ elecInscrirePrmParser = ElecInscrirePrm
 
 elecSupprimerPrmParser :: Parser ElecCommand
 elecSupprimerPrmParser = ElecSupprimerPrm <$> uuidArg "UUID du site dont le PRM doit être supprimé"
+
+elecIngererParser :: Parser ElecCommand
+elecIngererParser = ElecIngerer <$>
+  (IngererElecParams
+    <$> optional (some (Prm . T.pack <$>
+          strOption (long "prm" <> metavar "PRM"
+                     <> help "Filtrer sur ce PRM (répétable, défaut : tous)")))
+    <*> dayLimitParser
+    <*> postDownloadParser
+    <*> modeParser)
+
+modeParser :: Parser IngererElecMode
+modeParser =
+  flag' ModeBackfill (long "backfill" <> help "Détecter les trous et envoyer les demandes M023")
+  <|> pure ModeNormal
+
+dayLimitParser :: Parser DayLimit
+dayLimitParser =
+  (Days <$> option auto (long "jours" <> metavar "N" <> help "Ne traiter que les fichiers des N derniers jours"))
+  <|> pure AllDays
+
+postDownloadParser :: Parser PostDownload
+postDownloadParser =
+  flag' Archive (long "archive" <> help "Archiver les fichiers sur le serveur après téléchargement")
+  <|> flag' Remove (long "supprimer" <> help "Supprimer les fichiers du serveur après téléchargement")
+  <|> pure Keep
 
 
 accordParser :: Parser Accord

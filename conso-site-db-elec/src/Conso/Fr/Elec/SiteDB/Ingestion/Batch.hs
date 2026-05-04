@@ -22,6 +22,7 @@ module Conso.Fr.Elec.SiteDB.Ingestion.Batch
 
 import           Database.SQLite.Simple
 import           Data.ByteString        (ByteString)
+import           Data.Maybe             (fromMaybe)
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Time              (getCurrentTime, UTCTime)
@@ -40,8 +41,9 @@ import           Conso.Fr.Elec.SiteDB.Storage.Insert
 
 -- | Résultat de l'ingestion pour un PRM.
 data IngestResult
-  = IngestOk  PrmId Text -- ^ Succès : PRM ingéré + code flux (ex. @\"R63\"@)
-  | IngestErr PrmId Text -- ^ Échec  : PRM + message d'erreur
+  = IngestOk   PrmId Text -- ^ Succès : PRM ingéré + code flux (ex. @\"R63\"@)
+  | IngestSkip PrmId Text -- ^ Ignoré : fichier déjà présent dans elec_ingestion_log
+  | IngestErr  PrmId Text -- ^ Échec  : PRM + message d'erreur
   deriving (Show)
 
 -- | Ingère un fichier JSON SGE dans les bases SQLite des PRM qu'il contient.
@@ -69,7 +71,7 @@ ingestFlux openConn cf mSrc now (FluxCourbeCharge f) =
     ingestM m = do
       let prm = mr63IdPrm m
           p   = mr63Periode m
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf
           (modePublicationToText (hModePublication hdr))
           (hIdDemande hdr) (hIdPublication hdr) Nothing now
@@ -82,7 +84,7 @@ ingestFlux openConn cf mSrc now (FluxIndex f) =
     ingestM m = do
       let prm = mr64IdPrm m
           p   = mr64Periode m
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf
           (modePublicationToText (hModePublication hdr))
           (hIdDemande hdr) (hIdPublication hdr) Nothing now
@@ -95,7 +97,7 @@ ingestFlux openConn cf mSrc now (FluxEnergie f) =
     ingestM m = do
       let prm = mr65IdPrm m
           p   = mr65Periode m
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf
           (modePublicationToText (hModePublication hdr))
           (hIdDemande hdr) Nothing Nothing now
@@ -108,7 +110,7 @@ ingestFlux openConn cf mSrc now (FluxPmax f) =
     ingestM m = do
       let prm = mr66IdPrm m
           p   = mr66Periode m
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf
           (modePublicationToText (hModePublication hdr))
           (hIdDemande hdr) (hIdPublication hdr) Nothing now
@@ -121,7 +123,7 @@ ingestFlux openConn cf mSrc now (FluxFacturant f) =
     ingestM m = do
       let prm = mr67IdPrm m
           p   = mr67Periode m
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf
           (modePublicationToText (hModePublication hdr))
           (hIdDemande hdr) Nothing Nothing now
@@ -132,21 +134,33 @@ ingestFlux openConn cf mSrc now (FluxITC items) =
   where
     ingestM itc = do
       let prm = c68IdPrm itc
-      doInsert openConn prm $ \conn ->
+      doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf "P" "C68" Nothing Nothing now
           Nothing Nothing mSrc
         >>= \ingId -> insertPrmInfo conn ingId now itc
 
--- | Ouvre la connexion via @openConn@, exécute l'action dans une transaction, ferme.
-doInsert :: (PrmId -> IO Connection) -> PrmId -> (Connection -> IO ()) -> IO IngestResult
-doInsert openConn prm action = do
+-- | Ouvre la connexion via @openConn@, vérifie si le fichier a déjà été ingéré,
+-- exécute l'action dans une transaction si non, ferme.
+doInsert :: (PrmId -> IO Connection) -> PrmId -> Maybe Text -> (Connection -> IO ()) -> IO IngestResult
+doInsert openConn prm mSrc action = do
   result <- try $ do
     conn <- openConn prm
-    withTransaction conn (action conn)
-    close conn
+    alreadyDone <- case mSrc of
+      Nothing  -> return False
+      Just src -> do
+        rows <- query conn
+          "SELECT COUNT(*) FROM elec_ingestion_log WHERE fichier_source = ?"
+          (Only src) :: IO [Only Int]
+        return $ case rows of { [Only n] -> n > 0; _ -> False }
+    if alreadyDone
+      then close conn >> return (IngestSkip prm (fromMaybe "" mSrc))
+      else do
+        withTransaction conn (action conn)
+        close conn
+        return (IngestOk prm (fromMaybe "" mSrc))
   return $ case result of
-    Left  ex -> IngestErr prm (T.pack (show (ex :: SomeException)))
-    Right _  -> IngestOk  prm (unPrmId prm)
+    Left  ex -> IngestErr  prm (T.pack (show (ex :: SomeException)))
+    Right r  -> r
 
 -- | Ingère un lot de fichiers JSON de façon séquentielle.
 -- Les erreurs sur un fichier n'interrompent pas les suivants.
@@ -159,7 +173,7 @@ ingestBatch openConn files = do
   return (concat results)
 
 modePublicationToText :: ModePublication -> Text
-modePublicationToText MP_Ponctuel    = "P"
-modePublicationToText MP_Quotidien   = "Q"
-modePublicationToText MP_Hebdomadaire = "H"
-modePublicationToText MP_Mensuel     = "M"
+modePublicationToText MpPonctuel    = "P"
+modePublicationToText MpQuotidien   = "Q"
+modePublicationToText MpHebdomadaire = "H"
+modePublicationToText MpMensuel     = "M"

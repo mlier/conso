@@ -44,6 +44,8 @@ library
         Conso.Fr.Elec.SiteDB.Export.Consolidate
         Conso.Fr.Elec.SiteDB.Orchestration.Adresse
         Conso.Fr.Elec.SiteDB.Orchestration.Inscription
+        Conso.Fr.Elec.SiteDB.Orchestration.Backfill
+        Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
         Conso.Fr.Elec.SiteDB.Cli
     build-depends:
           base >=4.17 && <5

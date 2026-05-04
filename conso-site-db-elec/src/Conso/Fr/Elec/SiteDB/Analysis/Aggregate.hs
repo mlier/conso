@@ -43,7 +43,7 @@ data AggregateRow = AggregateRow
 instance FromRow AggregateRow where
   fromRow = AggregateRow <$> field <*> field <*> field <*> field <*> field
 
--- | Agrège les courbes de charge (@curve_points@) sur une période.
+-- | Agrège les courbes de charge (@elec_curve_points@) sur une période.
 aggregateCurve
   :: Connection
   -> Text              -- ^ @grandeur_metier@ (@\"CONS\"@ ou @\"PROD\"@)
@@ -61,14 +61,14 @@ aggregateCurve conn gm gp em period deb fin =
       \ AVG(CAST(valeur AS REAL)), \
       \ MAX(CAST(valeur AS REAL)), \
       \ COUNT(*) \
-      \ FROM curve_points \
+      \ FROM elec_curve_points \
       \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
       \   AND etape_metier = ? \
       \   AND horodate >= ? AND horodate <= ? \
       \ GROUP BY periode ORDER BY periode")
     (gm, gp, em, deb, fin)
 
--- | Agrège les énergies quotidiennes (@daily_energy@) sur une période.
+-- | Agrège les énergies quotidiennes (@elec_daily_energy@) sur une période.
 aggregateEnergy
   :: Connection
   -> Text              -- ^ @grandeur_metier@
@@ -85,7 +85,7 @@ aggregateEnergy conn gm gp period deb fin =
       \ AVG(CAST(valeur AS REAL)), \
       \ MAX(CAST(valeur AS REAL)), \
       \ COUNT(*) \
-      \ FROM daily_energy \
+      \ FROM elec_daily_energy \
       \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
       \   AND date_mesure >= ? AND date_mesure <= ? \
       \ GROUP BY periode ORDER BY periode")

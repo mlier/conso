@@ -4,12 +4,14 @@ module Display
   , afficherSites
   , afficherDesinscription
   , afficherIngererGaz
+  , afficherIngererElec
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import Data.Foldable (forM_)
+import Data.Time (Day, showGregorian)
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
@@ -18,6 +20,10 @@ import Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
   ( IngererGazReport(..), PceIngestionReport(..), TrouBackfill(..) )
 import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
   ( ChangementInfosContract(..), ChangementInfosTech(..) )
+import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
+  ( IngererElecReport(..), PrmIngestionReport(..) )
+import Conso.Fr.Elec.SiteDB.Orchestration.Backfill
+  ( BackfillDemande(..) )
 
 
 afficherResultat :: InscriptionResult -> IO ()
@@ -124,3 +130,61 @@ afficherChangementTech :: Either Text ChangementInfosTech -> String
 afficherChangementTech (Left err)                      = "ERREUR — " <> T.unpack err
 afficherChangementTech (Right TechniquesPasDeChangement)    = "inchangées"
 afficherChangementTech (Right (TechniquesNouvellesInfos _)) = "mise à jour stockée"
+
+
+afficherIngererElec :: IngererElecReport -> IO ()
+afficherIngererElec r = do
+  putStrLn $ "=== Ingestion élec : " <> show (ierFichiersTotal r) <> " fichier(s) traité(s)"
+          <> " (" <> show (ierFichiersIgnores r) <> " ignoré(s)"
+          <> ", " <> show (ierFichiersErreur r) <> " erreur(s)) ==="
+  mapM_ afficherPrmReport (ierDetails r)
+  mapM_ afficherErreurPrm (ierErrors r)
+  let parseErrs = ierErreursParser r
+  if null parseErrs
+    then return ()
+    else do
+      putStrLn $ "\n=== Erreurs de parsing JSON (" <> show (length parseErrs) <> ") ==="
+      forM_ parseErrs $ \(fichier, msg) ->
+        putStrLn $ "  ERREUR " <> T.unpack fichier <> " : " <> T.unpack msg
+  let backfill = ierBackfill r
+  if null backfill
+    then return ()
+    else do
+      putStrLn $ "\n=== Demandes M023 envoyées : " <> show (length backfill) <> " ==="
+      mapM_ afficherBackfill backfill
+
+afficherBackfill :: BackfillDemande -> IO ()
+afficherBackfill d = do
+  let Prm prm = bdPrm d
+  putStrLn $ "  PRM " <> T.unpack prm
+          <> " [" <> T.unpack (bdFlux d) <> "] "
+          <> T.unpack (bdDebut d) <> " → " <> T.unpack (bdFin d)
+          <> " : " <> either (\e -> "ERREUR — " <> T.unpack e) T.unpack (bdAffaireId d)
+
+afficherPrmReport :: PrmIngestionReport -> IO ()
+afficherPrmReport r = do
+  let Prm prm = prirPrm r
+  putStrLn $ "\n--- PRM " <> T.unpack prm <> " ---"
+  putStrLn $ "  Fichiers ingérés  : " <> show (prirFichiersOk r)
+  putStrLn $ "  Fichiers ignorés  : " <> show (prirFichiersSkip r)
+  putStrLn $ "  Courbes           : " <> afficherDateElec (prirDerniereCourbe r)
+  putStrLn $ "  Énergie           : " <> afficherDateElec (prirDerniereEnergie r)
+  putStrLn $ "  Pmax              : " <> afficherDateElec (prirDernierePmax r)
+  afficherTrousDays "Trous énergie  " (prirTrousEnergie r)
+  afficherTrousDays "Trous Pmax     " (prirTrousPmax r)
+  forM_ (prirErreurs r) $ \(f, e) ->
+    putStrLn $ "  ERREUR " <> T.unpack f <> " : " <> T.unpack e
+
+afficherTrousDays :: String -> [Day] -> IO ()
+afficherTrousDays _     []   = return ()
+afficherTrousDays label days = do
+  putStrLn $ "  " <> label <> "(" <> show (length days) <> ") :"
+  mapM_ (\d -> putStrLn $ "    " <> showGregorian d) days
+
+afficherErreurPrm :: (Prm, Text) -> IO ()
+afficherErreurPrm (Prm prm, err) =
+  putStrLn $ "\n  ERREUR PRM " <> T.unpack prm <> " : " <> T.unpack err
+
+afficherDateElec :: Maybe Text -> String
+afficherDateElec Nothing  = "(aucune donnée)"
+afficherDateElec (Just d) = "[dernière : " <> T.unpack d <> "]"

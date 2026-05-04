@@ -53,7 +53,7 @@ detectAnomalies
 detectAnomalies conn gm gp em deb fin zThreshold mMin mMax = do
   -- Calcul de la moyenne
   avgRows <- query conn
-    "SELECT AVG(CAST(valeur AS REAL)) FROM curve_points \
+    "SELECT AVG(CAST(valeur AS REAL)) FROM elec_curve_points \
     \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
     \   AND etape_metier = ? AND horodate >= ? AND horodate <= ?"
     (gm, gp, em, deb, fin)
@@ -63,7 +63,7 @@ detectAnomalies conn gm gp em deb fin zThreshold mMin mMax = do
 
   -- Récupération des points
   rows <- query conn
-    "SELECT horodate, CAST(valeur AS REAL) FROM curve_points \
+    "SELECT horodate, CAST(valeur AS REAL) FROM elec_curve_points \
     \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
     \   AND etape_metier = ? AND horodate >= ? AND horodate <= ? \
     \ ORDER BY horodate"
