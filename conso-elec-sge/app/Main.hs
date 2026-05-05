@@ -226,9 +226,12 @@ data AcsArretOptions = AcsArretOptions
   } deriving (Eq, Show)
 
 data AcsModifierOptions = AcsModifierOptions
-  { acsModifierPoint   :: String
-  , acsModifierSens    :: String
-  , acsModifierService :: String
+  { acsModifierPoint     :: String
+  , acsModifierSens      :: String
+  , acsModifierService   :: String
+  , acsModifierAjouter   :: [MOD.Periodicite]
+  , acsModifierSupprimer :: [MOD.Periodicite]
+  , acsModifierCorrigees :: Maybe Bool
   } deriving (Eq, Show)
 
 data AcsRenouvelerOptions = AcsRenouvelerOptions
@@ -1048,6 +1051,15 @@ acsModifierParser = AcsModifierOptions
                   <> value "SOUTIRAGE" <> showDefault <> help "Sens de l'énergie")
     <*> strOption (long "service" <> short 's' <> metavar "SERVICE_ID"
                   <> help "Identifiant du service à modifier")
+    <*> many (option periodiciteReader
+                  (long "ajouter" <> metavar "P1D|P7D|P1M"
+                  <> help "Option de publication à ajouter (répétable)"))
+    <*> many (option periodiciteReader
+                  (long "supprimer" <> metavar "P1D|P7D|P1M"
+                  <> help "Option de publication à supprimer (répétable)"))
+    <*> ( flag' (Just True)  (long "corrigees"     <> help "mesuresCorrigees = True (obligatoire pour CDC)")
+      <|> flag' (Just False) (long "non-corrigees" <> help "mesuresCorrigees = False (obligatoire pour CDC)")
+      <|> pure Nothing )
 
 acsRenouvelerParser :: Parser AcsRenouvelerOptions
 acsRenouvelerParser = AcsRenouvelerOptions
@@ -1355,7 +1367,9 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
             pPrint rep'
 
     AcsModifier o -> do
-        myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o) [] []
+        myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o)
+                               (map (\p -> (acsModifierCorrigees o, p)) (acsModifierAjouter o))
+                               (map (\p -> (acsModifierCorrigees o, p)) (acsModifierSupprimer o))
         if xml then MOD.xmlRequest myType >>= (putStrLn . prettyXml)
         else MOD.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType

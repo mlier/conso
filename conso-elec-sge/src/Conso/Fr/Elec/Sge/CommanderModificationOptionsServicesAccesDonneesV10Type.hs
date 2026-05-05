@@ -57,7 +57,7 @@ instance SchemaType CommanderModificationOptionsServicesAccesDonneesResponseType
             ]
  
 newtype ServicesModifiesType = ServicesModifiesType
-        { servicesModifiesType_serviceSouscritId :: [ServiceSouscritIdType]
+        { servicesModifiesType_serviceSouscritId :: [ServiceIdType]
         }
         deriving (Eq,Show)
 instance SchemaType ServicesModifiesType where
@@ -69,20 +69,6 @@ instance SchemaType ServicesModifiesType where
     schemaTypeToXML s x@ServicesModifiesType{} =
         toXMLElement s []
             [ concatMap (schemaTypeToXML "serviceSouscritId") $ servicesModifiesType_serviceSouscritId x
-            ]
- 
-newtype ServiceSouscritIdType = ServiceSouscritIdType
-        { serviceSouscritIdType_serviceSouscritId :: ServiceIdType
-        }
-        deriving (Eq,Show)
-instance SchemaType ServiceSouscritIdType where
-    parseSchemaType s = do
-        (_,e) <- posnElement [s]
-        commit $ interior e $ return ServiceSouscritIdType
-            `apply` parseSchemaType "serviceSouscritId"
-    schemaTypeToXML s x@ServiceSouscritIdType{} =
-        toXMLElement s []
-            [ schemaTypeToXML "serviceSouscritId" $ serviceSouscritIdType_serviceSouscritId x
             ]
  
 data DemandeType = DemandeType
