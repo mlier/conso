@@ -211,11 +211,12 @@ data DureeSpec = DureeJours Integer | DateFinStr String
     deriving (Eq, Show)
 
 data AcsAccesOptions = AcsAccesOptions
-  { acsAccesPoint  :: String
-  , acsAccesSens   :: String
-  , acsAccesType   :: String
-  , acsAccesDuree  :: Maybe DureeSpec
-  , acsAccesAccord :: AccesAccordOpts
+  { acsAccesPoint       :: String
+  , acsAccesSens        :: String
+  , acsAccesType        :: String
+  , acsAccesDuree       :: Maybe DureeSpec
+  , acsAccesAccord      :: AccesAccordOpts
+  , acsAccesPeriodicite :: Maybe ACS.Periodicite
   } deriving (Eq, Show)
 
 data AcsArretOptions = AcsArretOptions
@@ -1007,6 +1008,13 @@ dureeParser = optional $
             (long "date-fin" <> metavar "YYYY-MM-DD"
             <> help "Date de fin de l'accès (format ISO 8601)"))
 
+periodiciteReader :: ReadM ACS.Periodicite
+periodiciteReader = eitherReader $ \s -> case s of
+  "P1D" -> Right ACS.P1D
+  "P7D" -> Right ACS.P7D
+  "P1M" -> Right ACS.P1M
+  _     -> Left $ "Périodicité inconnue : " <> s <> " (valeurs valides : P1D, P7D, P1M)"
+
 acsAccesParser :: Parser AcsAccesOptions
 acsAccesParser = AcsAccesOptions
     <$> strOption (long "point" <> short 'p' <> metavar "PRM"
@@ -1017,6 +1025,11 @@ acsAccesParser = AcsAccesOptions
                   <> help "Type de données demandé")
     <*> dureeParser
     <*> accesAccordParser
+    <*> optional (option periodiciteReader
+          ( long "periodicite" <> metavar "P1D|P7D|P1M"
+         <> help "Périodicité de publication automatique sur SFTP \
+                 \(P1D = quotidien, P7D = hebdomadaire, P1M = mensuel). \
+                 \Sans cet argument : accès consultation uniquement, sans dépôt SFTP." ))
 
 acsArretParser :: Parser AcsArretOptions
 acsArretParser = AcsArretOptions
@@ -1328,7 +1341,7 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
                 AccesPhysique nom -> ACS.AccordPersonnePhysiqueNom nom
                 AccesMorale   den -> ACS.AccordPersonneMoraleDenominationSociale den
         duree  <- resolveDuree (acsAccesDuree o)
-        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) (Just accordType) (acsAccesType o) duree
+        myType <- ACS.initType (acsAccesPoint o) (toSensACS (acsAccesSens o)) (Just accordType) (acsAccesType o) duree (acsAccesPeriodicite o)
         if xml then ACS.xmlRequest myType >>= (putStrLn . prettyXml)
         else ACS.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderServicesAccesDonneesResponseType

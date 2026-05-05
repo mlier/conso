@@ -12,7 +12,8 @@ avec @cadreAcces = SERVICE_ACCES@.
 @duree = Nothing@ crée un SAD ouvert (SAD-NR2 → SGT509 si durée > 3 ans).
 -}
 module Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10 (
-  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest, AccordPersonneType(..), Sens(..)
+  initType, initTypeTest, myrequest, wsRequest, xmlRequest, wsRequestTest, xmlRequestTest,
+  AccordPersonneType(..), Sens(..), Periodicite(..), periodiciteStr
 ) where
 
 import qualified Data.Text as T
@@ -51,6 +52,11 @@ import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
       PointIdType(PointIdType),
       SensType(SensTypeSOUTIRAGE, SensTypeINJECTION),
       ServicesSouscritsType(ServicesSouscritsType),
+      OptionPublicationType(OptionPublicationType,
+                            optionPublicationType_mesuresCorrigees,
+                            optionPublicationType_periodiciteTransmission),
+      OptionsPublicationType(OptionsPublicationType),
+      PeriodiciteTransmissionType(PeriodiciteTransmissionType),
       ServiceSouscritType(ServiceSouscritType,
                           serviceSouscritType_typeDonnees,
                           serviceSouscritType_optionsPublication),
@@ -88,8 +94,8 @@ instance ResponseType CommanderServicesAccesDonneesResponseType where
                    }
 
 
-initType_ :: Bool -> String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> IO CommanderServicesAccesDonneesType
-initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
+initType_ :: Bool -> String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> Maybe Periodicite -> IO CommanderServicesAccesDonneesType
+initType_ prod myPointId sens accordPersonneType typeDonnees duree mPeriodicite = do
     (loginUtilisateur, contratId) <- getLoginContrat prod
 
     zonedTime <- getZonedTime
@@ -121,6 +127,14 @@ initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
                     }
               }
 
+    let optsPub = fmap (\p -> OptionsPublicationType
+          [ OptionPublicationType
+              { optionPublicationType_mesuresCorrigees        = Nothing
+              , optionPublicationType_periodiciteTransmission =
+                  PeriodiciteTransmissionType (Xsd.XsdString (periodiciteStr p))
+              }
+          ]) mPeriodicite
+
     let requestType = CommanderServicesAccesDonneesType{
           commanderServicesAccesDonneesType_demande = DemandeType
           { demandeType_donneesGenerales = DonneesGeneralesType
@@ -134,8 +148,8 @@ initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
             }
           , demandeType_servicesSouscrits = ServicesSouscritsType
             [ ServiceSouscritType
-              { serviceSouscritType_typeDonnees = TypeDonneesType $ Xsd.XsdString typeDonnees
-              , serviceSouscritType_optionsPublication = Nothing
+              { serviceSouscritType_typeDonnees        = TypeDonneesType $ Xsd.XsdString typeDonnees
+              , serviceSouscritType_optionsPublication = optsPub
               }
             ]
           }
@@ -143,20 +157,21 @@ initType_ prod myPointId sens accordPersonneType typeDonnees duree = do
     return requestType
 
 -- | initType renvoit un objet de configuration utilisable par wsRequest sur le serveur de production de SGE.
-initType :: String                  -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
-         -> Sens                    -- ^ sens : indique le sens de l'énergie.
+initType :: String                   -- ^ myPointId : identifiant PRM du point sur lequel porte la demande.
+         -> Sens                     -- ^ sens : indique le sens de l'énergie.
          -> Maybe AccordPersonneType -- ^ accordPersonneType : certifie l'accord du client.
-                                    --
-                                    -- - Just PersonnePhysique : accord True, nom de la personne,
-                                    -- - Just PersonneMorale : accord True, dénomination morale,
-                                    -- - Nothing : accord False (SAD-NR1 → SGT566).
-         -> String                  -- ^ typeDonnees : type de données demandé (CDC, IDX, PMAX, ENERGIE).
+                                     --
+                                     -- - Just PersonnePhysique : accord True, nom de la personne,
+                                     -- - Just PersonneMorale : accord True, dénomination morale,
+                                     -- - Nothing : accord False (SAD-NR1 → SGT566).
+         -> String                   -- ^ typeDonnees : type de données demandé (CDC, IDX, PMAX, ENERGIE).
          -> Maybe Integer            -- ^ duree : durée en jours depuis aujourd'hui, ou Nothing (SAD-NR2 → SGT509 si > 3 ans).
+         -> Maybe Periodicite        -- ^ periodicite : périodicité de publication (@P1D@ = quotidien, @P7D@ = hebdomadaire, @P1M@ = mensuel). 'Nothing' = accès consultation uniquement, sans dépôt SFTP automatique.
          -> IO CommanderServicesAccesDonneesType
 initType = initType_ True
 
 -- | Comme 'initType' mais sur le serveur d'homologation.
-initTypeTest :: String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> IO CommanderServicesAccesDonneesType
+initTypeTest :: String -> Sens -> Maybe AccordPersonneType -> String -> Maybe Integer -> Maybe Periodicite -> IO CommanderServicesAccesDonneesType
 initTypeTest = initType_ False
 
 
@@ -168,7 +183,7 @@ myrequest = do
     myType <- initType (T.unpack $ pointId testEnv)
                        SensSOUTIRAGE
                        (Just $ AccordPersonnePhysiqueNom (T.unpack $ nomClientFinalOuDenominationSociale testEnv))
-                       "CDC" Nothing
+                       "CDC" Nothing (Just P1D)
     rep <- wsRequest myType :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     pPrint rep
 
@@ -183,3 +198,15 @@ data AccordPersonneType
     = AccordPersonnePhysiqueNom String                 -- ^ Nom de la personne physique ayant donné accord
     | AccordPersonneMoraleDenominationSociale String   -- ^ Dénomination sociale de la personne morale
     deriving (Eq,Show)
+
+-- | Périodicité de publication automatique sur SFTP (format ISO 8601).
+data Periodicite
+    = P1D  -- ^ Quotidien
+    | P7D  -- ^ Hebdomadaire
+    | P1M  -- ^ Mensuel
+    deriving (Eq, Show, Enum, Bounded)
+
+periodiciteStr :: Periodicite -> String
+periodiciteStr P1D = "P1D"
+periodiciteStr P7D = "P7D"
+periodiciteStr P1M = "P1M"

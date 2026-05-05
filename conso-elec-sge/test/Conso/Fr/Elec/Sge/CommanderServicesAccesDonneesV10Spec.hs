@@ -20,7 +20,7 @@ isRightOrSgt570 (Left (code, _)) = code == "SGT570"
 shouldDemanderC5Homo :: String -> String -> Maybe Integer -> Expectation
 shouldDemanderC5Homo prm typeDonnees duree = pendingOnNetworkError $ do
     cleanupServices prm
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees duree
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees duree Nothing
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldSatisfy` isRightOrSgt570
@@ -28,7 +28,7 @@ shouldDemanderC5Homo prm typeDonnees duree = pendingOnNetworkError $ do
 shouldDemanderC2C4Homo :: String -> String -> Maybe Integer -> Expectation
 shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
     cleanupServices prm
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees duree
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees duree Nothing
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldSatisfy` isRightOrSgt570
@@ -36,7 +36,7 @@ shouldDemanderC2C4Homo prm typeDonnees duree = pendingOnNetworkError $ do
 shouldRefuserHomo :: String -> String -> String -> Expectation
 shouldRefuserHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
     cleanupServices prm
-    myType <- initTypeTest prm SensSOUTIRAGE Nothing typeDonnees (Just 500)
+    myType <- initTypeTest prm SensSOUTIRAGE Nothing typeDonnees (Just 500) Nothing
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldHaveCode` expectedCode
@@ -45,7 +45,7 @@ shouldRefuserDateFinHomo :: String -> String -> String -> Expectation
 shouldRefuserDateFinHomo prm typeDonnees expectedCode = pendingOnNetworkError $ do
     cleanupServices prm
     -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT5O9
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1200)
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonnePhysiqueNom "Toto")) typeDonnees (Just 1200) Nothing
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldHaveCode` expectedCode
@@ -54,7 +54,7 @@ shouldRefuserDateFinC2C4Homo :: String -> String -> String -> Expectation
 shouldRefuserDateFinC2C4Homo prm typeDonnees expectedCode = pendingOnNetworkError $ do
     cleanupServices prm
     -- dateFin > 3 ans : 1200 jours (~3 ans 4 mois) → SGT5O9
-    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees (Just 1200)
+    myType <- initTypeTest prm SensSOUTIRAGE (Just (AccordPersonneMoraleDenominationSociale "Toto")) typeDonnees (Just 1200) Nothing
     rep    <- wsRequestTest myType
                 :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
     rep `shouldHaveCode` expectedCode

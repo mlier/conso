@@ -48,6 +48,9 @@ import Conso.Fr.Elec.Sge.CommanderModificationOptionsServicesAccesDonneesV10Type
       elementCommanderModificationOptionsServicesAccesDonneesResponse,
       elementToXMLCommanderModificationOptionsServicesAccesDonnees )
 
+import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
+    ( Periodicite(..), periodiciteStr )
+
 import Conso.Fr.Elec.Sge.Sge
     ( getEnv,
       getLoginContrat,
@@ -77,18 +80,6 @@ instance ResponseType CommanderModificationOptionsServicesAccesDonneesResponseTy
                    , elementResponse = elementCommanderModificationOptionsServicesAccesDonneesResponse
                    }
 
-
--- | Périodicité de transmission ISO 8601 pour les options de publication MOSAD.
-data Periodicite
-    = P1D  -- ^ Quotidien
-    | P7D  -- ^ Hebdomadaire
-    | P1M  -- ^ Mensuel
-    deriving (Eq, Show, Enum)
-
-periodiciteStr :: Periodicite -> String
-periodiciteStr P1D = "P1D"
-periodiciteStr P7D = "P7D"
-periodiciteStr P1M = "P1M"
 
 -- | Convertit une liste de (mesuresCorrigees, periodiciteTransmission) en OptionsPublicationType.
 --   Liste vide → Nothing.
