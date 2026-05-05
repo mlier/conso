@@ -306,7 +306,7 @@ comm =
         -- NOUVEAU : groupe AccesDonnees
     <|> subparser
         (  commandGroup "Accès aux flux R6x (API v26+)"
-        <> command "liste"
+        <> command "lister"
             ( info
                 ( AcsServices <$> acsServicesParser <**> helper )
                 ( fullDesc
@@ -334,7 +334,7 @@ comm =
                 <> progDesc "CommanderRenouvellementServicesAccesDonneesV10 : Renouveler des services AccesDonnees"
                 )
             )
-        <> command "arret"
+        <> command "arreter"
             ( info
                 ( AcsArret <$> acsArretParser <**> helper )
                 ( fullDesc
