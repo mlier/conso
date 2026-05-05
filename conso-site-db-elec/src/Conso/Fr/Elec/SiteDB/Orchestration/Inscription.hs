@@ -14,7 +14,7 @@ import Database.SQLite.Simple (Connection)
 
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10
   ( initType, initTypeTest, wsRequest, wsRequestTest
-  , AccordPersonneType(..), Sens(..) )
+  , AccordPersonneType(..), Sens(..), Periodicite(..) )
 import Conso.Fr.Elec.Sge.CommanderServicesAccesDonneesV10Type
   (CommanderServicesAccesDonneesResponseType)
 import qualified Conso.Fr.Elec.Sge.CommanderRenouvellementServicesAccesDonneesV10 as RRen
@@ -147,6 +147,7 @@ renouvelerSge prod prmT accord sid = do
 subscribeSge :: Bool -> Text -> Accord -> TypeFlux -> IO (Either (String, String) ())
 subscribeSge prod prmT accord t = do
   req <- mkInit (T.unpack prmT) SensSOUTIRAGE (Just accordType) (typeFluxToStr t) (Just 730)
+           (periodiciteFor t)
   resp <- mkWs req :: IO (Either (String, String) CommanderServicesAccesDonneesResponseType)
   return $ void resp
   where
@@ -155,6 +156,10 @@ subscribeSge prod prmT accord t = do
       AccordDenomination d -> AccordPersonneMoraleDenominationSociale (T.unpack d)
     mkInit = if prod then initType else initTypeTest
     mkWs   = if prod then wsRequest else wsRequestTest
+
+periodiciteFor :: TypeFlux -> Maybe Periodicite
+periodiciteFor IDX = Nothing
+periodiciteFor _   = Just P1D
 
 
 logV :: Bool -> String -> IO ()
