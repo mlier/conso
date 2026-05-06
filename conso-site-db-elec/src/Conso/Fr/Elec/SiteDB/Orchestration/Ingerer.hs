@@ -101,8 +101,9 @@ ingererElec
   -> IO IngererElecReport
 ingererElec regConn configDir siteDbDir params = do
   today <- utctDay <$> getCurrentTime
-  let start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) today
-      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     today
+  let yesterday = addDays (-1) today
+      start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) yesterday
+      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     yesterday
 
   sites <- listSites regConn
   let prmsSites = mapMaybe (\sr -> fmap (\p -> (p, srSiteId sr)) (srPrm sr)) sites
@@ -122,7 +123,7 @@ ingererElec regConn configDir siteDbDir params = do
       parseErrors  = Map.findWithDefault [] "?" byPrmRaw
       byPrm        = Map.delete "?" byPrmRaw
 
-  results <- mapM (buildAndBackfill siteDbDir byPrm start3Ans start2Ans today) prmsSites'
+  results <- mapM (buildAndBackfill siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
   let (errPrms, okPairs)        = partitionEithers results
       (okReports, allDemandes)  = unzip okPairs
 
@@ -146,14 +147,14 @@ buildAndBackfill
   -> Day -> Day -> Day
   -> (Prm, SiteId)
   -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillDemande]))
-buildAndBackfill siteDbDir byPrm start3Ans start2Ans today (prm, siteId) =
-  catch (Right <$> buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm siteId)
+buildAndBackfill siteDbDir byPrm start3Ans start2Ans endDate (prm, siteId) =
+  catch (Right <$> buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans endDate prm siteId)
         (\e -> return $ Left (prm, T.pack (displayException (e :: SomeException))))
 
 buildAndBackfillUnsafe
   :: FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Day -> Prm -> SiteId
   -> IO (PrmIngestionReport, [BackfillDemande])
-buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm@(Prm prmText) siteId = do
+buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmText) siteId = do
   conn <- openSiteDbElec siteDbDir siteId
   let entries     = Map.findWithDefault [] prmText byPrm
       fichiersOk  = length [ () | (_, e) <- entries, e == "ok"   ]
@@ -165,9 +166,9 @@ buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm@(Prm prmTex
   dPmax    <- derniereDatePmax conn
   dIndex   <- derniereHorodateIndex conn
 
-  trousE <- detectEnergyGaps   conn "CONS" start3Ans today
-  trousP <- detectPmaxGaps     conn "CONS" start3Ans today
-  trousC <- detectCurveDayGaps conn "CONS" start2Ans today
+  trousE <- detectEnergyGaps   conn "CONS" start3Ans endDate
+  trousP <- detectPmaxGaps     conn "CONS" start3Ans endDate
+  trousC <- detectCurveDayGaps conn "CONS" start2Ans endDate
 
   let report = PrmIngestionReport
         { prirPrm             = prm
@@ -183,26 +184,28 @@ buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans today prm@(Prm prmTex
         , prirTrousCourbes    = trousC
         }
 
-  demandesEP <- mapMaybeM (envoyerSiNonRecent conn prm "R65/R66" "ENERGIE")
-                  (groupDays (nub (trousE ++ trousP)))
+  demandesE  <- mapMaybeM (envoyerSiNonRecent conn prm "R65" "ENERGIE")
+                  (groupDays trousE)
+  demandesP  <- mapMaybeM (envoyerSiNonRecent conn prm "R66" "PMAX")
+                  (groupDays trousP)
   demandesC  <- mapMaybeM (envoyerSiNonRecent conn prm "R63" "COURBES")
                   (groupDays (nub trousC))
-  demandesI  <- backfillIndexSiNecessaire conn prm start3Ans today dIndex
+  demandesI  <- backfillIndexSiNecessaire conn prm start3Ans endDate dIndex
 
-  return (report, demandesEP ++ demandesC ++ demandesI)
+  return (report, demandesE ++ demandesP ++ demandesC ++ demandesI)
 
 
 backfillIndexSiNecessaire
   :: Connection -> Prm -> Day -> Day -> Maybe Text
   -> IO [BackfillDemande]
-backfillIndexSiNecessaire conn prm start3Ans today mLastDate = do
+backfillIndexSiNecessaire conn prm start3Ans endDate mLastDate = do
   let needsBackfill = case mLastDate of
         Nothing -> True
         Just t  -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t) of
           Nothing -> True
-          Just d  -> addDays 90 d < today
+          Just d  -> addDays 90 d < endDate
   if needsBackfill
-    then maybeToList <$> envoyerSiNonRecent conn prm "R64" "INDEX" (start3Ans, today)
+    then maybeToList <$> envoyerSiNonRecent conn prm "R64" "INDEX" (start3Ans, endDate)
     else return []
 
 
