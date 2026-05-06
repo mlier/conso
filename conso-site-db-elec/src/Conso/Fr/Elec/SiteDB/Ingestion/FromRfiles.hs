@@ -37,6 +37,7 @@ import qualified Data.Aeson                 as Aeson
 import           Data.Aeson.Types           (parseMaybe)
 import qualified Data.ByteString.Lazy       as LBS
 import           System.FilePath            ((</>), takeFileName)
+import           Data.List                  (sort)
 import           System.Directory           (listDirectory, doesDirectoryExist)
 import           Control.Exception          (try, SomeException)
 
@@ -65,7 +66,7 @@ ingestDirectory
 ingestDirectory configDir siteDbDir = collectJson
   where
     collectJson dir = do
-      entries <- listDirectory dir
+      entries <- sort <$> listDirectory dir
       concat <$> mapM (processEntry dir) entries
     processEntry dir name = do
       let path = dir </> name
