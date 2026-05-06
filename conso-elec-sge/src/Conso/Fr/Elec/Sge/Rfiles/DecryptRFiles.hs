@@ -37,7 +37,7 @@ import           Crypto.Cipher.Types (BlockCipher(..), Cipher(..), IV, makeIV,
 import           Crypto.Error        (CryptoFailable(..))
 import qualified Data.ByteString     as BS
 import           Data.Char           (isDigit)
-import           Data.List           (isSuffixOf, isPrefixOf, tails)
+import           Data.List           (isSuffixOf, isPrefixOf, isInfixOf, tails)
 import           Data.Maybe          (fromMaybe)
 import           Control.Monad       (when)
 import           System.Directory    (listDirectory, doesDirectoryExist, removeFile)
@@ -88,7 +88,9 @@ extractDate fp = go (tails (takeFileName fp))
       , "20" `isPrefixOf` cand = Just cand
       | otherwise = go rest
 
--- | Choisit le mode selon la date du fichier et la config
+-- | Choisit le mode selon le répertoire et la config.
+--   Les fichiers sous un répertoire "fluxr" (publication périodique Enedis) utilisent
+--   toujours AES-256-CBC. Les autres (M023) utilisent AES-128-CBC ou la date de bascule.
 modeForFile :: DecryptConfig -> FilePath -> Either String DecryptMode
 modeForFile cfg fp =
     let useAes128 = case (dc128Key cfg, dc128IV cfg) of
@@ -97,13 +99,15 @@ modeForFile cfg fp =
         useAes256 = case dc256Key cfg of
             Just k  -> Right (Mode256 k)
             Nothing -> Left "AES-256 non configuré (zipAes256Key manquant)"
-    in case dcSwitchDate cfg of
-        Nothing         -> useAes128
-        Just switchDate ->
-            let fileDate = fromMaybe "" (extractDate (takeFileName fp))
-            in if fileDate < switchDate
-               then useAes128
-               else useAes256
+    in if "fluxr" `isInfixOf` fp
+       then useAes256
+       else case dcSwitchDate cfg of
+               Nothing         -> useAes128
+               Just switchDate ->
+                   let fileDate = fromMaybe "" (extractDate (takeFileName fp))
+                   in if fileDate < switchDate
+                      then useAes128
+                      else useAes256
 
 -- ---------------------------------------------------------------------------
 -- Déchiffrement

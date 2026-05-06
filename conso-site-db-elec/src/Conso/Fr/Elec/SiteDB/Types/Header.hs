@@ -109,7 +109,9 @@ instance FromJSON ModePublication where
 instance FromJSON TypePublication where
   parseJSON = withText "TypePublication" $ \t -> case t of
     "FIL_EAU"  -> pure FilEau
+    "filEau"   -> pure FilEau
     "IMMEDIAT" -> pure Immediat
+    "immediat" -> pure Immediat
     _          -> fail $ "TypePublication inconnue: " ++ T.unpack t
 
 -- | Parse le header d'un flux M023 ponctuel.
