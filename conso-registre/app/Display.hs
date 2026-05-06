@@ -11,7 +11,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
 import Data.Foldable (forM_)
-import Data.Time (Day, showGregorian)
+import Data.Time (Day, showGregorian, addDays)
 
 import Conso.Fr.SiteDB.Types (SiteId(..), Prm(..), Pce(..), SiteRef(..))
 import Conso.Fr.SiteDB.Orchestration.Types
@@ -177,11 +177,24 @@ afficherPrmReport r = do
   forM_ (prirErreurs r) $ \(f, e) ->
     putStrLn $ "  ERREUR " <> T.unpack f <> " : " <> T.unpack e
 
+groupRanges :: [Day] -> [(Day, Day)]
+groupRanges []     = []
+groupRanges (d:ds) = go d d ds
+  where
+    go s e []     = [(s, e)]
+    go s e (x:xs)
+      | x == addDays 1 e = go s x xs
+      | otherwise        = (s, e) : go x x xs
+
 afficherTrousDays :: String -> [Day] -> IO ()
 afficherTrousDays _     []   = return ()
 afficherTrousDays label days = do
-  putStrLn $ "  " <> label <> "(" <> show (length days) <> ") :"
-  mapM_ (\d -> putStrLn $ "    " <> showGregorian d) days
+  putStrLn $ "  " <> label <> "(" <> show (length days) <> " j) :"
+  mapM_ (putStrLn . ("    " <>) . showRange) (groupRanges days)
+  where
+    showRange (s, e)
+      | s == e    = showGregorian s
+      | otherwise = showGregorian s <> "->" <> showGregorian e
 
 afficherErreurPrm :: (Prm, Text) -> IO ()
 afficherErreurPrm (Prm prm, err) =
