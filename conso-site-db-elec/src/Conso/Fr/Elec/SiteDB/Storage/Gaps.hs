@@ -71,7 +71,7 @@ detectCurveDayGaps
 detectCurveDayGaps conn gm start end = do
   rows <- query conn
     "SELECT DISTINCT date(horodate) FROM elec_curve_points \
-    \ WHERE grandeur_metier = ? AND horodate >= ? AND horodate <= ?"
+    \ WHERE grandeur_metier = ? AND date(horodate) >= ? AND date(horodate) <= ?"
     (gm, fmtDay start, fmtDay end)
   let present  = Set.fromList $ mapMaybe (parseDay . fromOnly) rows
       expected = [start .. end]
@@ -113,7 +113,7 @@ detectPmaxGaps conn gm start end = do
   rows <- query conn
     "SELECT date(horodate) FROM elec_daily_pmax \
     \ WHERE grandeur_metier = ? \
-    \   AND horodate >= ? AND horodate <= ? \
+    \   AND date(horodate) >= ? AND date(horodate) <= ? \
     \ GROUP BY date(horodate) \
     \ ORDER BY date(horodate)"
     (gm, fmtDay start, fmtDay end)
