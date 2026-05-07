@@ -44,6 +44,8 @@ import           Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
 import           Conso.Fr.Elec.SiteDB.Ingestion.Batch  (IngestResult(..))
 import           Conso.Fr.Elec.SiteDB.Orchestration.Backfill
   ( BackfillDemande(..), envoyerSiNonRecent )
+import           Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
+  ( CrResult(..), processCrDirectory )
 
 
 -- ---------------------------------------------------------------------------
@@ -86,6 +88,7 @@ data IngererElecReport = IngererElecReport
   , ierDetails         :: [PrmIngestionReport]
   , ierErrors          :: [(Prm, Text)]
   , ierBackfill        :: [BackfillDemande]
+  , ierCR              :: [CrResult]
   , ierErreursParser   :: [(Text, Text)]
   } deriving (Show)
 
@@ -123,9 +126,10 @@ ingererElec regConn configDir siteDbDir params = do
       parseErrors  = Map.findWithDefault [] "?" byPrmRaw
       byPrm        = Map.delete "?" byPrmRaw
 
-  results <- mapM (buildAndBackfill siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
-  let (errPrms, okPairs)        = partitionEithers results
-      (okReports, allDemandes)  = unzip okPairs
+  let rfilesDir = localDir cfg
+  results <- mapM (buildAndBackfill rfilesDir siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
+  let (errPrms, okTriples)             = partitionEithers results
+      (okReports, allDemandes, allCRs) = unzip3 okTriples
 
   return $ IngererElecReport
     { ierFichiersTotal   = total
@@ -134,6 +138,7 @@ ingererElec regConn configDir siteDbDir params = do
     , ierDetails         = sortBy (comparing ((\(Prm t) -> t) . prirPrm)) okReports
     , ierErrors          = errPrms
     , ierBackfill        = concat allDemandes
+    , ierCR              = concat allCRs
     , ierErreursParser   = parseErrors
     }
 
@@ -143,18 +148,19 @@ ingererElec regConn configDir siteDbDir params = do
 
 buildAndBackfill
   :: FilePath
+  -> FilePath
   -> Map Text [(Text, Text)]
   -> Day -> Day -> Day
   -> (Prm, SiteId)
-  -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillDemande]))
-buildAndBackfill siteDbDir byPrm start3Ans start2Ans endDate (prm, siteId) =
-  catch (Right <$> buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans endDate prm siteId)
+  -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillDemande], [CrResult]))
+buildAndBackfill rfilesDir siteDbDir byPrm start3Ans start2Ans endDate (prm, siteId) =
+  catch (Right <$> buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm siteId)
         (\e -> return $ Left (prm, T.pack (displayException (e :: SomeException))))
 
 buildAndBackfillUnsafe
-  :: FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Day -> Prm -> SiteId
-  -> IO (PrmIngestionReport, [BackfillDemande])
-buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmText) siteId = do
+  :: FilePath -> FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Day -> Prm -> SiteId
+  -> IO (PrmIngestionReport, [BackfillDemande], [CrResult])
+buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmText) siteId = do
   conn <- openSiteDbElec siteDbDir siteId
   let entries     = Map.findWithDefault [] prmText byPrm
       fichiersOk  = length [ () | (_, e) <- entries, e == "ok"   ]
@@ -191,8 +197,9 @@ buildAndBackfillUnsafe siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmT
   demandesC  <- mapMaybeM (envoyerSiNonRecent conn prm "R63" "COURBES")
                   (groupDays (nub trousC))
   demandesI  <- backfillIndexSiNecessaire conn prm start3Ans endDate dIndex
+  crResults  <- processCrDirectory rfilesDir conn
 
-  return (report, demandesE ++ demandesP ++ demandesC ++ demandesI)
+  return (report, demandesE ++ demandesP ++ demandesC ++ demandesI, crResults)
 
 
 backfillIndexSiNecessaire

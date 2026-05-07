@@ -16,7 +16,8 @@ import           Conso.Fr.SiteDB.Types              (Prm(..))
 
 import qualified Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10 as M23
 import           Conso.Fr.Elec.Sge.DemandePublicationMesuresFinesM23V10Type
-  ( MesuresTypeCode(..), CadreAcces(..), Sens(..), AffaireId )
+  ( MesuresTypeCode(..), CadreAcces(..), Sens(..), AffaireId(..) )
+import           Text.XML.HaXml.Schema.PrimitiveTypes   (XsdString(..))
 
 data BackfillDemande = BackfillDemande
   { bdPrm       :: Prm
@@ -39,7 +40,7 @@ envoyerBackfill prm@(Prm prmText) fluxLabel typeCode (debut, fin) = do
     case result of
       Left  e          -> Left (T.pack (displayException (e :: SomeException)))
       Right (Left  (code, lbl)) -> Left (T.pack code <> " — " <> T.pack lbl)
-      Right (Right affId)       -> Right (T.pack (show affId))
+      Right (Right (AffaireId (XsdString s))) -> Right (T.pack s)
 
 parseTypeCode :: Text -> MesuresTypeCode
 parseTypeCode "COURBES" = MesuresTypeCodeCOURBES

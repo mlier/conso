@@ -87,20 +87,23 @@ ingestJsonFile
   -> IO IngestDirResult
 ingestJsonFile configDir siteDbDir inputDir fileName = do
   let path = inputDir </> fileName
-  result <- try (BS.readFile path) :: IO (Either SomeException ByteString)
-  case result of
-    Left ex -> return $ FileErr path (T.pack (show ex))
-    Right bs ->
-      case detectCodeFlux bs fileName of
-        Nothing -> return $ FileSkip path
-          ("CodeFlux non reconnu dans le fichier ni dans le nom : " <> T.pack fileName)
-        Just cf -> do
-          let openConn (PrmId prmText) = do
-                reg     <- openRegistry configDir
-                siteId  <- lookupOrCreateByPrm reg (Prm prmText)
-                openSiteDbElec siteDbDir siteId
-          results <- ingestFile openConn cf (Just (T.pack (takeFileName path))) bs
-          return $ FileOk path results
+  if "_CR_" `T.isInfixOf` T.pack fileName
+    then return $ FileSkip path "Compte-rendu Enedis (traité séparément)"
+    else do
+      result <- try (BS.readFile path) :: IO (Either SomeException ByteString)
+      case result of
+        Left ex -> return $ FileErr path (T.pack (show ex))
+        Right bs ->
+          case detectCodeFlux bs fileName of
+            Nothing -> return $ FileSkip path
+              ("CodeFlux non reconnu dans le fichier ni dans le nom : " <> T.pack fileName)
+            Just cf -> do
+              let openConn (PrmId prmText) = do
+                    reg     <- openRegistry configDir
+                    siteId  <- lookupOrCreateByPrm reg (Prm prmText)
+                    openSiteDbElec siteDbDir siteId
+              results <- ingestFile openConn cf (Just (T.pack (takeFileName path))) bs
+              return $ FileOk path results
 
 -- | Détecte le 'CodeFlux' d'un fichier JSON M023 :
 --

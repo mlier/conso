@@ -37,7 +37,7 @@ import           Data.Yaml              (decodeFileEither)
 import           Data.Aeson             (FromJSON(..), withObject, (.:), (.:?))
 import qualified Data.ByteString.Char8  as BS
 import           Data.Bits              ((.&.))
-import           Data.List              (isSuffixOf)
+import           Data.List              (isSuffixOf, isInfixOf)
 import           Data.Maybe             (fromMaybe)
 import           Control.Monad          (forM)
 import           System.FilePath        ((</>), takeFileName, makeRelative, takeDirectory, isAbsolute)
@@ -183,8 +183,11 @@ isDirectory :: SftpAttributes -> Bool
 isDirectory attrs =
     (fromIntegral (saPermissions attrs) .&. (0o170000 :: Int)) == 0o040000
 
-isZipFile :: RFileInfo -> Bool
-isZipFile info = ".zip" `isSuffixOf` takeFileName (rfiRelPath info)
+isEncryptedSftpFile :: RFileInfo -> Bool
+isEncryptedSftpFile info =
+    let name = takeFileName (rfiRelPath info)
+    in ".zip" `isSuffixOf` name
+    || ("_CR_" `isInfixOf` name && ".json" `isSuffixOf` name)
 
 formatSize :: Integer -> String
 formatSize n
@@ -269,10 +272,10 @@ listRFiles :: RFilesConfig -- ^ Configuration SFTP.
 listRFiles cfg verbose dayLimit = withRFilesSFTP cfg $ \sftp -> do
     let root = startDir cfg
     now   <- round <$> getPOSIXTime
-    infos <- filter (isRecentEnough dayLimit now) . filter isZipFile
+    infos <- filter (isRecentEnough dayLimit now) . filter isEncryptedSftpFile
                 <$> listTree sftp root root
     if null infos
-        then putStrLn "Aucun fichier .zip disponible."
+        then putStrLn "Aucun fichier disponible."
         else mapM_ (printInfo verbose) infos
     return infos
   where
@@ -315,7 +318,7 @@ loadRFiles cfg postDl dayLimit =
         putStrLn $ "Début chargement, option " <> show postDl
         let root = startDir cfg
         now   <- round <$> getPOSIXTime
-        infos <- filter (isRecentEnough dayLimit now) . filter isZipFile
+        infos <- filter (isRecentEnough dayLimit now) . filter isEncryptedSftpFile
                     <$> listTree sftp root root
         putStrLn $ "Nombre de document à télécharger : " <> show ( length infos )
         mapM (downloadFile sftp root) infos

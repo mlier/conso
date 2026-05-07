@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 module Conso.Fr.Elec.SiteDB.Orchestration.Adresse
   ( codePostalPrm
   , rechercherServicesActifs
@@ -110,8 +111,8 @@ arreterSge verbose prod prmT serviceIds = do
   req  <- mkInit (T.unpack prmT) Arret.SensSOUTIRAGE serviceIds
   resp <- mkWs req :: IO (Either (String, String) CommanderArretServicesAccesDonneesResponseType)
   return $ case resp of
-    Left err -> map (\sid -> (sid, Left err)) serviceIds
-    Right _  -> map (\sid -> (sid, Right ())) serviceIds
+    Left err -> map (, Left err) serviceIds
+    Right _  -> map (, Right ()) serviceIds
   where
     mkInit = if prod then Arret.initType else Arret.initTypeTest
     mkWs   = if prod then Arret.wsRequest else Arret.wsRequestTest

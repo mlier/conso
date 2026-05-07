@@ -181,17 +181,27 @@ processEntry cfg dir name = do
     isDir <- doesDirectoryExist path
     if isDir
         then decryptDir cfg path
-        else when (".zip" `isSuffixOf` name)
-                $ do putStr $ "  Déchiffrement : " <> name <> " ... "
-                     case modeForFile cfg path of
-                       Left err -> putStrLn $ "ERREUR (config) : " <> err
-                       Right mode
-                         -> do res <- decryptZipFile mode path
-                               case res of
-                                 Left err -> putStrLn $ "ERREUR : " <> err
-                                 Right () -> do
-                                     let outDir = takeDirectory path
-                                     (code, _, err) <- readProcessWithExitCode "unzip" ["-o", path, "-d", outDir] ""
-                                     case code of
-                                         ExitSuccess   -> removeFile path >> putStrLn "OK"
-                                         ExitFailure n -> putStrLn $ "ERREUR unzip (code " <> show n <> ") : " <> err
+        else if ".zip" `isSuffixOf` name
+               then do
+                 putStr $ "  Déchiffrement : " <> name <> " ... "
+                 case modeForFile cfg path of
+                   Left err -> putStrLn $ "ERREUR (config) : " <> err
+                   Right mode -> do
+                     res <- decryptZipFile mode path
+                     case res of
+                       Left err -> putStrLn $ "ERREUR : " <> err
+                       Right () -> do
+                         let outDir = takeDirectory path
+                         (code, _, err) <- readProcessWithExitCode "unzip" ["-o", path, "-d", outDir] ""
+                         case code of
+                           ExitSuccess   -> removeFile path >> putStrLn "OK"
+                           ExitFailure n -> putStrLn $ "ERREUR unzip (code " <> show n <> ") : " <> err
+               else when ("_CR_" `isInfixOf` name && ".json" `isSuffixOf` name) $ do
+                 putStr $ "  Déchiffrement CR : " <> name <> " ... "
+                 case modeForFile cfg path of
+                   Left err -> putStrLn $ "ERREUR (config) : " <> err
+                   Right mode -> do
+                     res <- decryptZipFile mode path
+                     putStrLn $ case res of
+                       Left err -> "ERREUR : " <> err
+                       Right () -> "OK"

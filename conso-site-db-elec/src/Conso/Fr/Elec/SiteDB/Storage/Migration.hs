@@ -182,7 +182,9 @@ migrations =
         \  debut       TEXT NOT NULL,\
         \  fin         TEXT NOT NULL,\
         \  date_envoi  TEXT NOT NULL,\
-        \  affaire_id  TEXT\
+        \  affaire_id  TEXT,\
+        \  statut_cr   TEXT,\
+        \  date_cr     TEXT\
         \)"
       ])
 
