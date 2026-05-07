@@ -109,13 +109,13 @@ migrations =
         \  grandeur_physique TEXT NOT NULL,\
         \  unite             TEXT NOT NULL,\
         \  mode_calcul       TEXT NOT NULL,\
-        \  date_mesure       TEXT NOT NULL,\
+        \  date       TEXT NOT NULL,\
         \  valeur            TEXT NOT NULL,\
         \  ingestion_id      INTEGER REFERENCES elec_ingestion_log(id),\
-        \  UNIQUE(grandeur_metier, grandeur_physique, date_mesure)\
+        \  UNIQUE(grandeur_metier, grandeur_physique, date)\
         \)"
       , "CREATE INDEX IF NOT EXISTS idx_energy_date \
-        \  ON elec_daily_energy(date_mesure)"
+        \  ON elec_daily_energy(date)"
 
         -- Pmax quotidiennes (R66, R66B)
       , "CREATE TABLE IF NOT EXISTS elec_daily_pmax (\
@@ -148,8 +148,8 @@ migrations =
         \  id_classe_temporelle  TEXT NOT NULL,\
         \  libelle_classe_temp   TEXT NOT NULL,\
         \  date_creation         TEXT NOT NULL,\
-        \  dbt_mesure            TEXT NOT NULL,\
-        \  fin_mesure            TEXT NOT NULL,\
+        \  debut                 TEXT NOT NULL,\
+        \  fin                   TEXT NOT NULL,\
         \  quantite              INTEGER NOT NULL,\
         \  code_nature           TEXT,\
         \  libelle_nature        TEXT NOT NULL,\
@@ -158,7 +158,7 @@ migrations =
         \  ingestion_id          INTEGER REFERENCES elec_ingestion_log(id)\
         \)"
       , "CREATE INDEX IF NOT EXISTS idx_billing_periode \
-        \  ON elec_billing_measures(dbt_mesure, fin_mesure)"
+        \  ON elec_billing_measures(debut, fin)"
       , "CREATE INDEX IF NOT EXISTS idx_billing_grandeur \
         \  ON elec_billing_measures(grandeur_metier, grandeur_physique)"
 

@@ -67,7 +67,7 @@ exportEnergyJSON conn mGm deb fin = do
       , "grandeurPhysique" .= erGrandeurPhysique r
       , "unite"            .= erUnite r
       , "modeCalcul"       .= erModeCalcul r
-      , "dateMesure"       .= erDateMesure r
+      , "dateMesure"       .= erDate r
       , "valeur"           .= erValeur r
       ]
 

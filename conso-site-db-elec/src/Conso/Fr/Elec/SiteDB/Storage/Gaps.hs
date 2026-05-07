@@ -89,10 +89,10 @@ detectEnergyGaps
   -> IO [Day]
 detectEnergyGaps conn gm start end = do
   rows <- query conn
-    "SELECT date_mesure FROM elec_daily_energy \
+    "SELECT date FROM elec_daily_energy \
     \ WHERE grandeur_metier = ? \
-    \   AND date_mesure >= ? AND date_mesure <= ? \
-    \ ORDER BY date_mesure"
+    \   AND date >= ? AND date <= ? \
+    \ ORDER BY date"
     (gm, showGregorian start, showGregorian end)
   let present  = Set.fromList $ mapMaybe (parseDay . fromOnly) rows
       expected = [start .. end]

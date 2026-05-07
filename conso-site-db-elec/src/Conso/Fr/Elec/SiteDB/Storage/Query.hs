@@ -89,7 +89,7 @@ data EnergyRow = EnergyRow
   , erGrandeurPhysique :: Text -- ^ @grandeur_physique@ — @\"EA\"@, @\"ERI\"@, @\"ERC\"@
   , erUnite            :: Text -- ^ @unite@ — ex. @\"Wh\"@
   , erModeCalcul       :: Text -- ^ @mode_calcul@ — @\"DIFF_INDEX\"@ ou @\"INTEG_COURBE\"@
-  , erDateMesure       :: Text -- ^ @date_mesure@ — @YYYY-MM-DD@
+  , erDate       :: Text -- ^ @date@ — @YYYY-MM-DD@
   , erValeur           :: Text -- ^ @valeur@ — énergie de la journée (chaîne)
   } deriving (Eq, Show)
 
@@ -125,8 +125,8 @@ data BillingRow = BillingRow
   , brIdClasse          :: Text       -- ^ @id_classe_temporelle@ — ex. @\"HPH\"@
   , brLibelleClasse     :: Text       -- ^ @libelle_classe_temp@
   , brDateCreation      :: Text       -- ^ @date_creation@
-  , brDbtMesure         :: Text       -- ^ @dbt_mesure@ — début de la période (@YYYY-MM-DD@)
-  , brFinMesure         :: Text       -- ^ @fin_mesure@ — fin de la période (@YYYY-MM-DD@)
+  , brDebut             :: Text       -- ^ @debut@ — début de la période (@YYYY-MM-DD@)
+  , brFin               :: Text       -- ^ @fin@ — fin de la période (@YYYY-MM-DD@)
   , brQuantite          :: Int        -- ^ @quantite@ — valeur entière facturée
   , brCodeNature        :: Maybe Text -- ^ @code_nature@ — @E@, @I@, @C@, @R@
   , brLibelleNature     :: Text       -- ^ @libelle_nature@
@@ -209,11 +209,11 @@ queryDailyEnergy
 queryDailyEnergy conn mGm deb fin =
   query conn
     (Query $ "SELECT etape_metier, grandeur_metier, grandeur_physique, unite, \
-             \  mode_calcul, date_mesure, valeur \
+             \  mode_calcul, date, valeur \
              \ FROM elec_daily_energy \
-             \ WHERE date_mesure >= ? AND date_mesure <= ?"
+             \ WHERE date >= ? AND date <= ?"
              <> whereClause [("grandeur_metier", mGm)]
-             <> " ORDER BY grandeur_metier, grandeur_physique, date_mesure")
+             <> " ORDER BY grandeur_metier, grandeur_physique, date")
     (deb, fin)
 
 -- | Pmax quotidiennes sur une période
@@ -243,12 +243,12 @@ queryBillingMeasures conn mGm deb fin =
     (Query $ "SELECT etape_metier, id_motif_releve, grandeur_metier, \
              \  grandeur_physique, unite, code_grille, libelle_grille, \
              \  code_calendrier, libelle_calendrier, id_classe_temporelle, \
-             \  libelle_classe_temp, date_creation, dbt_mesure, fin_mesure, \
+             \  libelle_classe_temp, date_creation, debut, fin, \
              \  quantite, code_nature, libelle_nature, code_statut, libelle_statut \
              \ FROM elec_billing_measures \
-             \ WHERE dbt_mesure <= ? AND fin_mesure >= ?"
+             \ WHERE debut <= ? AND fin >= ?"
              <> whereClause [("grandeur_metier", mGm)]
-             <> " ORDER BY grandeur_metier, grandeur_physique, dbt_mesure")
+             <> " ORDER BY grandeur_metier, grandeur_physique, debut")
     (fin, deb)
 
 -- | Informations techniques courantes (dernière ligne ingérée)
@@ -275,7 +275,7 @@ derniereHorodateIndex conn = scalarQuery conn
 
 derniereDateEnergie :: Connection -> IO (Maybe Text)
 derniereDateEnergie conn = scalarQuery conn
-  "SELECT MAX(date_mesure) FROM elec_daily_energy"
+  "SELECT MAX(date) FROM elec_daily_energy"
 
 derniereDatePmax :: Connection -> IO (Maybe Text)
 derniereDatePmax conn = scalarQuery conn

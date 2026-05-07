@@ -87,7 +87,7 @@ aggregateEnergy conn gm gp period deb fin =
       \ COUNT(*) \
       \ FROM elec_daily_energy \
       \ WHERE grandeur_metier = ? AND grandeur_physique = ? \
-      \   AND date_mesure >= ? AND date_mesure <= ? \
+      \   AND date >= ? AND date <= ? \
       \ GROUP BY periode ORDER BY periode")
     (gm, gp, deb, fin)
 
@@ -100,7 +100,7 @@ periodExpr ParAn      = "strftime('%Y', horodate)"
 
 -- | Expression SQLite pour la période d'agrégation sur une date
 periodExprDay :: AggregationPeriod -> Text
-periodExprDay ParJour    = "date_mesure"
-periodExprDay ParSemaine = "strftime('%Y-W%W', date_mesure)"
-periodExprDay ParMois    = "strftime('%Y-%m', date_mesure)"
-periodExprDay ParAn      = "strftime('%Y', date_mesure)"
+periodExprDay ParJour    = "date"
+periodExprDay ParSemaine = "strftime('%Y-W%W', date)"
+periodExprDay ParMois    = "strftime('%Y-%m', date)"
+periodExprDay ParAn      = "strftime('%Y', date)"

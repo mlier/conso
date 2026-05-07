@@ -24,6 +24,8 @@ import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   ( IngererElecReport(..), PrmIngestionReport(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.Backfill
   ( BackfillDemande(..) )
+import Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
+  ( CrResult(..) )
 
 
 afficherResultat :: InscriptionResult -> IO ()
@@ -152,6 +154,18 @@ afficherIngererElec r = do
     else do
       putStrLn $ "\n=== Demandes M023 envoyées : " <> show (length backfill) <> " ==="
       mapM_ afficherBackfill backfill
+  let crs = ierCR r
+  if null crs
+    then return ()
+    else do
+      putStrLn $ "\n=== Comptes-Rendus Enedis reçus : " <> show (length crs) <> " ==="
+      mapM_ afficherCr crs
+
+afficherCr :: CrResult -> IO ()
+afficherCr cr =
+  putStrLn $ "  " <> T.unpack (crAffaireId cr)
+          <> "  " <> T.unpack (crStatut cr)
+          <> " : " <> T.unpack (crMessage cr)
 
 afficherBackfill :: BackfillDemande -> IO ()
 afficherBackfill d = do

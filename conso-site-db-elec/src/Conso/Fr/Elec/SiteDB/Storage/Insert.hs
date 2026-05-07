@@ -188,7 +188,7 @@ insertIndexValues conn ingId m =
 -- Insertion énergies quotidiennes (R65)
 
 -- | Insère les énergies journalières d'une 'MesureR65' dans @elec_daily_energy@.
--- Utilise @INSERT OR REPLACE@ : idempotent sur @(grandeur_metier, grandeur_physique, date_mesure)@.
+-- Utilise @INSERT OR REPLACE@ : idempotent sur @(grandeur_metier, grandeur_physique, date)@.
 insertDailyEnergy :: Connection -> IngestionId -> MesureR65 -> IO ()
 insertDailyEnergy conn ingId m =
   mapM_ insertGrandeur (mr65Grandeurs m)
@@ -199,7 +199,7 @@ insertDailyEnergy conn ingId m =
       execute conn
         "INSERT OR REPLACE INTO elec_daily_energy \
         \ (etape_metier, grandeur_metier, grandeur_physique, unite, \
-        \  mode_calcul, date_mesure, valeur, ingestion_id) \
+        \  mode_calcul, date, valeur, ingestion_id) \
         \ VALUES (?,?,?,?,?,?,?,?)"
         ( etapeMetierToText (mr65EtapeMetier m)
         , grandeurMetierToText (gr65GrandeurMetier g)
@@ -260,7 +260,7 @@ insertBillingMeasures conn ingId m =
         \  grandeur_metier, grandeur_physique, unite, \
         \  code_grille, libelle_grille, code_calendrier, libelle_calendrier, \
         \  id_classe_temporelle, libelle_classe_temp, \
-        \  date_creation, dbt_mesure, fin_mesure, quantite, \
+        \  date_creation, debut, fin, quantite, \
         \  code_nature, libelle_nature, code_statut, libelle_statut, \
         \  ingestion_id) \
         \ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"

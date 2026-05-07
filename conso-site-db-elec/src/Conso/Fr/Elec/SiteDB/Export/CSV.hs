@@ -16,6 +16,7 @@ module Conso.Fr.Elec.SiteDB.Export.CSV
 
 import           Data.Text              (Text)
 import qualified Data.Text              as T
+import           Data.Maybe (fromMaybe)
 import           Database.SQLite.Simple (Connection)
 import           Conso.Fr.Elec.SiteDB.Storage.Query
 
@@ -25,7 +26,7 @@ curveHeader = "etape_metier;grandeur_metier;grandeur_physique;unite;horodate;val
 
 -- | En-tête CSV pour les énergies quotidiennes
 energyHeader :: Text
-energyHeader = "etape_metier;grandeur_metier;grandeur_physique;unite;mode_calcul;date_mesure;valeur\n"
+energyHeader = "etape_metier;grandeur_metier;grandeur_physique;unite;mode_calcul;date;valeur\n"
 
 -- | En-tête CSV pour les Pmax
 pmaxHeader :: Text
@@ -33,7 +34,7 @@ pmaxHeader = "etape_metier;grandeur_metier;grandeur_physique;unite;horodate;vale
 
 -- | En-tête CSV pour les mesures facturantes
 billingHeader :: Text
-billingHeader = "etape_metier;id_motif_releve;grandeur_metier;grandeur_physique;unite;libelle_grille;libelle_calendrier;id_classe;dbt_mesure;fin_mesure;quantite;libelle_nature;libelle_statut\n"
+billingHeader = "etape_metier;id_motif_releve;grandeur_metier;grandeur_physique;unite;libelle_grille;libelle_calendrier;id_classe;debut;fin;quantite;libelle_nature;libelle_statut\n"
 
 -- | Export CSV des courbes de charge.
 -- Colonnes : @etape_metier;grandeur_metier;grandeur_physique;unite;horodate;valeur;pas;nature;type_completion;iv;ec@
@@ -52,13 +53,13 @@ exportCurveCSV conn mEm mGm mGp deb fin = do
     rowToCSV r = T.intercalate ";"
       [ crEtapeMetier r, crGrandeurMetier r, crGrandeurPhysique r, crUnite r
       , crHorodate r, crValeur r, crPas r, crNature r
-      , maybe "" id (crTypeCompletion r)
+      , fromMaybe "" (crTypeCompletion r)
       , maybe "" (T.pack . show) (crIv r)
       , maybe "" (T.pack . show) (crEc r)
       ] <> "\n"
 
 -- | Export CSV des énergies quotidiennes.
--- Colonnes : @etape_metier;grandeur_metier;grandeur_physique;unite;mode_calcul;date_mesure;valeur@
+-- Colonnes : @etape_metier;grandeur_metier;grandeur_physique;unite;mode_calcul;date;valeur@
 exportEnergyCSV
   :: Connection
   -> Maybe Text -- ^ Filtre @grandeur_metier@ (ou 'Nothing' pour tout)
@@ -71,7 +72,7 @@ exportEnergyCSV conn mGm deb fin = do
   where
     rowToCSV r = T.intercalate ";"
       [ erEtapeMetier r, erGrandeurMetier r, erGrandeurPhysique r
-      , erUnite r, erModeCalcul r, erDateMesure r, erValeur r
+      , erUnite r, erModeCalcul r, erDate r, erValeur r
       ] <> "\n"
 
 -- | Export CSV des Pmax quotidiennes.
@@ -92,7 +93,7 @@ exportPmaxCSV conn mGm deb fin = do
       ] <> "\n"
 
 -- | Export CSV des mesures facturantes.
--- Colonnes : @etape_metier;id_motif_releve;grandeur_metier;grandeur_physique;unite;libelle_grille;libelle_calendrier;id_classe;dbt_mesure;fin_mesure;quantite;libelle_nature;libelle_statut@
+-- Colonnes : @etape_metier;id_motif_releve;grandeur_metier;grandeur_physique;unite;libelle_grille;libelle_calendrier;id_classe;debut;fin;quantite;libelle_nature;libelle_statut@
 exportBillingCSV
   :: Connection
   -> Maybe Text -- ^ Filtre @grandeur_metier@ (ou 'Nothing')
@@ -109,7 +110,7 @@ exportBillingCSV conn mGm deb fin = do
       , brLibelleGrille r
       , brLibelleCalendrier r
       , brIdClasse r
-      , brDbtMesure r, brFinMesure r
+      , brDebut r, brFin r
       , T.pack (show (brQuantite r))
       , brLibelleNature r, brLibelleStatut r
       ] <> "\n"
