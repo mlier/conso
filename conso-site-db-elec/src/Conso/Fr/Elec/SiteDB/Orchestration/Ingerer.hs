@@ -5,7 +5,6 @@ module Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   , IngererElecReport(..)
   , PrmIngestionReport(..)
   , PrmInfoC68(..)
-  , BackfillDemande(..)
   , ingererElec
   ) where
 
@@ -15,7 +14,7 @@ import           Data.Either                   (partitionEithers)
 import           Data.List                     (nub, sortBy)
 import           Data.Map.Strict               (Map)
 import qualified Data.Map.Strict               as Map
-import           Data.Maybe                    (mapMaybe, catMaybes, maybeToList)
+import           Data.Maybe                    (mapMaybe, catMaybes)
 import           Data.Ord                      (comparing)
 import           Data.Text                     (Text)
 import qualified Data.Text                     as T
@@ -46,7 +45,11 @@ import           Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
   ( ingestDirectory, IngestDirResult(..) )
 import           Conso.Fr.Elec.SiteDB.Ingestion.Batch  (IngestResult(..))
 import           Conso.Fr.Elec.SiteDB.Orchestration.Backfill
-  ( BackfillDemande(..), envoyerSiNonRecent )
+  ( BackfillBesoin(..), BackfillBatch(..)
+  , grouperBesoins, filtrerDejaDemandes
+  , itcDejaDemandeeAujourdhui
+  , envoyerBatchMfi, envoyerBatchItc
+  , chunksOf )
 import           Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
   ( CrResult(..), processCrDirectory )
 
@@ -59,6 +62,12 @@ lookbackEnergiePmax = 3
 
 lookbackCourbes :: Integer
 lookbackCourbes = 2
+
+-- Limites officielles Enedis par flux (PRMs par requête)
+limiteMfi :: Text -> Int
+limiteMfi "COURBES" = 1500
+limiteMfi "INDEX"   = 1500
+limiteMfi _         = 10000
 
 
 -- ---------------------------------------------------------------------------
@@ -102,7 +111,7 @@ data IngererElecReport = IngererElecReport
   , ierFichiersErreur  :: Int
   , ierDetails         :: [PrmIngestionReport]
   , ierErrors          :: [(Prm, Text)]
-  , ierBackfill        :: [BackfillDemande]
+  , ierBackfill        :: [BackfillBatch]
   , ierCR              :: [CrResult]
   , ierErreursParser   :: [(Text, Text)]
   } deriving (Show)
@@ -134,17 +143,22 @@ ingererElec regConn configDir siteDbDir params = do
   decryptDir (decryptConfigFromRFiles cfg) (localDir cfg)
   dirResults <- ingestDirectory configDir siteDbDir (localDir cfg)
 
-  let total        = length dirResults
-      ignores      = length [ () | FileSkip _ _ <- dirResults ]
-      errors       = length [ () | FileErr  _ _ <- dirResults ]
-      byPrmRaw     = groupByPrm dirResults
-      parseErrors  = Map.findWithDefault [] "?" byPrmRaw
-      byPrm        = Map.delete "?" byPrmRaw
+  let total       = length dirResults
+      ignores     = length [ () | FileSkip _ _ <- dirResults ]
+      errors      = length [ () | FileErr  _ _ <- dirResults ]
+      byPrmRaw    = groupByPrm dirResults
+      parseErrors = Map.findWithDefault [] "?" byPrmRaw
+      byPrm       = Map.delete "?" byPrmRaw
 
   let rfilesDir = localDir cfg
-  results <- mapM (buildAndBackfill rfilesDir siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
-  let (errPrms, okTriples)             = partitionEithers results
-      (okReports, allDemandes, allCRs) = unzip3 okTriples
+  -- Phase 1 : collecter rapports + besoins pour chaque PRM
+  results <- mapM (buildReport rfilesDir siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
+  let (errPrms, okTriples)           = partitionEithers results
+      (okReports, allBesoins, allCRs) = unzip3 okTriples
+
+  -- Phase 2-4 : grouper, dédupliquer, envoyer
+  let besoinsTous = concat allBesoins
+  batches <- envoyerDemandes siteDbDir prmsSites' besoinsTous yesterday
 
   return $ IngererElecReport
     { ierFichiersTotal   = total
@@ -152,30 +166,30 @@ ingererElec regConn configDir siteDbDir params = do
     , ierFichiersErreur  = errors
     , ierDetails         = sortBy (comparing ((\(Prm t) -> t) . prirPrm)) okReports
     , ierErrors          = errPrms
-    , ierBackfill        = concat allDemandes
+    , ierBackfill        = batches
     , ierCR              = concat allCRs
     , ierErreursParser   = parseErrors
     }
 
 
 -- ---------------------------------------------------------------------------
--- Rapport + backfill par PRM (une seule connexion)
+-- Phase 1 : rapport par PRM (sans envoi de requêtes)
 
-buildAndBackfill
+buildReport
   :: FilePath
   -> FilePath
   -> Map Text [(Text, Text)]
   -> Day -> Day -> Day
   -> (Prm, SiteId)
-  -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillDemande], [CrResult]))
-buildAndBackfill rfilesDir siteDbDir byPrm start3Ans start2Ans endDate (prm, siteId) =
-  catch (Right <$> buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm siteId)
+  -> IO (Either (Prm, Text) (PrmIngestionReport, [BackfillBesoin], [CrResult]))
+buildReport rfilesDir siteDbDir byPrm start3Ans start2Ans endDate (prm, siteId) =
+  catch (Right <$> buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm siteId)
         (\e -> return $ Left (prm, T.pack (displayException (e :: SomeException))))
 
-buildAndBackfillUnsafe
+buildReportUnsafe
   :: FilePath -> FilePath -> Map Text [(Text, Text)] -> Day -> Day -> Day -> Prm -> SiteId
-  -> IO (PrmIngestionReport, [BackfillDemande], [CrResult])
-buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmText) siteId = do
+  -> IO (PrmIngestionReport, [BackfillBesoin], [CrResult])
+buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm prmText) siteId = do
   conn <- openSiteDbElec siteDbDir siteId
   let entries     = Map.findWithDefault [] prmText byPrm
       fichiersOk  = length [ () | (_, e) <- entries, e == "ok"   ]
@@ -209,37 +223,78 @@ buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm
         , prirInfoC68         = infoC68
         }
 
-  demandesE  <- mapMaybeM (envoyerSiNonRecent conn prm "R65" "ENERGIE")
-                  (groupDays trousE)
-  demandesP  <- mapMaybeM (envoyerSiNonRecent conn prm "R66" "PMAX")
-                  (groupDays trousP)
-  demandesC  <- mapMaybeM (envoyerSiNonRecent conn prm "R63" "COURBES")
-                  (groupDays (nub trousC))
-  demandesI  <- backfillIndexSiNecessaire conn prm start3Ans endDate dIndex
-  crResults  <- processCrDirectory rfilesDir conn
+  let besoinsE = [BackfillBesoin prm "ENERGIE" "R65" d f | (d, f) <- groupDays trousE]
+      besoinsP = [BackfillBesoin prm "PMAX"    "R66" d f | (d, f) <- groupDays trousP]
+      besoinsC = [BackfillBesoin prm "COURBES" "R63" d f | (d, f) <- groupDays (nub trousC)]
+      besoinsI = besoinsIndex prm start3Ans endDate dIndex
 
-  return (report, demandesE ++ demandesP ++ demandesC ++ demandesI, crResults)
+  crResults <- processCrDirectory rfilesDir conn
 
+  return (report, besoinsE ++ besoinsP ++ besoinsC ++ besoinsI, crResults)
 
-backfillIndexSiNecessaire
-  :: Connection -> Prm -> Day -> Day -> Maybe Text
-  -> IO [BackfillDemande]
-backfillIndexSiNecessaire conn prm start3Ans endDate mLastDate = do
+besoinsIndex :: Prm -> Day -> Day -> Maybe Text -> [BackfillBesoin]
+besoinsIndex prm start3Ans endDate mLastDate =
   let needsBackfill = case mLastDate of
         Nothing -> True
         Just t  -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t) of
           Nothing -> True
           Just d  -> addDays 90 d < endDate
-  if needsBackfill
-    then maybeToList <$> envoyerSiNonRecent conn prm "R64" "INDEX" (start3Ans, endDate)
-    else return []
+  in [BackfillBesoin prm "INDEX" "R64" start3Ans endDate | needsBackfill]
+
+
+-- ---------------------------------------------------------------------------
+-- Phases 2-4 : grouper, dédupliquer, envoyer
+
+envoyerDemandes
+  :: FilePath
+  -> [(Prm, SiteId)]
+  -> [BackfillBesoin]
+  -> Day
+  -> IO [BackfillBatch]
+envoyerDemandes siteDbDir prmsSites besoins _endDate = do
+  let grouped = grouperBesoins besoins
+
+  -- MFI : un batch par (typeCode, debut, fin), découpé selon les limites
+  mfiBatches <- concat <$> mapM (envoyerGroupe siteDbDir prmsSites) (Map.toList grouped)
+
+  -- ITC C68 : une fois par jour, tous les PRMs
+  itcBatches <- case prmsSites of
+    [] -> return []
+    ((_, firstSiteId) : _) -> do
+      conn <- openSiteDbElec siteDbDir firstSiteId
+      dejaDemandee <- itcDejaDemandeeAujourdhui conn
+      if dejaDemandee
+        then return []
+        else do
+          let tousLesPrms = map fst prmsSites
+              chunks = chunksOf 10000 tousLesPrms
+          catMaybes <$> mapM (envoyerBatchItc conn) chunks
+
+  return (mfiBatches ++ itcBatches)
+
+envoyerGroupe
+  :: FilePath
+  -> [(Prm, SiteId)]
+  -> ((Text, Day, Day), (Text, [Prm]))
+  -> IO [BackfillBatch]
+envoyerGroupe siteDbDir prmsSites ((typeCode, debut, fin), (flux, prms)) = do
+  case lookupSiteId (head prms) prmsSites of
+    Nothing     -> return []
+    Just siteId -> do
+      conn <- openSiteDbElec siteDbDir siteId
+      filtres <- filtrerDejaDemandes conn typeCode debut fin prms
+      let lim    = limiteMfi typeCode
+          chunks = chunksOf lim filtres
+      catMaybes <$> mapM (\chunk -> envoyerBatchMfi conn chunk flux typeCode (debut, fin)) chunks
+
+lookupSiteId :: Prm -> [(Prm, SiteId)] -> Maybe SiteId
+lookupSiteId prm = fmap snd . safeHead . filter ((== prm) . fst)
+  where safeHead []    = Nothing
+        safeHead (x:_) = Just x
 
 
 -- ---------------------------------------------------------------------------
 -- Helpers
-
-mapMaybeM :: Monad m => (a -> m (Maybe b)) -> [a] -> m [b]
-mapMaybeM f xs = catMaybes <$> mapM f xs
 
 groupByPrm :: [IngestDirResult] -> Map Text [(Text, Text)]
 groupByPrm = foldr step Map.empty
@@ -256,7 +311,6 @@ groupByPrm = foldr step Map.empty
     addResult path (IngestErr  (PrmId pid) e) m =
       Map.insertWith (<>) pid [(path, e)]      m
 
--- | Regroupe des jours isolés en périodes contiguës.
 groupDays :: [Day] -> [(Day, Day)]
 groupDays [] = []
 groupDays (d:ds) = go d d ds

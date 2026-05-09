@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 {-|
 Module      : Conso.Fr.Elec.SiteDB.Types.R65
 Description : Types pour les énergies quotidiennes Enedis (flux R65)
@@ -57,7 +58,7 @@ data FluxR65 = FluxR65
 -- Instances FromJSON
 
 instance FromJSON GrandeurPhysiqueEnergie where
-  parseJSON = withText "GrandeurPhysiqueEnergie" $ \t -> case t of
+  parseJSON = withText "GrandeurPhysiqueEnergie" $ \case
     "EA"  -> pure GP_EA_E
     "ERI" -> pure GP_ERI_E
     "ERC" -> pure GP_ERC_E
@@ -80,8 +81,7 @@ instance FromJSON GrandeurR65 where
 -- | Parse un objet @mesure@ R65 depuis le JSON.
 parseMesureR65 :: Value -> Parser MesureR65
 parseMesureR65 = withObject "MesureR65" $ \o ->
-  MesureR65
-    <$> (PrmId <$> o .: "idPrm")
+  (MesureR65 . PrmId <$> (o .: "idPrm"))
     <*> o .: "etapeMetier"
     <*> parsePeriode o
     <*> o .: "typeValeur"

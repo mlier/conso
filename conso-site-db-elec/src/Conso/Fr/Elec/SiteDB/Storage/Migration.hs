@@ -322,6 +322,7 @@ migrations =
       , "CREATE TABLE IF NOT EXISTS elec_backfill_log (\
         \  id          INTEGER PRIMARY KEY AUTOINCREMENT,\
         \  type_mesure TEXT NOT NULL,\
+        \  prm         TEXT,\
         \  debut       TEXT NOT NULL,\
         \  fin         TEXT NOT NULL,\
         \  date_envoi  TEXT NOT NULL,\

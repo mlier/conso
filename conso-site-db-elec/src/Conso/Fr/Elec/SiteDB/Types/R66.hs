@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 {-|
 Module      : Conso.Fr.Elec.SiteDB.Types.R66
 Description : Types pour les puissances maximales quotidiennes Enedis (flux R66, R66B)
@@ -58,7 +59,7 @@ data FluxR66 = FluxR66
 -- Instances FromJSON
 
 instance FromJSON GrandeurPhysiquePmax where
-  parseJSON = withText "GrandeurPhysiquePmax" $ \t -> case t of
+  parseJSON = withText "GrandeurPhysiquePmax" $ \case
     "PMA"  -> pure GP_PMA_MONO
     "PMA1" -> pure GP_PMA1
     "PMA2" -> pure GP_PMA2

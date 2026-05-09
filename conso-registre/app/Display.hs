@@ -23,7 +23,7 @@ import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
 import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   ( IngererElecReport(..), PrmIngestionReport(..), PrmInfoC68(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.Backfill
-  ( BackfillDemande(..) )
+  ( BackfillBatch(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
   ( CrResult(..) )
 
@@ -167,13 +167,14 @@ afficherCr cr =
           <> "  " <> T.unpack (crStatut cr)
           <> " : " <> T.unpack (crMessage cr)
 
-afficherBackfill :: BackfillDemande -> IO ()
-afficherBackfill d = do
-  let Prm prm = bdPrm d
-  putStrLn $ "  PRM " <> T.unpack prm
-          <> " [" <> T.unpack (bdFlux d) <> "] "
-          <> T.unpack (bdDebut d) <> " → " <> T.unpack (bdFin d)
-          <> " : " <> either (\e -> "ERREUR — " <> T.unpack e) T.unpack (bdAffaireId d)
+afficherBackfill :: BackfillBatch -> IO ()
+afficherBackfill b = do
+  let nbPrm = length (bbPrms b)
+  putStrLn $ "  [" <> T.unpack (bbFlux b) <> "] "
+          <> T.unpack (bbDebut b)
+          <> (if T.null (bbFin b) then "" else " → " <> T.unpack (bbFin b))
+          <> " (" <> show nbPrm <> " PRM(s))"
+          <> " : " <> either (\e -> "ERREUR — " <> T.unpack e) T.unpack (bbAffaireId b)
 
 afficherPrmReport :: PrmIngestionReport -> IO ()
 afficherPrmReport r = do
