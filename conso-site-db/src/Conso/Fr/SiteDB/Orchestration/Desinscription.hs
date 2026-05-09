@@ -9,6 +9,7 @@ module Conso.Fr.SiteDB.Orchestration.Desinscription
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Maybe (isNothing)
 import System.Directory (removeFile)
 import System.IO (hPutStrLn, stderr)
 import Control.Exception (try, SomeException)
@@ -109,7 +110,7 @@ nettoyerSiVide :: Connection -> FilePath -> SiteId -> IO Bool
 nettoyerSiVide conn siteDbDir siteId = do
   mSite <- lookupBySiteId conn siteId
   case mSite of
-    Just site | srPrm site == Nothing && srPce site == Nothing -> do
+    Just site | isNothing (srPrm site) && isNothing (srPce site) -> do
       deleteFromRegistry conn siteId
       let dbPath = siteDbPath siteDbDir siteId
       _ <- try (removeFile dbPath) :: IO (Either SomeException ())

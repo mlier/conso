@@ -23,6 +23,7 @@ module Conso.Fr.Elec.SiteDB.Storage.Query
   , queryDailyPmax
   , queryBillingMeasures
   , queryPrmInfo
+  , queryLatestPrmInfo
   , derniereHorodateCourbe
   , derniereHorodateIndex
   , derniereDateEnergie
@@ -143,19 +144,151 @@ instance FromRow BillingRow where
 
 -- | Ligne de résultat d'une requête sur @elec_prm_info@.
 data PrmInfoRow = PrmInfoRow
-  { piId               :: Int        -- ^ @id@ — clé primaire auto-incrémentée
-  , piSegment          :: Maybe Text -- ^ @segment@ — @\"C5\"@, @\"P4\"@, …
-  , piEtatContractuel  :: Maybe Text -- ^ @etat_contractuel@
-  , piEtatAlimentation :: Maybe Text -- ^ @etat_alimentation@
-  , piPuissance        :: Maybe Text -- ^ @puissance_souscrite@ (kVA)
-  , piDomaineTension   :: Maybe Text -- ^ @domaine_tension@ — @\"BT\"@, @\"HTA\"@, @\"HTB\"@
-  , piRawJson          :: Text       -- ^ @raw_json@ — JSON C68 complet sérialisé
-  , piDateIngestion    :: Text       -- ^ @date_ingestion@
+  { piId                              :: Int
+  , piSegment                         :: Maybe Text
+  , piEtatContractuel                 :: Maybe Text
+  , piEtatAlimentation                :: Maybe Text
+  , piPuissanceSouscrite              :: Maybe Text
+  , piDomaineTension                  :: Maybe Text
+  , piAdresseNumeroNomVoie            :: Maybe Text
+  , piAdresseBatiment                 :: Maybe Text
+  , piAdresseEscalierEtage            :: Maybe Text
+  , piAdresseLieuDit                  :: Maybe Text
+  , piAdresseCodePostal               :: Maybe Text
+  , piAdresseCommune                  :: Maybe Text
+  , piTypageSensible                  :: Maybe Int
+  , piTypageAlimComplementaire        :: Maybe Int
+  , piTypageAlimSecours               :: Maybe Int
+  , piTypageBornePoste                :: Maybe Int
+  , piTypageBorneFixe                 :: Maybe Int
+  , piNiveauOuvertureServices         :: Maybe Text
+  , piDateModifFta                    :: Maybe Text
+  , piDateAugmentationPuissance       :: Maybe Text
+  , piDateDiminutionPuissance         :: Maybe Text
+  , piDateMesSoutirage                :: Maybe Text
+  , piDateMesInjection                :: Maybe Text
+  , piDatePremierePoseLinky           :: Maybe Text
+  , piTelephoneDepannage              :: Maybe Text
+  , piAutoConsoCollective             :: Maybe Text
+  , piAutoConsoIndividuelle           :: Maybe Text
+  , piPuissanceSouscriteUnite         :: Maybe Text
+  , piFormuleTarifaireCode            :: Maybe Text
+  , piFormuleTarifaireLibelle         :: Maybe Text
+  , piCodeTarifAcheminement           :: Maybe Text
+  , piTypeOffre                       :: Maybe Text
+  , piContexteUtilisation             :: Maybe Text
+  , piForfaitValeur                   :: Maybe Text
+  , piForfaitUnite                    :: Maybe Text
+  , piCalendrierTurpeCode             :: Maybe Text
+  , piGroupePeriodeMobile             :: Maybe Text
+  , piGroupePeriodeMobileDistrib      :: Maybe Text
+  , piDateDebutContrat                :: Maybe Text
+  , piNatureContrat                   :: Maybe Text
+  , piTypeInjection                   :: Maybe Int
+  , piRefusPoseAmm                    :: Maybe Int
+  , piDateRefusPoseAmm                :: Maybe Text
+  , piCategorieClient                 :: Maybe Text
+  , piTypeResidence                   :: Maybe Text
+  , piReferenceClient                 :: Maybe Text
+  , piTitulaireCivilite               :: Maybe Text
+  , piTitulaireNom                    :: Maybe Text
+  , piTitulairePrenom                 :: Maybe Text
+  , piTitulaireDenominationSociale    :: Maybe Text
+  , piTitulaireNomCommercial          :: Maybe Text
+  , piTitulaireSiren                  :: Maybe Text
+  , piTitulaireSiret                  :: Maybe Text
+  , piTitulaireSecteur                :: Maybe Text
+  , piTitulaireActiviteNaf            :: Maybe Text
+  , piReferenceContrat                :: Maybe Text
+  , piTensionLivraison                :: Maybe Text
+  , piPuissanceRaccordSoutirage       :: Maybe Text
+  , piPuissanceRaccordInjection       :: Maybe Text
+  , piPuissanceLimiteSoutirage        :: Maybe Text
+  , piTensionContractuelle            :: Maybe Text
+  , piModeAlimApresCompteur           :: Maybe Text
+  , piNbFilsBranchement               :: Maybe Int
+  , piZoneQualiteDesserte             :: Maybe Text
+  , piLongueurLiaisonAerienne         :: Maybe Text
+  , piLongueurLiaisonSouterraine      :: Maybe Text
+  , piProdAutonomeNb                  :: Maybe Int
+  , piProdAutonomePuissance           :: Maybe Text
+  , piCoupureLocalisation             :: Maybe Text
+  , piCoupureRestrictionMotif         :: Maybe Text
+  , piLimiteurPuissance               :: Maybe Text
+  , piTypeComptage                    :: Maybe Text
+  , piModeReleve                      :: Maybe Text
+  , piMediaReleve                     :: Maybe Text
+  , piTeleoperable                    :: Maybe Int
+  , piEligiblePeriodeMobile           :: Maybe Int
+  , piTensionComptage                 :: Maybe Text
+  , piComptageParticularite           :: Maybe Text
+  , piBoitierTelereport               :: Maybe Int
+  , piMatriculeCompteur               :: Maybe Text
+  , piNumeroSerieCompteur             :: Maybe Text
+  , piTicActivee                      :: Maybe Int
+  , piTicActivable                    :: Maybe Int
+  , piTicStandard                     :: Maybe Int
+  , piPeriodeDeploiementLinky         :: Maybe Text
+  , piIntensiteNominale               :: Maybe Text
+  , piPuissanceMaxCompteur            :: Maybe Text
+  , piCoefficientLecture              :: Maybe Double
+  , piNbFilsCompteur                  :: Maybe Int
+  , piRegimeProprieteCompteur         :: Maybe Text
+  , piCompteurAccessibilite           :: Maybe Int
+  , piCompteurSituation               :: Maybe Text
+  , piDisjoncteurCalibre              :: Maybe Text
+  , piDisjoncteurNature               :: Maybe Text
+  , piDisjoncteurNbPoles              :: Maybe Int
+  , piDisjoncteurAccessibilite        :: Maybe Int
+  , piDisjoncteurSituation            :: Maybe Text
+  , piDisjoncteurIntensiteReglage     :: Maybe Text
+  , piDisjoncteurRegimePropriete      :: Maybe Text
+  , piTcCalibre                       :: Maybe Text
+  , piTcClassePrecision               :: Maybe Text
+  , piTcCouplage                      :: Maybe Text
+  , piTcPosition                      :: Maybe Text
+  , piTcRegimePropriete               :: Maybe Text
+  , piTtCalibre                       :: Maybe Text
+  , piTtClassePrecision               :: Maybe Text
+  , piTtCouplage                      :: Maybe Text
+  , piPertesFer                       :: Maybe Double
+  , piPertesJoules                    :: Maybe Double
+  , piPertesReactives                 :: Maybe Double
+  , piRelaisNature                    :: Maybe Text
+  , piRelaisPlageHc                   :: Maybe Text
+  , piRelaisTypeCommande              :: Maybe Text
+  , piRelaisRegimePropriete           :: Maybe Text
+  , piProductionFiliere               :: Maybe Text
+  , piProductionTechnologie           :: Maybe Text
+  , piDateIngestion                   :: Text
   } deriving (Eq, Show)
 
 instance FromRow PrmInfoRow where
-  fromRow = PrmInfoRow <$> field <*> field <*> field <*> field
-                       <*> field <*> field <*> field <*> field
+  fromRow = PrmInfoRow
+    <$> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field <*> field <*> field <*> field
+    <*> field <*> field
 
 -- ---------------------------------------------------------------------------
 -- Requêtes
@@ -251,16 +384,65 @@ queryBillingMeasures conn mGm deb fin =
              <> " ORDER BY grandeur_metier, grandeur_physique, debut")
     (fin, deb)
 
+prmInfoSelect :: Query
+prmInfoSelect =
+  "SELECT id, segment, etat_contractuel, etat_alimentation, \
+  \ puissance_souscrite, domaine_tension, \
+  \ adresse_numero_nom_voie, adresse_batiment, adresse_escalier_etage, \
+  \ adresse_lieu_dit, adresse_code_postal, adresse_commune, \
+  \ typage_sensible, typage_alimentation_complementaire, typage_alimentation_secours, \
+  \ typage_borne_poste, typage_borne_fixe, \
+  \ niveau_ouverture_services, date_modif_fta, \
+  \ date_augmentation_puissance, date_diminution_puissance, \
+  \ date_mes_soutirage, date_mes_injection, date_premiere_pose_linky, \
+  \ telephone_depannage, auto_conso_collective, auto_conso_individuelle, \
+  \ puissance_souscrite_unite, formule_tarifaire_code, formule_tarifaire_libelle, \
+  \ code_tarif_acheminement, type_offre, contexte_utilisation, \
+  \ forfait_valeur, forfait_unite, calendrier_turpe_code, \
+  \ groupe_periode_mobile, groupe_periode_mobile_distributeur, \
+  \ date_debut_contrat, nature_contrat, type_injection, \
+  \ refus_pose_amm, date_refus_pose_amm, \
+  \ categorie_client, type_residence, reference_client, \
+  \ titulaire_civilite, titulaire_nom, titulaire_prenom, \
+  \ titulaire_denomination_sociale, titulaire_nom_commercial, \
+  \ titulaire_siren, titulaire_siret, titulaire_secteur, titulaire_activite_naf, \
+  \ reference_contrat, tension_livraison, \
+  \ puissance_raccordement_soutirage, puissance_raccordement_injection, \
+  \ puissance_limite_soutirage, tension_contractuelle, \
+  \ mode_alimentation_apres_compteur, nb_fils_branchement, zone_qualite_desserte, \
+  \ longueur_liaison_aerienne, longueur_liaison_souterraine, \
+  \ prod_autonome_nb, prod_autonome_puissance, \
+  \ coupure_localisation, coupure_restriction_motif, limiteur_puissance, \
+  \ type_comptage, mode_releve, media_releve, \
+  \ teleoperable, eligible_periode_mobile, tension_comptage, comptage_particularite, \
+  \ boitier_telereport, \
+  \ matricule_compteur, numero_serie_compteur, \
+  \ tic_activee, tic_activable, tic_standard, periode_deploiement_linky, \
+  \ intensite_nominale, puissance_max_compteur, coefficient_lecture, \
+  \ nb_fils_compteur, regime_propriete_compteur, \
+  \ compteur_accessibilite, compteur_situation, \
+  \ disjoncteur_calibre, disjoncteur_nature, disjoncteur_nb_poles, \
+  \ disjoncteur_accessibilite, disjoncteur_situation, \
+  \ disjoncteur_intensite_reglage, disjoncteur_regime_propriete, \
+  \ tc_calibre, tc_classe_precision, tc_couplage, tc_position, tc_regime_propriete, \
+  \ tt_calibre, tt_classe_precision, tt_couplage, \
+  \ pertes_fer, pertes_joules, pertes_reactives, \
+  \ relais_nature, relais_plage_hc, relais_type_commande, relais_regime_propriete, \
+  \ production_filiere, production_technologie, \
+  \ date_ingestion \
+  \ FROM elec_prm_info"
+
 -- | Informations techniques courantes (dernière ligne ingérée)
 queryPrmInfo :: Connection -> IO (Maybe PrmInfoRow)
 queryPrmInfo conn = do
-  rows <- query_ conn
-    "SELECT id, segment, etat_contractuel, etat_alimentation, \
-    \  puissance_souscrite, domaine_tension, raw_json, date_ingestion \
-    \ FROM elec_prm_info ORDER BY id DESC LIMIT 1"
+  rows <- query_ conn (prmInfoSelect <> " ORDER BY id DESC LIMIT 1")
   return $ case rows of
     []    -> Nothing
     (r:_) -> Just r
+
+-- | Alias de queryPrmInfo — utilisé pour la comparaison upsert.
+queryLatestPrmInfo :: Connection -> IO (Maybe PrmInfoRow)
+queryLatestPrmInfo = queryPrmInfo
 
 -- ---------------------------------------------------------------------------
 -- Dernières dates disponibles par table

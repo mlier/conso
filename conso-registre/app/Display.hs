@@ -21,7 +21,7 @@ import Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
 import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
   ( ChangementInfosContract(..), ChangementInfosTech(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
-  ( IngererElecReport(..), PrmIngestionReport(..) )
+  ( IngererElecReport(..), PrmIngestionReport(..), PrmInfoC68(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.Backfill
   ( BackfillDemande(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
@@ -181,15 +181,28 @@ afficherPrmReport r = do
   putStrLn $ "\n--- PRM " <> T.unpack prm <> " ---"
   putStrLn $ "  Fichiers ingérés  : " <> show (prirFichiersOk r)
   putStrLn $ "  Fichiers ignorés  : " <> show (prirFichiersSkip r)
-  putStrLn $ "  Courbes           : " <> afficherDateElec (prirDerniereCourbe r)
-  putStrLn $ "  Énergie           : " <> afficherDateElec (prirDerniereEnergie r)
-  putStrLn $ "  Pmax              : " <> afficherDateElec (prirDernierePmax r)
-  putStrLn $ "  Index             : " <> afficherDateElec (prirDerniereIndex r)
+  putStrLn $ "  Courbes (R63)     : " <> afficherDateElec (prirDerniereCourbe r)
+  putStrLn $ "  Index   (R64)     : " <> afficherDateElec (prirDerniereIndex r)
+  putStrLn $ "  Énergie (R65)     : " <> afficherDateElec (prirDerniereEnergie r)
+  putStrLn $ "  Pmax    (R66)     : " <> afficherDateElec (prirDernierePmax r)
+  forM_ (prirInfoC68 r) afficherInfoC68
   afficherTrousDays "Trous courbes  " (prirTrousCourbes r)
   afficherTrousDays "Trous énergie  " (prirTrousEnergie r)
   afficherTrousDays "Trous Pmax     " (prirTrousPmax r)
   forM_ (prirErreurs r) $ \(f, e) ->
     putStrLn $ "  ERREUR " <> T.unpack f <> " : " <> T.unpack e
+
+afficherInfoC68 :: PrmInfoC68 -> IO ()
+afficherInfoC68 c = do
+  putStrLn "  --- C68 (dernières infos) ---"
+  forM_ (picSegment c)              $ \v -> putStrLn $ "    Segment             : " <> T.unpack v
+  forM_ (picEtatContractuel c)      $ \v -> putStrLn $ "    État contractuel     : " <> T.unpack v
+  forM_ (picFormuleTarifaire c)     $ \v -> putStrLn $ "    FTA                 : " <> T.unpack v
+  forM_ (picPuissanceSouscrite c)   $ \v -> putStrLn $ "    Puissance souscrite : " <> T.unpack v
+  forM_ (picAdresse c)              $ \v -> putStrLn $ "    Adresse             : " <> T.unpack v
+  forM_ (picMatriculeCompteur c)    $ \v -> putStrLn $ "    Compteur            : " <> T.unpack v
+  forM_ (picLinky c)                $ \v -> putStrLn $ "    Linky déployé le    : " <> T.unpack v
+  forM_ (picTitulaireNom c)         $ \v -> putStrLn $ "    Titulaire           : " <> T.unpack v
 
 groupRanges :: [Day] -> [(Day, Day)]
 groupRanges []     = []

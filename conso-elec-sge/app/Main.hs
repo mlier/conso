@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main where
 
@@ -1368,8 +1369,8 @@ docommand Options{ optXml=xml, optRaw=raw, optCommand=c } = case c of
 
     AcsModifier o -> do
         myType <- MOD.initType (acsModifierPoint o) (toSensMOD (acsModifierSens o)) (acsModifierService o)
-                               (map (\p -> (acsModifierCorrigees o, p)) (acsModifierAjouter o))
-                               (map (\p -> (acsModifierCorrigees o, p)) (acsModifierSupprimer o))
+                               (map (acsModifierCorrigees o,) (acsModifierAjouter o))
+                               (map (acsModifierCorrigees o,) (acsModifierSupprimer o))
         if xml then MOD.xmlRequest myType >>= (putStrLn . prettyXml)
         else MOD.wsRequest myType >>= \rep -> do
             let rep' = rep :: Either (String, String) CommanderModificationOptionsServicesAccesDonneesResponseType

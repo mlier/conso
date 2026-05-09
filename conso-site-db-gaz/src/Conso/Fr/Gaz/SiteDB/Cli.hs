@@ -77,15 +77,15 @@ resolveRattPce (Just (GRSite u f)) = case UUID.fromString u of
 
 
 gazInscrirePceParser :: Parser GazCommand
-gazInscrirePceParser = GazInscrirePce
-  <$> (InscriptionPceParams
-        <$> (T.pack <$> argument str (metavar "PCE" <> help "Identifiant PCE (14 chiffres)"))
-        <*> (T.pack <$> strOption (long "cp" <> metavar "CODE_POSTAL" <> help "Code postal du site"))
-        <*> optional (T.pack <$> strOption (long "email" <> metavar "EMAIL" <> help "Courriel du titulaire"))
-        <*> accordParser
-        <*> pure Standalone
+gazInscrirePceParser = GazInscrirePce                                                                                                                                                 
+  <$> (InscriptionPceParams . T.pack                  
+        <$> argument str (metavar "PCE" <> help "Identifiant PCE (14 chiffres)")
+        <*> (T.pack <$> strOption (long "cp" <> metavar "CODE_POSTAL" <> help "Code postal du site"))                                                                                 
+        <*> optional (T.pack <$> strOption (long "email" <> metavar "EMAIL" <> help "Courriel du titulaire"))                                                                         
+        <*> accordParser                                                                                                                                                              
+        <*> pure Standalone                                                                                                                                                           
         <*> switch (long "avec-injections" <> help "Inclure le périmètre données d'injection dans le droit d'accès GRDF"))
-  <*> optional rattachementPceParser
+  <*> optional rattachementPceParser 
 
 gazSupprimerPceParser :: Parser GazCommand
 gazSupprimerPceParser = GazSupprimerPce <$> uuidArg "UUID du site dont le PCE doit être supprimé"

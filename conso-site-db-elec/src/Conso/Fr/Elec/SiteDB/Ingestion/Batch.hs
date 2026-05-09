@@ -133,11 +133,11 @@ ingestFlux openConn cf mSrc now (FluxITC items) =
   mapM ingestM items
   where
     ingestM itc = do
-      let prm = c68IdPrm itc
+      let prm = idPrm itc
       doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf "P" "C68" Nothing Nothing now
           Nothing Nothing mSrc
-        >>= \ingId -> insertPrmInfo conn ingId now itc
+        >>= \ingId -> insertPrmInfoIfChanged conn ingId now itc
 
 -- | Ouvre la connexion via @openConn@, vérifie si le fichier a déjà été ingéré,
 -- exécute l'action dans une transaction si non, ferme.

@@ -164,15 +164,158 @@ migrations =
 
         -- Informations techniques et contractuelles (C68)
       , "CREATE TABLE IF NOT EXISTS elec_prm_info (\
+        \  id                               INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  segment                          TEXT,\
+        \  etat_contractuel                 TEXT,\
+        \  etat_alimentation                TEXT,\
+        \  puissance_souscrite              TEXT,\
+        \  domaine_tension                  TEXT,\
+        \  adresse_numero_nom_voie          TEXT,\
+        \  adresse_batiment                 TEXT,\
+        \  adresse_escalier_etage           TEXT,\
+        \  adresse_lieu_dit                 TEXT,\
+        \  adresse_code_postal              TEXT,\
+        \  adresse_commune                  TEXT,\
+        \  typage_sensible                  INTEGER,\
+        \  typage_alimentation_complementaire INTEGER,\
+        \  typage_alimentation_secours      INTEGER,\
+        \  typage_borne_poste               INTEGER,\
+        \  typage_borne_fixe                INTEGER,\
+        \  niveau_ouverture_services        TEXT,\
+        \  date_modif_fta                   TEXT,\
+        \  date_augmentation_puissance      TEXT,\
+        \  date_diminution_puissance        TEXT,\
+        \  date_mes_soutirage               TEXT,\
+        \  date_mes_injection               TEXT,\
+        \  date_premiere_pose_linky         TEXT,\
+        \  telephone_depannage              TEXT,\
+        \  auto_conso_collective            TEXT,\
+        \  auto_conso_individuelle          TEXT,\
+        \  puissance_souscrite_unite        TEXT,\
+        \  formule_tarifaire_code           TEXT,\
+        \  formule_tarifaire_libelle        TEXT,\
+        \  code_tarif_acheminement          TEXT,\
+        \  type_offre                       TEXT,\
+        \  contexte_utilisation             TEXT,\
+        \  forfait_valeur                   TEXT,\
+        \  forfait_unite                    TEXT,\
+        \  calendrier_turpe_code            TEXT,\
+        \  groupe_periode_mobile            TEXT,\
+        \  groupe_periode_mobile_distributeur TEXT,\
+        \  date_debut_contrat               TEXT,\
+        \  nature_contrat                   TEXT,\
+        \  type_injection                   INTEGER,\
+        \  refus_pose_amm                   INTEGER,\
+        \  date_refus_pose_amm              TEXT,\
+        \  categorie_client                 TEXT,\
+        \  type_residence                   TEXT,\
+        \  reference_client                 TEXT,\
+        \  titulaire_civilite               TEXT,\
+        \  titulaire_nom                    TEXT,\
+        \  titulaire_prenom                 TEXT,\
+        \  titulaire_denomination_sociale   TEXT,\
+        \  titulaire_nom_commercial         TEXT,\
+        \  titulaire_siren                  TEXT,\
+        \  titulaire_siret                  TEXT,\
+        \  titulaire_secteur                TEXT,\
+        \  titulaire_activite_naf           TEXT,\
+        \  reference_contrat                TEXT,\
+        \  tension_livraison                TEXT,\
+        \  puissance_raccordement_soutirage TEXT,\
+        \  puissance_raccordement_injection TEXT,\
+        \  puissance_limite_soutirage       TEXT,\
+        \  tension_contractuelle            TEXT,\
+        \  mode_alimentation_apres_compteur TEXT,\
+        \  nb_fils_branchement              INTEGER,\
+        \  zone_qualite_desserte            TEXT,\
+        \  longueur_liaison_aerienne        TEXT,\
+        \  longueur_liaison_souterraine     TEXT,\
+        \  prod_autonome_nb                 INTEGER,\
+        \  prod_autonome_puissance          TEXT,\
+        \  coupure_localisation             TEXT,\
+        \  coupure_restriction_motif        TEXT,\
+        \  limiteur_puissance               TEXT,\
+        \  type_comptage                    TEXT,\
+        \  mode_releve                      TEXT,\
+        \  media_releve                     TEXT,\
+        \  teleoperable                     INTEGER,\
+        \  eligible_periode_mobile          INTEGER,\
+        \  tension_comptage                 TEXT,\
+        \  comptage_particularite           TEXT,\
+        \  boitier_telereport               INTEGER,\
+        \  matricule_compteur               TEXT,\
+        \  numero_serie_compteur            TEXT,\
+        \  tic_activee                      INTEGER,\
+        \  tic_activable                    INTEGER,\
+        \  tic_standard                     INTEGER,\
+        \  periode_deploiement_linky        TEXT,\
+        \  intensite_nominale               TEXT,\
+        \  puissance_max_compteur           TEXT,\
+        \  coefficient_lecture              REAL,\
+        \  nb_fils_compteur                 INTEGER,\
+        \  regime_propriete_compteur        TEXT,\
+        \  compteur_accessibilite           INTEGER,\
+        \  compteur_situation               TEXT,\
+        \  disjoncteur_calibre              TEXT,\
+        \  disjoncteur_nature               TEXT,\
+        \  disjoncteur_nb_poles             INTEGER,\
+        \  disjoncteur_accessibilite        INTEGER,\
+        \  disjoncteur_situation            TEXT,\
+        \  disjoncteur_intensite_reglage    TEXT,\
+        \  disjoncteur_regime_propriete     TEXT,\
+        \  tc_calibre                       TEXT,\
+        \  tc_classe_precision              TEXT,\
+        \  tc_couplage                      TEXT,\
+        \  tc_position                      TEXT,\
+        \  tc_regime_propriete              TEXT,\
+        \  tt_calibre                       TEXT,\
+        \  tt_classe_precision              TEXT,\
+        \  tt_couplage                      TEXT,\
+        \  pertes_fer                       REAL,\
+        \  pertes_joules                    REAL,\
+        \  pertes_reactives                 REAL,\
+        \  relais_nature                    TEXT,\
+        \  relais_plage_hc                  TEXT,\
+        \  relais_type_commande             TEXT,\
+        \  relais_regime_propriete          TEXT,\
+        \  production_filiere               TEXT,\
+        \  production_technologie           TEXT,\
+        \  date_ingestion                   TEXT NOT NULL,\
+        \  ingestion_id                     INTEGER REFERENCES elec_ingestion_log(id)\
+        \)"
+
+      , "CREATE TABLE IF NOT EXISTS elec_calendriers_fournisseur (\
+        \  id                       INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  prm_info_id              INTEGER NOT NULL REFERENCES elec_prm_info(id),\
+        \  code                     TEXT NOT NULL,\
+        \  periode_mobile_autorisee INTEGER,\
+        \  profilable               INTEGER\
+        \)"
+
+      , "CREATE TABLE IF NOT EXISTS elec_continuite_fourniture (\
+        \  id                    INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  prm_info_id           INTEGER NOT NULL REFERENCES elec_prm_info(id),\
+        \  id_fonctionnel        TEXT,\
+        \  type                  TEXT,\
+        \  periodicite           TEXT,\
+        \  date_reference        TEXT,\
+        \  mois_reference        INTEGER,\
+        \  nb_coupures_breves    INTEGER,\
+        \  nb_coupures_longues   INTEGER,\
+        \  nb_total_coupures     INTEGER,\
+        \  type_coupures         TEXT\
+        \)"
+
+      , "CREATE TABLE IF NOT EXISTS elec_qualite_fourniture (\
         \  id                  INTEGER PRIMARY KEY AUTOINCREMENT,\
-        \  segment             TEXT,\
-        \  etat_contractuel    TEXT,\
-        \  etat_alimentation   TEXT,\
-        \  puissance_souscrite TEXT,\
-        \  domaine_tension     TEXT,\
-        \  raw_json            TEXT NOT NULL,\
-        \  date_ingestion      TEXT NOT NULL,\
-        \  ingestion_id        INTEGER REFERENCES elec_ingestion_log(id)\
+        \  prm_info_id         INTEGER NOT NULL REFERENCES elec_prm_info(id),\
+        \  id_fonctionnel      TEXT,\
+        \  periodicite         TEXT,\
+        \  date_reference      TEXT,\
+        \  nb_creux            REAL,\
+        \  profondeur_creux    REAL,\
+        \  duree_creux_valeur  REAL,\
+        \  duree_creux_unite   TEXT\
         \)"
 
         -- Journal des demandes M023 de backfill (déduplication)

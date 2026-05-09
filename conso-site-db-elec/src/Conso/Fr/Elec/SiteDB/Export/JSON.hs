@@ -1,24 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-|
-Module      : Conso.Fr.Elec.SiteDB.Export.JSON
-Description : Re-sérialisation JSON des mesures SgeDB (via Aeson)
-
-Les fonctions retournent un 'Value' Aeson avec des noms de champs camelCase
-(ex. @etapeMetier@, @grandeurMetier@) cohérents avec la structure d'origine
-des flux Enedis.
-
-'exportPrmInfoJSON' est particulier : il re-parse le texte JSON brut stocké
-dans la colonne @raw_json@ de @prm_info@, permettant de retourner l'arbre
-JSON C68 complet.
--}
 module Conso.Fr.Elec.SiteDB.Export.JSON
   ( exportCurveJSON
   , exportEnergyJSON
-  , exportPrmInfoJSON
   ) where
 
 import           Data.Text                  (Text)
-import qualified Data.Text.Encoding         as TE
 import           Data.Aeson
 import           Database.SQLite.Simple     (Connection)
 import           Conso.Fr.Elec.SiteDB.Storage.Query
@@ -71,14 +57,3 @@ exportEnergyJSON conn mGm deb fin = do
       , "valeur"           .= erValeur r
       ]
 
--- | Retourne le JSON C68 complet de la dernière 'PrmInfoRow' ingérée.
--- Re-parse le texte @raw_json@ stocké en base vers un 'Value' Aeson.
--- Retourne 'Nothing' si aucune info C68 n'a été ingérée pour ce PRM.
-exportPrmInfoJSON :: Connection -> IO (Maybe Value)
-exportPrmInfoJSON conn = do
-  mRow <- queryPrmInfo conn
-  case mRow of
-    Nothing -> return Nothing
-    Just r  ->
-      -- Le raw_json est stocké comme texte JSON : on le re-parse
-      return $ decodeStrict (TE.encodeUtf8 (piRawJson r))

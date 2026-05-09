@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 module Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   ( IngererElecParams(..)
   , IngererElecReport(..)
   , PrmIngestionReport(..)
+  , PrmInfoC68(..)
   , BackfillDemande(..)
   , ingererElec
   ) where
@@ -36,7 +38,8 @@ import           Conso.Fr.Elec.SiteDB.Types.Common     (PrmId(..))
 import           Conso.Fr.Elec.SiteDB.Storage.Connection (openSiteDbElec)
 import           Conso.Fr.Elec.SiteDB.Storage.Query
   ( derniereHorodateCourbe, derniereHorodateIndex
-  , derniereDateEnergie, derniereDatePmax )
+  , derniereDateEnergie, derniereDatePmax
+  , queryLatestPrmInfo, PrmInfoRow(..) )
 import           Conso.Fr.Elec.SiteDB.Storage.Gaps
   ( detectEnergyGaps, detectPmaxGaps, detectCurveDayGaps )
 import           Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
@@ -67,6 +70,17 @@ data IngererElecParams = IngererElecParams
   , iepPostDownload :: PostDownload
   }
 
+data PrmInfoC68 = PrmInfoC68
+  { picSegment            :: Maybe Text
+  , picEtatContractuel    :: Maybe Text
+  , picFormuleTarifaire   :: Maybe Text
+  , picPuissanceSouscrite :: Maybe Text
+  , picAdresse            :: Maybe Text
+  , picMatriculeCompteur  :: Maybe Text
+  , picLinky              :: Maybe Text
+  , picTitulaireNom       :: Maybe Text
+  } deriving (Show)
+
 data PrmIngestionReport = PrmIngestionReport
   { prirPrm             :: Prm
   , prirFichiersOk      :: Int
@@ -79,6 +93,7 @@ data PrmIngestionReport = PrmIngestionReport
   , prirTrousEnergie    :: [Day]
   , prirTrousPmax       :: [Day]
   , prirTrousCourbes    :: [Day]
+  , prirInfoC68         :: Maybe PrmInfoC68
   } deriving (Show)
 
 data IngererElecReport = IngererElecReport
@@ -109,7 +124,7 @@ ingererElec regConn configDir siteDbDir params = do
       start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     yesterday
 
   sites <- listSites regConn
-  let prmsSites = mapMaybe (\sr -> fmap (\p -> (p, srSiteId sr)) (srPrm sr)) sites
+  let prmsSites = mapMaybe (\sr -> fmap (, srSiteId sr) (srPrm sr)) sites
       prmsSites' = case iepPrmFilter params of
         Nothing   -> prmsSites
         Just filt -> filter (\(p, _) -> p `elem` filt) prmsSites
@@ -176,6 +191,9 @@ buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm
   trousP <- detectPmaxGaps     conn "CONS" start3Ans endDate
   trousC <- detectCurveDayGaps conn "CONS" start2Ans endDate
 
+  mInfoRow <- queryLatestPrmInfo conn
+  let infoC68 = fmap rowToC68Summary mInfoRow
+
   let report = PrmIngestionReport
         { prirPrm             = prm
         , prirFichiersOk      = fichiersOk
@@ -188,6 +206,7 @@ buildAndBackfillUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm
         , prirTrousEnergie    = trousE
         , prirTrousPmax       = trousP
         , prirTrousCourbes    = trousC
+        , prirInfoC68         = infoC68
         }
 
   demandesE  <- mapMaybeM (envoyerSiNonRecent conn prm "R65" "ENERGIE")
@@ -260,3 +279,23 @@ hexToBytes []         = BS.empty
 hexToBytes [_]        = BS.empty
 hexToBytes (a:b:rest) =
   BS.cons (fromIntegral (digitToInt a * 16 + digitToInt b)) (hexToBytes rest)
+
+rowToC68Summary :: PrmInfoRow -> PrmInfoC68
+rowToC68Summary r = PrmInfoC68
+  { picSegment            = piSegment r
+  , picEtatContractuel    = piEtatContractuel r
+  , picFormuleTarifaire   = piFormuleTarifaireCode r
+  , picPuissanceSouscrite = piPuissanceSouscrite r
+  , picAdresse            = buildAdresse r
+  , picMatriculeCompteur  = piMatriculeCompteur r
+  , picLinky              = piDatePremierePoseLinky r
+  , picTitulaireNom       = buildTitulaireNom r
+  }
+  where
+    buildAdresse row = case (piAdresseNumeroNomVoie row, piAdresseCodePostal row, piAdresseCommune row) of
+      (Just rue, Just cp, Just commune) -> Just (rue <> " " <> cp <> " " <> commune)
+      _                                 -> Nothing
+    buildTitulaireNom row = case (piTitulaireNom row, piTitulairePrenom row) of
+      (Just nom, Just prenom) -> Just (prenom <> " " <> nom)
+      (Just nom, Nothing)     -> Just nom
+      _                       -> piTitulaireDenominationSociale row
