@@ -70,8 +70,10 @@ detectCurveDayGaps
   -> IO [Day]
 detectCurveDayGaps conn gm start end = do
   rows <- query conn
-    "SELECT DISTINCT date(horodate) FROM elec_curve_points \
-    \ WHERE grandeur_metier = ? AND date(horodate) >= ? AND date(horodate) <= ?"
+    "SELECT DISTINCT date(horodate, '-1 second') FROM elec_curve_points \
+    \ WHERE grandeur_metier = ? \
+    \   AND date(horodate, '-1 second') >= ? \
+    \   AND date(horodate, '-1 second') <= ?"
     (gm, fmtDay start, fmtDay end)
   let present  = Set.fromList $ mapMaybe (parseDay . fromOnly) rows
       expected = [start .. end]

@@ -449,11 +449,11 @@ queryLatestPrmInfo = queryPrmInfo
 
 derniereHorodateCourbe :: Connection -> IO (Maybe Text)
 derniereHorodateCourbe conn = scalarQuery conn
-  "SELECT SUBSTR(MAX(horodate),1,10) FROM elec_curve_points"
+  "SELECT MAX(horodate) FROM elec_curve_points"
 
 derniereHorodateIndex :: Connection -> IO (Maybe Text)
 derniereHorodateIndex conn = scalarQuery conn
-  "SELECT SUBSTR(MAX(horodate),1,10) FROM elec_index_values"
+  "SELECT MAX(horodate) FROM elec_index_values"
 
 derniereDateEnergie :: Connection -> IO (Maybe Text)
 derniereDateEnergie conn = scalarQuery conn
@@ -461,7 +461,7 @@ derniereDateEnergie conn = scalarQuery conn
 
 derniereDatePmax :: Connection -> IO (Maybe Text)
 derniereDatePmax conn = scalarQuery conn
-  "SELECT MAX(date(horodate)) FROM elec_daily_pmax"
+  "SELECT MAX(horodate) FROM elec_daily_pmax"
 
 scalarQuery :: Connection -> Query -> IO (Maybe Text)
 scalarQuery conn q = do

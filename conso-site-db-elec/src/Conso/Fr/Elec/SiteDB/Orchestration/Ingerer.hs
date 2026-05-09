@@ -128,9 +128,9 @@ ingererElec
   -> IO IngererElecReport
 ingererElec regConn configDir siteDbDir params = do
   today <- utctDay <$> getCurrentTime
-  let yesterday = addDays (-1) today
-      start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) yesterday
-      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     yesterday
+  let avantHier = addDays (-2) today
+      start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) avantHier
+      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     avantHier
 
   sites <- listSites regConn
   let prmsSites = mapMaybe (\sr -> fmap (, srSiteId sr) (srPrm sr)) sites
@@ -152,13 +152,13 @@ ingererElec regConn configDir siteDbDir params = do
 
   let rfilesDir = localDir cfg
   -- Phase 1 : collecter rapports + besoins pour chaque PRM
-  results <- mapM (buildReport rfilesDir siteDbDir byPrm start3Ans start2Ans yesterday) prmsSites'
+  results <- mapM (buildReport rfilesDir siteDbDir byPrm start3Ans start2Ans avantHier) prmsSites'
   let (errPrms, okTriples)           = partitionEithers results
       (okReports, allBesoins, allCRs) = unzip3 okTriples
 
   -- Phase 2-4 : grouper, dédupliquer, envoyer
   let besoinsTous = concat allBesoins
-  batches <- envoyerDemandes siteDbDir prmsSites' besoinsTous yesterday
+  batches <- envoyerDemandes siteDbDir prmsSites' besoinsTous avantHier
 
   return $ IngererElecReport
     { ierFichiersTotal   = total
@@ -234,12 +234,13 @@ buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm
 
 besoinsIndex :: Prm -> Day -> Day -> Maybe Text -> [BackfillBesoin]
 besoinsIndex prm start3Ans endDate mLastDate =
-  let needsBackfill = case mLastDate of
-        Nothing -> True
-        Just t  -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (T.unpack t) of
-          Nothing -> True
-          Just d  -> addDays 90 d < endDate
-  in [BackfillBesoin prm "INDEX" "R64" start3Ans endDate | needsBackfill]
+  case mLastDate of
+    Nothing -> [BackfillBesoin prm "INDEX" "R64" start3Ans endDate]
+    Just t  -> case parseTimeM True defaultTimeLocale "%Y-%m-%d" (take 10 (T.unpack t)) of
+      Nothing -> [BackfillBesoin prm "INDEX" "R64" start3Ans endDate]
+      Just d  ->
+        let debut = addDays 1 d
+        in [BackfillBesoin prm "INDEX" "R64" debut endDate | debut <= endDate]
 
 
 -- ---------------------------------------------------------------------------
