@@ -68,10 +68,12 @@ filtrerDejaDemandes :: Connection -> Text -> Day -> Day -> [Prm] -> IO [Prm]
 filtrerDejaDemandes conn typeCode debut fin prms = do
   rows <- query conn
     "SELECT prm FROM elec_backfill_log \
-    \ WHERE type_mesure = ? AND debut = ? AND fin = ? \
-    \   AND date_envoi >= datetime('now', '-7 days') \
-    \   AND prm IS NOT NULL"
-    (typeCode, show debut, show fin) :: IO [Only Text]
+    \ WHERE prm IS NOT NULL \
+    \   AND debut = ? AND fin = ? \
+    \   AND (   (type_mesure = ? AND date_envoi >= datetime('now', '-7 days')) \
+    \        OR statut_cr = 'NON_PUBLIE' \
+    \       )"
+    (show debut, show fin, typeCode) :: IO [Only Text]
   let deja = Set.fromList (map (\(Only t) -> t) rows)
   return [p | p@(Prm t) <- prms, not (Set.member t deja)]
 
