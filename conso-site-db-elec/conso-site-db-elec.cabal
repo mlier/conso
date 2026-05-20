@@ -24,6 +24,7 @@ library
         Conso.Fr.Elec.SiteDB.Types.R66
         Conso.Fr.Elec.SiteDB.Types.R67
         Conso.Fr.Elec.SiteDB.Types.C68
+        Conso.Fr.Elec.SiteDB.Types.Nass
         Conso.Fr.Elec.SiteDB.Storage.Connection
         Conso.Fr.Elec.SiteDB.Storage.Migration
         Conso.Fr.Elec.SiteDB.Storage.Schema

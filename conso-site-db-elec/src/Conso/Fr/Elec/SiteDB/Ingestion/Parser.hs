@@ -27,6 +27,7 @@ import           Conso.Fr.Elec.SiteDB.Types.R65    (FluxR65)
 import           Conso.Fr.Elec.SiteDB.Types.R66    (FluxR66)
 import           Conso.Fr.Elec.SiteDB.Types.R67    (FluxR67)
 import           Conso.Fr.Elec.SiteDB.Types.C68    (InfoTechniqueContractuelle, parseFluxC68)
+import           Conso.Fr.Elec.SiteDB.Types.Nass   (FluxNassJson(..), NassService)
 
 -- | Type union de tous les flux M023 Enedis.
 data FluxRxx
@@ -36,6 +37,7 @@ data FluxRxx
   | FluxPmax         FluxR66                  -- ^ R66, R66B — puissances maximales
   | FluxFacturant    FluxR67                  -- ^ R67 — mesures facturantes
   | FluxITC          [InfoTechniqueContractuelle] -- ^ C68 — informations techniques
+  | FluxNass         [NassService]            -- ^ NASS — arrêts de services souscrits
   deriving (Show)
 
 -- | Parse un 'ByteString' JSON en 'FluxRxx' selon le 'CodeFlux' fourni.
@@ -50,6 +52,10 @@ parseFluxRxx CF_C68 bs =
     Right v  -> case parseFluxC68 v of
       Left  msg   -> Left (T.pack msg)
       Right items -> Right (FluxITC items)
+parseFluxRxx CF_NASS bs =
+  case eitherDecodeStrict bs :: Either String FluxNassJson of
+    Left  msg -> Left (T.pack msg)
+    Right (FluxNassJson services) -> Right (FluxNass services)
 parseFluxRxx cf bs =
   case cf of
     CF_R63  -> FluxCourbeCharge <$> decodeFlux bs
@@ -62,7 +68,6 @@ parseFluxRxx cf bs =
     CF_R66  -> FluxPmax         <$> decodeFlux bs
     CF_R66B -> FluxPmax         <$> decodeFlux bs
     CF_R67  -> FluxFacturant    <$> decodeFlux bs
-    CF_C68  -> Left "CF_C68 traité séparément"  -- unreachable
 
 decodeFlux :: FromJSON a => ByteString -> Either Text a
 decodeFlux bs = case eitherDecodeStrict bs of

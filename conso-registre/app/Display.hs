@@ -22,6 +22,7 @@ import Conso.Fr.Gaz.SiteDB.Ingestion.FromApi
   ( ChangementInfosContract(..), ChangementInfosTech(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.Ingerer
   ( IngererElecReport(..), PrmIngestionReport(..), PrmInfoC68(..) )
+import Conso.Fr.Elec.SiteDB.Storage.Query (ServiceArretRow(..))
 import Conso.Fr.Elec.SiteDB.Orchestration.Backfill
   ( BackfillBatch(..) )
 import Conso.Fr.Elec.SiteDB.Orchestration.CompteRendu
@@ -190,6 +191,7 @@ afficherPrmReport r = do
   afficherTrousDays "Trous courbes  " (prirTrousCourbes r)
   afficherTrousDays "Trous énergie  " (prirTrousEnergie r)
   afficherTrousDays "Trous Pmax     " (prirTrousPmax r)
+  forM_ (prirServicesArrets r) afficherServiceArret
   forM_ (prirErreurs r) $ \(f, e) ->
     putStrLn $ "  ERREUR " <> T.unpack f <> " : " <> T.unpack e
 
@@ -227,6 +229,15 @@ afficherTrousDays label days = do
 afficherErreurPrm :: (Prm, Text) -> IO ()
 afficherErreurPrm (Prm prm, err) =
   putStrLn $ "\n  ERREUR PRM " <> T.unpack prm <> " : " <> T.unpack err
+
+afficherServiceArret :: ServiceArretRow -> IO ()
+afficherServiceArret s =
+  putStrLn $ "  SERVICE ARRETÉ " <> T.unpack (sarTypeServiceSouscrit s)
+          <> " " <> T.unpack (sarTypeService s)
+          <> " (" <> T.unpack (sarSegment s) <> ")"
+          <> " fin " <> T.unpack (sarDateFin s)
+          <> maybe "" (\m -> " — " <> T.unpack m) (sarMotifFinLibelle s)
+          <> maybe "" (\c -> " (code " <> show c <> ")") (sarMotifFinCode s)
 
 afficherDateElec :: Maybe Text -> String
 afficherDateElec Nothing  = "(aucune donnée)"

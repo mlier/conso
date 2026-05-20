@@ -38,7 +38,8 @@ import           Conso.Fr.Elec.SiteDB.Storage.Connection (openSiteDbElec)
 import           Conso.Fr.Elec.SiteDB.Storage.Query
   ( derniereHorodateCourbe, derniereHorodateIndex
   , derniereDateEnergie, derniereDatePmax
-  , queryLatestPrmInfo, PrmInfoRow(..) )
+  , queryLatestPrmInfo, PrmInfoRow(..)
+  , queryServiceArrets, ServiceArretRow(..) )
 import           Conso.Fr.Elec.SiteDB.Storage.Gaps
   ( detectEnergyGaps, detectPmaxGaps, detectCurveDayGaps )
 import           Conso.Fr.Elec.SiteDB.Ingestion.FromRfiles
@@ -103,6 +104,7 @@ data PrmIngestionReport = PrmIngestionReport
   , prirTrousPmax       :: [Day]
   , prirTrousCourbes    :: [Day]
   , prirInfoC68         :: Maybe PrmInfoC68
+  , prirServicesArrets  :: [ServiceArretRow]
   } deriving (Show)
 
 data IngererElecReport = IngererElecReport
@@ -207,6 +209,7 @@ buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm
 
   mInfoRow <- queryLatestPrmInfo conn
   let infoC68 = fmap rowToC68Summary mInfoRow
+  arrets <- queryServiceArrets conn
 
   let report = PrmIngestionReport
         { prirPrm             = prm
@@ -221,6 +224,7 @@ buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm
         , prirTrousPmax       = trousP
         , prirTrousCourbes    = trousC
         , prirInfoC68         = infoC68
+        , prirServicesArrets  = arrets
         }
 
   let besoinsE = [BackfillBesoin prm "ENERGIE" "R65" d f | (d, f) <- groupDays trousE]

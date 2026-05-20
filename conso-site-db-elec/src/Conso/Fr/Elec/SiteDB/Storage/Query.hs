@@ -24,6 +24,8 @@ module Conso.Fr.Elec.SiteDB.Storage.Query
   , queryBillingMeasures
   , queryPrmInfo
   , queryLatestPrmInfo
+  , ServiceArretRow(..)
+  , queryServiceArrets
   , derniereHorodateCourbe
   , derniereHorodateIndex
   , derniereDateEnergie
@@ -443,6 +445,26 @@ queryPrmInfo conn = do
 -- | Alias de queryPrmInfo — utilisé pour la comparaison upsert.
 queryLatestPrmInfo :: Connection -> IO (Maybe PrmInfoRow)
 queryLatestPrmInfo = queryPrmInfo
+
+-- | Ligne de résultat d'une requête sur @elec_service_arrets@.
+data ServiceArretRow = ServiceArretRow
+  { sarTypeServiceSouscrit :: Text
+  , sarTypeService         :: Text
+  , sarSegment             :: Text
+  , sarDateFin             :: Text
+  , sarMotifFinLibelle     :: Maybe Text
+  , sarMotifFinCode        :: Maybe Int
+  } deriving (Eq, Show)
+
+instance FromRow ServiceArretRow where
+  fromRow = ServiceArretRow <$> field <*> field <*> field
+                            <*> field <*> field <*> field
+
+queryServiceArrets :: Connection -> IO [ServiceArretRow]
+queryServiceArrets conn = query_ conn
+  "SELECT type_service_souscrit, type_service, segment, date_fin, \
+  \ motif_fin_libelle, motif_fin_code \
+  \ FROM elec_service_arrets ORDER BY date_fin DESC"
 
 -- ---------------------------------------------------------------------------
 -- Dernières dates disponibles par table

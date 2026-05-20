@@ -18,6 +18,7 @@ module Conso.Fr.Elec.SiteDB.Storage.Insert
   , insertDailyPmax
   , insertBillingMeasures
   , insertPrmInfoIfChanged
+  , insertNassArrets
   , logIngestion
   , IngestionId
   ) where
@@ -36,7 +37,9 @@ import           Conso.Fr.Elec.SiteDB.Types.R65
 import           Conso.Fr.Elec.SiteDB.Types.R66
 import           Conso.Fr.Elec.SiteDB.Types.R67
 import           Conso.Fr.Elec.SiteDB.Types.C68
+import           Conso.Fr.Elec.SiteDB.Types.Nass
 import           Conso.Fr.Elec.SiteDB.Storage.Query (queryLatestPrmInfo, PrmInfoRow(..))
+import           Conso.Fr.SiteDB.Orchestration.Types (typeFluxToStr)
 import           Control.Monad                     (when)
 
 type IngestionId = Int
@@ -543,3 +546,29 @@ insertQualites conn prmInfoId = mapM_ ins
       \ VALUES (?,?,?,?,?,?,?,?)"
       ( prmInfoId, qualIdFonctionnel q, qualPeriodicite q, qualDateReference q
       , qualNbCreux q, qualProfondeurCreux q, qualDureeValeur q, qualDureeUnite q )
+
+-- ---------------------------------------------------------------------------
+-- NASS — Arrêts de services souscrits
+
+insertNassArrets :: Connection -> IngestionId -> UTCTime -> NassService -> IO ()
+insertNassArrets conn ingId now svc =
+  mapM_ insertSeg (nassSegments svc)
+  where
+    nowStr = T.pack $ formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" now
+    insertSeg seg = mapM_ (insertSS seg) (nassServiceSouscrits seg)
+    insertSS seg ss = execute conn
+      "INSERT OR IGNORE INTO elec_service_arrets \
+      \ (type_service_souscrit, type_service, segment, etat_service, \
+      \  date_debut, date_fin, motif_fin_libelle, motif_fin_code, \
+      \  date_ingestion, ingestion_id) \
+      \ VALUES (?,?,?,?,?,?,?,?,?,?)"
+      ( T.pack (typeFluxToStr   (nassTypeServiceSouscrit ss))
+      , typeServiceToText        (nassTypeService ss)
+      , nassSegmentLabel seg
+      , etatServiceToText        (nassEtatService ss)
+      , nassDateDebut ss
+      , nassDateFin ss
+      , nassMotifFinLibelle ss
+      , motifFinToInt            (nassMotifFin ss)
+      , nowStr
+      , ingId )

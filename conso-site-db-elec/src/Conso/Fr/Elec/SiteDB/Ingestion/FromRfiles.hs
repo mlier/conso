@@ -124,7 +124,7 @@ detectCodeFlux bs fileName =
 
     fromFileName :: FilePath -> Maybe CodeFlux
     fromFileName name =
-      let candidates = ["R63B","R63A","R64B","R64A","R66B","R63","R64","R65","R66","R67","C68"]
+      let candidates = ["R63B","R63A","R64B","R64A","R66B","R63","R64","R65","R66","R67","C68","NASS"]
           nameUpper  = T.toUpper (T.pack name)
       in foldr (\c acc -> case acc of
                   Just _  -> acc

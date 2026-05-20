@@ -35,6 +35,7 @@ import           Conso.Fr.Elec.SiteDB.Types.R65    (FluxR65(..), MesureR65(..))
 import           Conso.Fr.Elec.SiteDB.Types.R66    (FluxR66(..), MesureR66(..))
 import           Conso.Fr.Elec.SiteDB.Types.R67    (FluxR67(..), MesureR67(..))
 import           Conso.Fr.Elec.SiteDB.Types.C68
+import           Conso.Fr.Elec.SiteDB.Types.Nass   (nassIdPrm)
 import           Conso.Fr.Elec.SiteDB.Ingestion.Parser
 import           Conso.Fr.Elec.SiteDB.Ingestion.Versioning ()
 import           Conso.Fr.Elec.SiteDB.Storage.Insert
@@ -138,6 +139,15 @@ ingestFlux openConn cf mSrc now (FluxITC items) =
         logIngestion conn cf "P" "C68" Nothing Nothing now
           Nothing Nothing mSrc
         >>= \ingId -> insertPrmInfoIfChanged conn ingId now itc
+ingestFlux openConn cf mSrc now (FluxNass services) =
+  mapM ingestM services
+  where
+    ingestM svc = do
+      let prm = nassIdPrm svc
+      doInsert openConn prm mSrc $ \conn ->
+        logIngestion conn cf "P" "NASS" Nothing Nothing now
+          Nothing Nothing mSrc
+        >>= \ingId -> insertNassArrets conn ingId now svc
 
 -- | Ouvre la connexion via @openConn@, vérifie si le fichier a déjà été ingéré,
 -- exécute l'action dans une transaction si non, ferme.

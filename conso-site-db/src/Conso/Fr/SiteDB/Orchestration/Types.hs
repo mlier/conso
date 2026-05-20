@@ -3,6 +3,7 @@ module Conso.Fr.SiteDB.Orchestration.Types
   ( Accord(..)
   , TypeFlux(..)
   , typeFluxToStr
+  , typeFluxFromStr
   , Rattachement(..)
   , InscriptionPrmParams(..)
   , InscriptionPceParams(..)
@@ -25,7 +26,7 @@ data Accord
   | AccordDenomination Text
   deriving (Show)
 
-data TypeFlux = CDC | IDX | ENERGIE | PMAX
+data TypeFlux = CDC | IDX | ENERGIE | PMAX | ITC
   deriving (Show, Eq)
 
 typeFluxToStr :: TypeFlux -> String
@@ -33,6 +34,15 @@ typeFluxToStr CDC     = "CDC"
 typeFluxToStr IDX     = "IDX"
 typeFluxToStr ENERGIE = "ENERGIE"
 typeFluxToStr PMAX    = "PMAX"
+typeFluxToStr ITC     = "ITC"
+
+typeFluxFromStr :: String -> Maybe TypeFlux
+typeFluxFromStr "CDC"     = Just CDC
+typeFluxFromStr "IDX"     = Just IDX
+typeFluxFromStr "ENERGIE" = Just ENERGIE
+typeFluxFromStr "PMAX"    = Just PMAX
+typeFluxFromStr "ITC"     = Just ITC
+typeFluxFromStr _         = Nothing
 
 data Rattachement
   = Standalone

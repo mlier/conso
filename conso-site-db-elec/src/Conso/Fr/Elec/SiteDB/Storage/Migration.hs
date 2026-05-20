@@ -19,7 +19,7 @@ import           Control.Monad          (when, forM_)
 -- | Version courante du schéma attendue par ce code.
 -- À incrémenter à chaque nouvelle migration ajoutée dans 'migrations'.
 currentSchemaVersion :: Int
-currentSchemaVersion = 1
+currentSchemaVersion = 2
 
 -- | Liste ordonnée des migrations, indexées par numéro de version.
 --
@@ -330,13 +330,23 @@ migrations =
         \  statut_cr   TEXT,\
         \  date_cr     TEXT\
         \)"
-      ])
 
-  -- Exemple de migration future :
-  -- , (2,
-  --     [ "ALTER TABLE elec_billing_measures ADD COLUMN nouveau_champ TEXT"
-  --     , "UPDATE elec_schema_version SET version = 2"
-  --     ])
+      , "CREATE TABLE IF NOT EXISTS elec_service_arrets (\
+        \  id                    INTEGER PRIMARY KEY AUTOINCREMENT,\
+        \  type_service_souscrit TEXT NOT NULL,\
+        \  type_service          TEXT NOT NULL,\
+        \  segment               TEXT NOT NULL,\
+        \  etat_service          TEXT NOT NULL,\
+        \  date_debut            TEXT NOT NULL,\
+        \  date_fin              TEXT NOT NULL,\
+        \  motif_fin_libelle     TEXT,\
+        \  motif_fin_code        INTEGER,\
+        \  date_ingestion        TEXT NOT NULL,\
+        \  ingestion_id          INTEGER REFERENCES elec_ingestion_log(id),\
+        \  UNIQUE(type_service_souscrit, type_service, segment, date_debut, date_fin)\
+        \)"
+
+      ])
   ]
 
 -- | Applique les migrations manquantes de façon idempotente.

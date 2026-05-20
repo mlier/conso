@@ -33,6 +33,31 @@ data GrandeurMetier
   | PROD -- ^ Production (Injection vers le réseau)
   deriving (Eq, Ord, Show, Enum, Bounded)
 
+-- | Sens d'un service souscrit (utilisé dans le flux NASS).
+data TypeService = Soutirage | Injection
+  deriving (Eq, Show)
+
+typeServiceFromText :: Text -> Maybe TypeService
+typeServiceFromText "SOUTIRAGE" = Just Soutirage
+typeServiceFromText "INJECTION" = Just Injection
+typeServiceFromText _           = Nothing
+
+typeServiceToText :: TypeService -> Text
+typeServiceToText Soutirage = "SOUTIRAGE"
+typeServiceToText Injection = "INJECTION"
+
+-- | État d'un service souscrit (flux NASS ; TERMINE est la seule valeur observée).
+data EtatService = Termine | EtatServiceInconnu Text
+  deriving (Eq, Show)
+
+etatServiceFromText :: Text -> EtatService
+etatServiceFromText "TERMINE" = Termine
+etatServiceFromText t         = EtatServiceInconnu t
+
+etatServiceToText :: EtatService -> Text
+etatServiceToText Termine                = "TERMINE"
+etatServiceToText (EtatServiceInconnu t) = t
+
 -- | Grandeur physique pour les courbes de charge R63.
 data GrandeurPhysiqueR63
   = GP_PA  -- ^ Puissance Active (W)

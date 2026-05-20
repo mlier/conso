@@ -35,6 +35,7 @@ data CodeFlux
   | CF_R64B -- ^ Index récurrents, variante B (@R64B@)
   | CF_R66B -- ^ Pmax récurrentes (@R66B@)
   | CF_C68  -- ^ Informations Techniques et Contractuelles (@C68@)
+  | CF_NASS -- ^ Notification des Arrêts de Services Souscrits (@NASS@)
   deriving (Eq, Ord, Show)
 
 -- | Parse un 'CodeFlux' depuis sa représentation textuelle Enedis (ex. @\"R63\"@, @\"C68\"@).
@@ -51,6 +52,7 @@ codeFluxFromText "R64A" = Just CF_R64A
 codeFluxFromText "R64B" = Just CF_R64B
 codeFluxFromText "R66B" = Just CF_R66B
 codeFluxFromText "C68"  = Just CF_C68
+codeFluxFromText "NASS" = Just CF_NASS
 codeFluxFromText _      = Nothing
 
 -- | Convertit un 'CodeFlux' en sa représentation textuelle Enedis.
@@ -61,6 +63,7 @@ codeFluxToText CF_R67  = "R67";  codeFluxToText CF_R63A = "R63A"
 codeFluxToText CF_R63B = "R63B"; codeFluxToText CF_R64A = "R64A"
 codeFluxToText CF_R64B = "R64B"; codeFluxToText CF_R66B = "R66B"
 codeFluxToText CF_C68  = "C68"
+codeFluxToText CF_NASS = "NASS"
 
 -- | En-tête commun à tous les flux R6X (objet @header@ du JSON racine).
 data Header = Header
