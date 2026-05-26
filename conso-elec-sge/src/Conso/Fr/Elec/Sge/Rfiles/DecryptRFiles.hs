@@ -39,8 +39,8 @@ import qualified Data.ByteString     as BS
 import           Data.Char           (isDigit)
 import           Data.List           (isSuffixOf, isPrefixOf, isInfixOf, tails)
 import           Data.Maybe          (fromMaybe)
-import           Control.Monad       (when)
-import           System.Directory    (listDirectory, doesDirectoryExist, removeFile)
+import           Control.Monad       (when, forM_)
+import           System.Directory    (listDirectory, doesDirectoryExist, removeFile, renameFile)
 import           System.Exit         (ExitCode(..))
 import           System.FilePath     ((</>), takeFileName, takeDirectory)
 import           System.Process      (readProcessWithExitCode)
@@ -191,11 +191,34 @@ processEntry cfg dir name = do
                      case res of
                        Left err -> putStrLn $ "ERREUR : " <> err
                        Right () -> do
-                         let outDir = takeDirectory path
-                         (code, _, err) <- readProcessWithExitCode "unzip" ["-o", path, "-d", outDir] ""
+                         let outDir  = takeDirectory path
+                             tmpPath = path <> ".decrypting"
+                         renameFile path tmpPath  -- évite la collision si le ZIP interne a le même nom
+                         putStrLn $ "  → extraction vers : " <> outDir
+                         (code, out, err) <- readProcessWithExitCode "unzip" ["-o", tmpPath, "-d", outDir] ""
                          case code of
-                           ExitSuccess   -> removeFile path >> putStrLn "OK"
-                           ExitFailure n -> putStrLn $ "ERREUR unzip (code " <> show n <> ") : " <> err
+                           ExitSuccess -> do
+                             mapM_ (\l -> putStrLn $ "    " <> l) (filter (not . null) (lines out))
+                             removeFile tmpPath
+                             -- Extraire les ZIPs internes éventuels (ex. NASS : double couche)
+                             innerZips <- filter (".zip" `isSuffixOf`) <$> listDirectory outDir
+                             forM_ innerZips $ \innerName -> do
+                               let innerPath = outDir </> innerName
+                                   innerTmp  = innerPath <> ".inner"
+                               renameFile innerPath innerTmp
+                               putStrLn $ "  → extraction ZIP interne : " <> innerName
+                               (code2, out2, err2) <- readProcessWithExitCode "unzip" ["-o", innerTmp, "-d", outDir] ""
+                               case code2 of
+                                 ExitSuccess -> do
+                                   mapM_ (\l -> putStrLn $ "      " <> l) (filter (not . null) (lines out2))
+                                   removeFile innerTmp
+                                 ExitFailure n2 -> do
+                                   renameFile innerTmp innerPath
+                                   putStrLn $ "ERREUR extraction ZIP interne (code " <> show n2 <> "): " <> err2
+                             putStrLn "  → OK"
+                           ExitFailure n -> do
+                             renameFile tmpPath path
+                             putStrLn $ "ERREUR unzip (code " <> show n <> ")\n  stdout=" <> out <> "\n  stderr=" <> err
                else when ("_CR_" `isInfixOf` name && ".json" `isSuffixOf` name) $ do
                  putStr $ "  Déchiffrement CR : " <> name <> " ... "
                  case modeForFile cfg path of

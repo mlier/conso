@@ -95,9 +95,12 @@ ingestJsonFile configDir siteDbDir inputDir fileName = do
         Left ex -> return $ FileErr path (T.pack (show ex))
         Right bs ->
           case detectCodeFlux bs fileName of
-            Nothing -> return $ FileSkip path
-              ("CodeFlux non reconnu dans le fichier ni dans le nom : " <> T.pack fileName)
+            Nothing -> do
+              putStrLn $ "  [SKIP] CodeFlux non reconnu : " <> path
+              return $ FileSkip path
+                ("CodeFlux non reconnu dans le fichier ni dans le nom : " <> T.pack fileName)
             Just cf -> do
+              putStrLn $ "  [INGEST] " <> show cf <> " : " <> path
               let openConn (PrmId prmText) = do
                     reg     <- openRegistry configDir
                     siteId  <- lookupOrCreateByPrm reg (Prm prmText)

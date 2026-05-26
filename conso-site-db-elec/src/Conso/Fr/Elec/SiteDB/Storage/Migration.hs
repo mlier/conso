@@ -19,7 +19,7 @@ import           Control.Monad          (when, forM_)
 -- | Version courante du schéma attendue par ce code.
 -- À incrémenter à chaque nouvelle migration ajoutée dans 'migrations'.
 currentSchemaVersion :: Int
-currentSchemaVersion = 2
+currentSchemaVersion = 1
 
 -- | Liste ordonnée des migrations, indexées par numéro de version.
 --

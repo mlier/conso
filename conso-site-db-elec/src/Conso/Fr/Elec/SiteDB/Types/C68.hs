@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase        #-}
 module Conso.Fr.Elec.SiteDB.Types.C68 where
 
-import           Data.Text           (Text)
+import           Data.Text           (Text, pack)
 import           Data.Aeson
 import           Data.Aeson.Types    (Parser)
 import qualified Data.Aeson.Key      as Key
@@ -451,7 +451,13 @@ parseC68Item o = do
 
 lookupNested :: Object -> [Text] -> Parser (Maybe Text)
 lookupNested _ []     = pure Nothing
-lookupNested o [k]    = o .:? Key.fromText k
+lookupNested o [k]    = do
+  mv <- o .:? Key.fromText k :: Parser (Maybe Value)
+  case mv of
+    Nothing         -> pure Nothing
+    Just (String t) -> pure (Just t)
+    Just (Number n) -> pure (Just (pack (show n)))
+    Just _          -> pure Nothing
 lookupNested o (k:ks) = do
   mSub <- o .:? Key.fromText k :: Parser (Maybe Object)
   case mSub of

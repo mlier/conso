@@ -9,6 +9,7 @@ module Conso.Fr.Elec.SiteDB.Types.Nass
   , FluxNassJson(..)
   ) where
 
+import           Control.Applicative     ((<|>))
 import           Data.Text              (Text)
 import qualified Data.Text              as T
 import           Data.Aeson
@@ -104,17 +105,17 @@ instance FromJSON NassServiceSouscrit where
     tss <- case typeFluxFromStr tssStr of
       Just tf -> pure tf
       Nothing -> fail $ "typeServiceSouscrit inconnu: " ++ tssStr
-    tsStr <- o .: "typeService"
+    tsStr <- (o .: "typeMesure") <|> (o .: "typeService")
     ts <- case typeServiceFromText tsStr of
       Just v  -> pure v
       Nothing -> fail $ "typeService inconnu: " ++ T.unpack tsStr
     esStr <- o .: "etatService"
     codeStr <- o .: "motifFinCode"
-    pure NassServiceSouscrit
-      <*> pure tss
-      <*> pure ts
-      <*> pure (etatServiceFromText esStr)
-      <*> o .: "dateDebut"
+    NassServiceSouscrit 
+      tss 
+      ts 
+      (etatServiceFromText esStr)
+      <$> o .: "dateDebut"
       <*> o .: "dateFin"
       <*> pure (motifFinFromCode codeStr)
       <*> o .:? "motifFinLibelle"
@@ -127,8 +128,7 @@ instance FromJSON NassSegment where
 
 instance FromJSON NassService where
   parseJSON = withObject "NassService" $ \o ->
-    NassService
-      <$> (PrmId <$> o .: "idPrm")
+    (NassService . PrmId <$> (o .: "idPrm"))
       <*> o .: "segments"
 
 

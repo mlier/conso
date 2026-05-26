@@ -35,7 +35,7 @@ import           Conso.Fr.Elec.SiteDB.Types.R65    (FluxR65(..), MesureR65(..))
 import           Conso.Fr.Elec.SiteDB.Types.R66    (FluxR66(..), MesureR66(..))
 import           Conso.Fr.Elec.SiteDB.Types.R67    (FluxR67(..), MesureR67(..))
 import           Conso.Fr.Elec.SiteDB.Types.C68
-import           Conso.Fr.Elec.SiteDB.Types.Nass   (nassIdPrm)
+import           Conso.Fr.Elec.SiteDB.Types.Nass   (nassIdPrm, nassSegments, nassServiceSouscrits)
 import           Conso.Fr.Elec.SiteDB.Ingestion.Parser
 import           Conso.Fr.Elec.SiteDB.Ingestion.Versioning ()
 import           Conso.Fr.Elec.SiteDB.Storage.Insert
@@ -139,11 +139,17 @@ ingestFlux openConn cf mSrc now (FluxITC items) =
         logIngestion conn cf "P" "C68" Nothing Nothing now
           Nothing Nothing mSrc
         >>= \ingId -> insertPrmInfoIfChanged conn ingId now itc
-ingestFlux openConn cf mSrc now (FluxNass services) =
+ingestFlux openConn cf mSrc now (FluxNass services) = do
+  putStrLn $ "  NASS : " <> show (length services) <> " service(s) parsé(s)"
   mapM ingestM services
   where
     ingestM svc = do
-      let prm = nassIdPrm svc
+      let prm     = nassIdPrm svc
+          nbSegs  = length (nassSegments svc)
+          nbItems = sum (map (length . nassServiceSouscrits) (nassSegments svc))
+      putStrLn $ "    PRM " <> show prm
+              <> " : " <> show nbSegs <> " segment(s)"
+              <> ", " <> show nbItems <> " arrêt(s)"
       doInsert openConn prm mSrc $ \conn ->
         logIngestion conn cf "P" "NASS" Nothing Nothing now
           Nothing Nothing mSrc
