@@ -1,4 +1,4 @@
-# conso-elec-sge
+# Consommation électrique via les webservices SGE d'Enedis
 
 Client SOAP pour les webservices Enedis SGE (Système de Gestion des Échanges). Ce client fournit une interface en ligne de commande (CLI) avec affichage TUI (Text user interface). Ce client permet d'obtenir tous les types de données de consommation des points de consommation d'électricité gérés par Enedis.
 
