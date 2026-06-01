@@ -57,7 +57,8 @@ data Command
   | CmdSupprimerTout SiteId
   | CmdAffiche AfficheCommand
 
-data Periode = ParJour | ParSemaine | ParMois | ParAn
+data Periode = Par5Min | Par10Min | Par15Min | Par30Min | ParHeure
+             | ParJour | ParSemaine | ParMois | ParAn
 
 data ElecSousType = ElecEnergie | ElecCourbe | ElecPmax | ElecIndex
 data GazSousType  = GazConso | GazConsoInfo | GazInjection
@@ -130,12 +131,17 @@ runAfficheCommand siteDbDir (AfficheElec sous siteId periode deb fin) =
   bracket (openSiteDbElec siteDbDir siteId) close $ \conn -> do
     let p = toElecPeriode periode
     rows <- case sous of
-      ElecEnergie -> ElecAgg.aggregateEnergy    conn "CONS" "EA"   p deb fin
-      ElecCourbe  -> ElecAgg.aggregateCurve     conn "CONS" "PA" "BEST" p deb fin
-      ElecPmax    -> ElecAgg.aggregatePmax      conn "PMA"        p deb fin
-      ElecIndex   -> ElecAgg.aggregateIndexDelta conn "EA"        p deb fin
+      ElecEnergie -> ElecAgg.aggregateEnergy     conn "CONS" "EA" p deb fin
+      ElecCourbe  -> do
+        rowsBest <- ElecAgg.aggregateCurve conn "CONS" "PA" "BEST" p deb fin
+        if null rowsBest
+          then ElecAgg.aggregateCurve conn "CONS" "PA" "BRUT" p deb fin
+          else return rowsBest
+      ElecPmax    -> ElecAgg.aggregatePmax       conn "PMA" p deb fin
+      ElecIndex   -> ElecAgg.aggregateIndexDelta conn "EA"  p deb fin
     let title = elecTitle sous <> " — " <> deb <> " → " <> fin
-    barChart title [(T.takeEnd 2 (ElecAgg.agPeriode r), ElecAgg.agSomme r) | r <- rows]
+    let lbl = shortenLabel periode
+    barChart title [(lbl (ElecAgg.agPeriode r), ElecAgg.agSomme r) | r <- rows]
 
 runAfficheCommand siteDbDir (AfficheGaz sous siteId periode deb fin) =
   bracket (openSiteDbGaz siteDbDir siteId) close $ \conn -> do
@@ -145,19 +151,37 @@ runAfficheCommand siteDbDir (AfficheGaz sous siteId periode deb fin) =
       GazConsoInfo -> GazAgg.aggregateGazConsoInfo  conn p deb fin
       GazInjection -> GazAgg.aggregateGazInjection  conn p deb fin
     let title = gazTitle sous <> " — " <> deb <> " → " <> fin
-    barChart title [(T.takeEnd 2 (GazAgg.gazAgPeriode r), GazAgg.gazAgSomme r) | r <- rows]
+    let lbl = shortenLabel periode
+    barChart title [(lbl (GazAgg.gazAgPeriode r), GazAgg.gazAgSomme r) | r <- rows]
 
 toElecPeriode :: Periode -> ElecAgg.AggregationPeriod
+toElecPeriode Par5Min    = ElecAgg.Par5Min
+toElecPeriode Par10Min   = ElecAgg.Par10Min
+toElecPeriode Par15Min   = ElecAgg.Par15Min
+toElecPeriode Par30Min   = ElecAgg.Par30Min
+toElecPeriode ParHeure   = ElecAgg.ParHeure
 toElecPeriode ParJour    = ElecAgg.ParJour
 toElecPeriode ParSemaine = ElecAgg.ParSemaine
 toElecPeriode ParMois    = ElecAgg.ParMois
 toElecPeriode ParAn      = ElecAgg.ParAn
 
 toGazPeriode :: Periode -> GazAgg.AggregationPeriod
+toGazPeriode Par5Min    = GazAgg.ParJour
+toGazPeriode Par10Min   = GazAgg.ParJour
+toGazPeriode Par15Min   = GazAgg.ParJour
+toGazPeriode Par30Min   = GazAgg.ParJour
+toGazPeriode ParHeure   = GazAgg.ParJour
 toGazPeriode ParJour    = GazAgg.ParJour
 toGazPeriode ParSemaine = GazAgg.ParMois
 toGazPeriode ParMois    = GazAgg.ParMois
 toGazPeriode ParAn      = GazAgg.ParAn
+
+shortenLabel :: Periode -> Text -> Text
+shortenLabel Par5Min  = T.takeEnd 5
+shortenLabel Par10Min = T.takeEnd 5
+shortenLabel Par15Min = T.takeEnd 5
+shortenLabel Par30Min = T.takeEnd 5
+shortenLabel _        = T.takeEnd 2
 
 elecTitle :: ElecSousType -> Text
 elecTitle ElecEnergie = "Énergie (Wh)"
@@ -255,14 +279,19 @@ periodeOption = option (eitherReader parsePeriode)
   (  long "par"
   <> metavar "GRANULARITE"
   <> value ParMois
-  <> help "Granularité : jour, semaine, mois, an (défaut : mois)"
+  <> help "Granularité : 5min, 10min, 15min, 30min, heure, jour, semaine, mois, an (défaut : mois)"
   )
   where
+    parsePeriode "5min"    = Right Par5Min
+    parsePeriode "10min"   = Right Par10Min
+    parsePeriode "15min"   = Right Par15Min
+    parsePeriode "30min"   = Right Par30Min
+    parsePeriode "heure"   = Right ParHeure
     parsePeriode "jour"    = Right ParJour
     parsePeriode "semaine" = Right ParSemaine
     parsePeriode "mois"    = Right ParMois
     parsePeriode "an"      = Right ParAn
-    parsePeriode s         = Left $ "Granularité invalide : " <> s <> " (jour|semaine|mois|an)"
+    parsePeriode s         = Left $ "Granularité invalide : " <> s <> " (5min|10min|15min|30min|heure|jour|semaine|mois|an)"
 
 dateOption :: String -> String -> Parser Text
 dateOption l h = strOption (long l <> metavar "DATE" <> help h)

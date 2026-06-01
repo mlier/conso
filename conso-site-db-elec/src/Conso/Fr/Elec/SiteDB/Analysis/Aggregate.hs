@@ -24,10 +24,16 @@ module Conso.Fr.Elec.SiteDB.Analysis.Aggregate
 
 import           Database.SQLite.Simple
 import           Data.Text              (Text)
+import qualified Data.Text              as T
 
 -- | Granularité d'agrégation temporelle.
 data AggregationPeriod
-  = ParJour    -- ^ Agrégation par jour — label @YYYY-MM-DD@
+  = Par5Min    -- ^ Agrégation par tranche de 5 min — label @YYYY-MM-DDTHH:MM@
+  | Par10Min   -- ^ Agrégation par tranche de 10 min — label @YYYY-MM-DDTHH:MM@
+  | Par15Min   -- ^ Agrégation par tranche de 15 min — label @YYYY-MM-DDTHH:MM@
+  | Par30Min   -- ^ Agrégation par tranche de 30 min — label @YYYY-MM-DDTHH:MM@
+  | ParHeure   -- ^ Agrégation par heure — label @YYYY-MM-DDTHH@
+  | ParJour    -- ^ Agrégation par jour — label @YYYY-MM-DD@
   | ParSemaine -- ^ Agrégation par semaine ISO — label @YYYY-Www@
   | ParMois    -- ^ Agrégation par mois — label @YYYY-MM@
   | ParAn      -- ^ Agrégation par année — label @YYYY@
@@ -95,13 +101,29 @@ aggregateEnergy conn gm gp period deb fin =
 
 -- | Expression SQLite pour la période d'agrégation sur un timestamp
 periodExpr :: AggregationPeriod -> Text
+periodExpr Par5Min    = minBucket 5
+periodExpr Par10Min   = minBucket 10
+periodExpr Par15Min   = minBucket 15
+periodExpr Par30Min   = minBucket 30
+periodExpr ParHeure   = "strftime('%Y-%m-%dT%H', horodate)"
 periodExpr ParJour    = "date(horodate)"
 periodExpr ParSemaine = "strftime('%Y-W%W', horodate)"
 periodExpr ParMois    = "strftime('%Y-%m', horodate)"
 periodExpr ParAn      = "strftime('%Y', horodate)"
 
+minBucket :: Int -> Text
+minBucket n =
+  "strftime('%Y-%m-%dT%H:', horodate) || printf('%02d', (CAST(strftime('%M', horodate) AS INTEGER) / "
+  <> tshow n <> ") * " <> tshow n <> ")"
+  where tshow = T.pack . show
+
 -- | Expression SQLite pour la période d'agrégation sur une date
 periodExprDay :: AggregationPeriod -> Text
+periodExprDay Par5Min    = "date"
+periodExprDay Par10Min   = "date"
+periodExprDay Par15Min   = "date"
+periodExprDay Par30Min   = "date"
+periodExprDay ParHeure   = "date"
 periodExprDay ParJour    = "date"
 periodExprDay ParSemaine = "strftime('%Y-W%W', date)"
 periodExprDay ParMois    = "strftime('%Y-%m', date)"
