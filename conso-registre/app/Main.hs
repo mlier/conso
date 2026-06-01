@@ -1,9 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Exception (catch, SomeException, displayException)
+import Control.Exception (catch, SomeException, displayException, bracket)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.UUID as UUID
+import Database.SQLite.Simple (close)
 import Options.Applicative
 import System.Directory (getHomeDirectory)
 import System.FilePath ((</>))
@@ -15,21 +18,26 @@ import Conso.Fr.SiteDB.Orchestration.Desinscription
   ( DesinscriptionCallbacks(..), supprimerSite )
 
 import Conso.Fr.Elec.SiteDB.Orchestration.Adresse (codePostalPrm, arreterServicesSge)
+import Conso.Fr.Elec.SiteDB.Storage.Connection (openSiteDbElec)
 import Conso.Fr.Elec.SiteDB.Storage.Delete (deleteElecData)
 import Conso.Fr.Elec.SiteDB.Cli
   ( ElecCommand(..), ElecCommandResult(..), ElecRattachement(..)
   , elecInscrirePrmParser, elecSupprimerPrmParser, elecIngererParser
   , runElecCommand )
+import qualified Conso.Fr.Elec.SiteDB.Analysis.Aggregate as ElecAgg
 
 import Conso.Fr.Gaz.SiteDB.Orchestration.Adresse (codePostalPce)
+import Conso.Fr.Gaz.SiteDB.Storage.Connection (openSiteDbGaz)
 import Conso.Fr.Gaz.SiteDB.Storage.Delete (deleteGazData)
 import Conso.Fr.Gaz.SiteDB.Cli
   ( GazCommand(..), GazCommandResult(..), initSession
   , gazInscrirePceParser, gazSupprimerPceParser, gazIngererParser, runGazCommand )
+import qualified Conso.Fr.Gaz.SiteDB.Analysis.Aggregate as GazAgg
 
 import Display
   ( afficherResultat, afficherSites, afficherDesinscription
   , afficherIngererGaz, afficherIngererElec )
+import Display.Histogram (barChart)
 
 
 -- ---------------------------------------------------------------------------
@@ -47,6 +55,16 @@ data Command
   | CmdElec ElecCommand
   | CmdGaz  GazCommand
   | CmdSupprimerTout SiteId
+  | CmdAffiche AfficheCommand
+
+data Periode = ParJour | ParSemaine | ParMois | ParAn
+
+data ElecSousType = ElecEnergie | ElecCourbe | ElecPmax | ElecIndex
+data GazSousType  = GazConso | GazConsoInfo | GazInjection
+
+data AfficheCommand
+  = AfficheElec ElecSousType SiteId Periode Text Text
+  | AfficheGaz  GazSousType  SiteId Periode Text Text
 
 
 -- ---------------------------------------------------------------------------
@@ -93,6 +111,9 @@ runCommand configDir prod verbose siteDbDir (CmdGaz cmd) = do
       GazDesinscrit r -> afficherDesinscription r
       GazIngere     r -> afficherIngererGaz r
 
+runCommand _ _ _ siteDbDir (CmdAffiche cmd) =
+  runAfficheCommand siteDbDir cmd
+
 runCommand configDir prod verbose siteDbDir (CmdSupprimerTout siteId) = do
   let callbacks = DesinscriptionCallbacks
         { cbDeleteElec  = deleteElecData
@@ -102,6 +123,52 @@ runCommand configDir prod verbose siteDbDir (CmdSupprimerTout siteId) = do
   withRegistry configDir $ \conn -> do
     result <- supprimerSite conn siteDbDir prod verbose callbacks siteId
     afficherDesinscription result
+
+
+runAfficheCommand :: FilePath -> AfficheCommand -> IO ()
+runAfficheCommand siteDbDir (AfficheElec sous siteId periode deb fin) =
+  bracket (openSiteDbElec siteDbDir siteId) close $ \conn -> do
+    let p = toElecPeriode periode
+    rows <- case sous of
+      ElecEnergie -> ElecAgg.aggregateEnergy    conn "CONS" "EA"   p deb fin
+      ElecCourbe  -> ElecAgg.aggregateCurve     conn "CONS" "PA" "BEST" p deb fin
+      ElecPmax    -> ElecAgg.aggregatePmax      conn "PMA"        p deb fin
+      ElecIndex   -> ElecAgg.aggregateIndexDelta conn "EA"        p deb fin
+    let title = elecTitle sous <> " — " <> deb <> " → " <> fin
+    barChart title [(T.takeEnd 2 (ElecAgg.agPeriode r), ElecAgg.agSomme r) | r <- rows]
+
+runAfficheCommand siteDbDir (AfficheGaz sous siteId periode deb fin) =
+  bracket (openSiteDbGaz siteDbDir siteId) close $ \conn -> do
+    let p = toGazPeriode periode
+    rows <- case sous of
+      GazConso     -> GazAgg.aggregateGazConso     conn p deb fin
+      GazConsoInfo -> GazAgg.aggregateGazConsoInfo  conn p deb fin
+      GazInjection -> GazAgg.aggregateGazInjection  conn p deb fin
+    let title = gazTitle sous <> " — " <> deb <> " → " <> fin
+    barChart title [(T.takeEnd 2 (GazAgg.gazAgPeriode r), GazAgg.gazAgSomme r) | r <- rows]
+
+toElecPeriode :: Periode -> ElecAgg.AggregationPeriod
+toElecPeriode ParJour    = ElecAgg.ParJour
+toElecPeriode ParSemaine = ElecAgg.ParSemaine
+toElecPeriode ParMois    = ElecAgg.ParMois
+toElecPeriode ParAn      = ElecAgg.ParAn
+
+toGazPeriode :: Periode -> GazAgg.AggregationPeriod
+toGazPeriode ParJour    = GazAgg.ParJour
+toGazPeriode ParSemaine = GazAgg.ParMois
+toGazPeriode ParMois    = GazAgg.ParMois
+toGazPeriode ParAn      = GazAgg.ParAn
+
+elecTitle :: ElecSousType -> Text
+elecTitle ElecEnergie = "Énergie (Wh)"
+elecTitle ElecCourbe  = "Courbe de charge (Wh)"
+elecTitle ElecPmax    = "Puissance max (VA)"
+elecTitle ElecIndex   = "Index — deltas (Wh)"
+
+gazTitle :: GazSousType -> Text
+gazTitle GazConso     = "Consommations gaz (kWh)"
+gazTitle GazConsoInfo = "Consommations informatives (kWh)"
+gazTitle GazInjection = "Injections gaz (kWh)"
 
 
 -- ---------------------------------------------------------------------------
@@ -117,6 +184,7 @@ globalParser = GlobalOpts
     <> command "inscrire"  (info (inscrireParser  <**> helper)   (progDesc "Inscrire un PRM ou PCE"))
     <> command "supprimer" (info (supprimerParser <**> helper)   (progDesc "Supprimer un PRM, PCE ou site"))
     <> command "ingerer"   (info (ingererParser   <**> helper)   (progDesc "Ingérer les données depuis les APIs"))
+    <> command "affiche"   (info (afficheParser   <**> helper)   (progDesc "Afficher des données sous forme de graphique"))
     )
 
 inscrireParser :: Parser Command
@@ -146,3 +214,55 @@ uuidArg h = argument (eitherReader parseUUID) (metavar "UUID" <> help h)
     parseUUID s = case UUID.fromString s of
       Just u  -> Right (SiteId u)
       Nothing -> Left $ "UUID invalide : " <> s
+
+afficheParser :: Parser Command
+afficheParser = CmdAffiche <$> subparser
+  (  command "elec" (info (elecAfficheParser <**> helper) (progDesc "Données électricité"))
+  <> command "gaz"  (info (gazAfficheParser  <**> helper) (progDesc "Données gaz"))
+  )
+
+elecAfficheParser :: Parser AfficheCommand
+elecAfficheParser = subparser
+  (  command "energie" (info (elecSousParser ElecEnergie <**> helper) (progDesc "Énergies quotidiennes (Wh)"))
+  <> command "courbe"  (info (elecSousParser ElecCourbe  <**> helper) (progDesc "Courbe de charge agrégée (Wh)"))
+  <> command "pmax"    (info (elecSousParser ElecPmax    <**> helper) (progDesc "Puissance maximale (VA)"))
+  <> command "index"   (info (elecSousParser ElecIndex   <**> helper) (progDesc "Index — delta entre relevés (Wh)"))
+  )
+
+elecSousParser :: ElecSousType -> Parser AfficheCommand
+elecSousParser sous = AfficheElec sous
+  <$> uuidArg "UUID du site"
+  <*> periodeOption
+  <*> dateOption "debut" "Date de début (YYYY-MM-DD)"
+  <*> dateOption "fin"   "Date de fin (YYYY-MM-DD)"
+
+gazAfficheParser :: Parser AfficheCommand
+gazAfficheParser = subparser
+  (  command "conso"      (info (gazSousParser GazConso     <**> helper) (progDesc "Consommations publiées (kWh)"))
+  <> command "conso-info" (info (gazSousParser GazConsoInfo <**> helper) (progDesc "Consommations informatives (kWh)"))
+  <> command "injection"  (info (gazSousParser GazInjection <**> helper) (progDesc "Injections (kWh)"))
+  )
+
+gazSousParser :: GazSousType -> Parser AfficheCommand
+gazSousParser sous = AfficheGaz sous
+  <$> uuidArg "UUID du site"
+  <*> periodeOption
+  <*> dateOption "debut" "Date de début (YYYY-MM-DD)"
+  <*> dateOption "fin"   "Date de fin (YYYY-MM-DD)"
+
+periodeOption :: Parser Periode
+periodeOption = option (eitherReader parsePeriode)
+  (  long "par"
+  <> metavar "GRANULARITE"
+  <> value ParMois
+  <> help "Granularité : jour, semaine, mois, an (défaut : mois)"
+  )
+  where
+    parsePeriode "jour"    = Right ParJour
+    parsePeriode "semaine" = Right ParSemaine
+    parsePeriode "mois"    = Right ParMois
+    parsePeriode "an"      = Right ParAn
+    parsePeriode s         = Left $ "Granularité invalide : " <> s <> " (jour|semaine|mois|an)"
+
+dateOption :: String -> String -> Parser Text
+dateOption l h = strOption (long l <> metavar "DATE" <> help h)

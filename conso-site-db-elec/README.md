@@ -1,7 +1,6 @@
 # conso-site-db-elec
 
-Bibliothèque Haskell : stockage, ingestion, analyse et export des données électricité Enedis
-(flux M023/R6X/C68/NASS) dans des bases SQLite par PRM.
+Bibliothèque Haskell : stockage, ingestion, analyse et export des données électricité Enedis (flux M023/R6X/C68/NASS) dans des bases SQLite par PRM.
 
 Aucun exécutable — consommée par `conso-registre`.
 

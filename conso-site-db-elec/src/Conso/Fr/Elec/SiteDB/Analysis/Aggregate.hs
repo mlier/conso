@@ -18,6 +18,8 @@ module Conso.Fr.Elec.SiteDB.Analysis.Aggregate
   , AggregateRow(..)
   , aggregateCurve
   , aggregateEnergy
+  , aggregatePmax
+  , aggregateIndexDelta
   ) where
 
 import           Database.SQLite.Simple
@@ -104,3 +106,50 @@ periodExprDay ParJour    = "date"
 periodExprDay ParSemaine = "strftime('%Y-W%W', date)"
 periodExprDay ParMois    = "strftime('%Y-%m', date)"
 periodExprDay ParAn      = "strftime('%Y', date)"
+
+-- | Agrège les puissances maximales (@elec_daily_pmax@) sur une période.
+aggregatePmax
+  :: Connection
+  -> Text              -- ^ @grandeur_physique@ (@\"PMA\"@, @\"PMA1\"@, …)
+  -> AggregationPeriod
+  -> Text              -- ^ Horodate début (ISO 8601)
+  -> Text              -- ^ Horodate fin (ISO 8601)
+  -> IO [AggregateRow]
+aggregatePmax conn gp period deb fin =
+  query conn
+    (Query $
+      "SELECT " <> periodExpr period <> " AS periode, \
+      \ SUM(CAST(valeur AS REAL)), \
+      \ AVG(CAST(valeur AS REAL)), \
+      \ MAX(CAST(valeur AS REAL)), \
+      \ COUNT(*) \
+      \ FROM elec_daily_pmax \
+      \ WHERE grandeur_physique = ? \
+      \   AND horodate >= ? AND horodate <= ? \
+      \ GROUP BY periode ORDER BY periode")
+    (gp, deb, fin)
+
+-- | Agrège les index (@elec_index_values@) par delta entre relevés successifs.
+--
+-- Utilise la fonction fenêtre LAG pour calculer la consommation entre deux
+-- relevés consécutifs. Les deltas négatifs (reset compteur) sont exclus.
+aggregateIndexDelta
+  :: Connection
+  -> Text              -- ^ @grandeur_physique@ (@\"EA\"@, …)
+  -> AggregationPeriod
+  -> Text              -- ^ Horodate début (ISO 8601)
+  -> Text              -- ^ Horodate fin (ISO 8601)
+  -> IO [AggregateRow]
+aggregateIndexDelta conn gp period deb fin =
+  query conn
+    (Query $
+      "SELECT periode, SUM(delta), AVG(delta), MAX(delta), COUNT(*) FROM (\
+      \  SELECT " <> periodExpr period <> " AS periode, \
+      \    CAST(valeur AS REAL) - LAG(CAST(valeur AS REAL)) OVER (\
+      \      PARTITION BY grandeur_physique ORDER BY horodate\
+      \    ) AS delta \
+      \  FROM elec_index_values \
+      \  WHERE grandeur_physique = ? AND horodate >= ? AND horodate <= ?\
+      \) WHERE delta IS NOT NULL AND delta >= 0 \
+      \ GROUP BY periode ORDER BY periode")
+    (gp, deb, fin)

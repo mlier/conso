@@ -26,6 +26,7 @@ library
         Conso.Fr.Gaz.SiteDB.Orchestration.Inscription
         Conso.Fr.Gaz.SiteDB.Orchestration.Ingerer
         Conso.Fr.Gaz.SiteDB.Cli
+        Conso.Fr.Gaz.SiteDB.Analysis.Aggregate
     build-depends:
           base >=4.17 && <5
         , conso-site-db
