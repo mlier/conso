@@ -11,7 +11,8 @@ import Options.Applicative
 import System.Directory (getHomeDirectory)
 import System.FilePath ((</>))
 
-import Conso.Fr.SiteDB.Types (SiteId(..))
+import Data.List (sortOn)
+import Conso.Fr.SiteDB.Types (SiteId(..), SiteRef(..), Prm(..), Pce(..))
 import Conso.Fr.SiteDB.Registry (withRegistry)
 import Conso.Fr.SiteDB.Registry.Operations (listSites)
 import Conso.Fr.SiteDB.Orchestration.Desinscription
@@ -50,8 +51,15 @@ data GlobalOpts = GlobalOpts
   , optCommand   :: Command
   }
 
+data TriSites = TriDate | TriUuid | TriPrm | TriPce
+
+data ListerOpts = ListerOpts
+  { loTri      :: TriSites
+  , loChercher :: Maybe Text
+  }
+
 data Command
-  = CmdLister
+  = CmdLister ListerOpts
   | CmdElec ElecCommand
   | CmdGaz  GazCommand
   | CmdSupprimerTout SiteId
@@ -83,11 +91,31 @@ main = do
     `catch` \e -> putStrLn $ "Erreur : " <> displayException (e :: SomeException)
 
 
+filtrerSites :: Text -> [SiteRef] -> [SiteRef]
+filtrerSites terme = filter matches
+  where
+    t = T.toLower terme
+    matches sr =
+      let (SiteId uuid) = srSiteId sr
+      in any (T.isInfixOf t . T.toLower)
+           [ T.pack (UUID.toString uuid)
+           , maybe "" (\(Prm x) -> x) (srPrm sr)
+           , maybe "" (\(Pce x) -> x) (srPce sr)
+           ]
+
+trierSites :: TriSites -> [SiteRef] -> [SiteRef]
+trierSites TriDate = id
+trierSites TriUuid = sortOn (\sr -> let (SiteId u) = srSiteId sr in T.pack (UUID.toString u))
+trierSites TriPrm  = sortOn (maybe "" (\(Prm x) -> x) . srPrm)
+trierSites TriPce  = sortOn (maybe "" (\(Pce x) -> x) . srPce)
+
 runCommand :: FilePath -> Bool -> Bool -> FilePath -> Command -> IO ()
-runCommand configDir _ _ _ CmdLister =
+runCommand configDir _ _ _ (CmdLister opts) =
   withRegistry configDir $ \conn -> do
     sites <- listSites conn
-    afficherSites sites
+    let filtrés = maybe sites (`filtrerSites` sites) (loChercher opts)
+        triés   = trierSites (loTri opts) filtrés
+    afficherSites triés
 
 runCommand configDir prod verbose siteDbDir (CmdElec cmd) = do
   mSession <- case cmd of
@@ -198,17 +226,33 @@ gazTitle GazInjection = "Injections gaz (kWh)"
 -- ---------------------------------------------------------------------------
 -- Parsers optparse-applicative
 
+listerParser :: Parser Command
+listerParser = CmdLister <$>
+  (ListerOpts
+    <$> option (eitherReader parseTri)
+          (long "par" <> metavar "CHAMP" <> value TriDate
+           <> help "Trier par : uuid, prm, pce, date (défaut : date)")
+    <*> optional (strOption
+          (long "chercher" <> metavar "TERME"
+           <> help "Filtrer les lignes contenant TERME dans UUID, PRM ou PCE")))
+  where
+    parseTri "uuid"  = Right TriUuid
+    parseTri "prm"   = Right TriPrm
+    parseTri "pce"   = Right TriPce
+    parseTri "date"  = Right TriDate
+    parseTri s       = Left $ "Champ inconnu : " <> s <> " (uuid|prm|pce|date)"
+
 globalParser :: Parser GlobalOpts
 globalParser = GlobalOpts
   <$> optional (strOption (long "config-dir" <> metavar "DIR" <> help "Répertoire de config (défaut : ~/.conso)"))
   <*> switch (long "sandbox" <> help "Utiliser les serveurs sandbox/homologation (défaut : production)")
   <*> switch (long "verbose" <> short 'v' <> help "Afficher les détails des appels API")
   <*> subparser
-    (  command "lister"    (info (pure CmdLister <**> helper)   (progDesc "Lister les sites inscrits"))
+    (  command "lister"    (info (listerParser <**> helper)      (progDesc "Lister les sites inscrits"))
     <> command "inscrire"  (info (inscrireParser  <**> helper)   (progDesc "Inscrire un PRM ou PCE"))
     <> command "supprimer" (info (supprimerParser <**> helper)   (progDesc "Supprimer un PRM, PCE ou site"))
     <> command "ingerer"   (info (ingererParser   <**> helper)   (progDesc "Ingérer les données depuis les APIs"))
-    <> command "affiche"   (info (afficheParser   <**> helper)   (progDesc "Afficher des données sous forme de graphique"))
+    <> command "afficher"   (info (afficheParser   <**> helper)   (progDesc "Afficher des données sous forme de graphique"))
     )
 
 inscrireParser :: Parser Command

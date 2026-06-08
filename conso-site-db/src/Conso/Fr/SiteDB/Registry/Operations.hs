@@ -83,15 +83,16 @@ lookupOrCreateByPce conn pce = do
 lookupBySiteId :: Connection -> SiteId -> IO (Maybe SiteRef)
 lookupBySiteId conn (SiteId uuid) = do
   rows <- query conn
-    "SELECT uuid, prm, pce, label, gaz_avec_injections FROM site_registry WHERE uuid = ?"
-    (Only (UUID.toText uuid)) :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int)]
+    "SELECT uuid, prm, pce, label, gaz_avec_injections, created_at FROM site_registry WHERE uuid = ?"
+    (Only (UUID.toText uuid)) :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int, Text)]
   return $ case rows of
-    [(u, p, c, l, gi)] -> Just SiteRef
+    [(u, p, c, l, gi, ca)] -> Just SiteRef
       { srSiteId            = SiteId (parseUuid u)
       , srPrm               = Prm <$> p
       , srPce               = Pce <$> c
       , srLabel             = l
       , srGazAvecInjections = gi /= 0
+      , srCreatedAt         = ca
       }
     _ -> Nothing
   where
@@ -132,16 +133,17 @@ deleteFromRegistry conn (SiteId uuid) =
 listSites :: Connection -> IO [SiteRef]
 listSites conn = do
   rows <- query_ conn
-    "SELECT uuid, prm, pce, label, gaz_avec_injections FROM site_registry ORDER BY created_at"
-    :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int)]
+    "SELECT uuid, prm, pce, label, gaz_avec_injections, created_at FROM site_registry ORDER BY created_at"
+    :: IO [(Text, Maybe Text, Maybe Text, Maybe Text, Int, Text)]
   return [ SiteRef
              { srSiteId            = SiteId (parseUuid u)
              , srPrm               = Prm <$> p
              , srPce               = Pce <$> c
              , srLabel             = l
              , srGazAvecInjections = gi /= 0
+             , srCreatedAt         = ca
              }
-         | (u, p, c, l, gi) <- rows
+         | (u, p, c, l, gi, ca) <- rows
          ]
   where
     parseUuid t = case UUID.fromText t of

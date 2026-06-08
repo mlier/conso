@@ -40,4 +40,5 @@ data SiteRef = SiteRef
   , srPce                 :: Maybe Pce
   , srLabel               :: Maybe SiteLabel
   , srGazAvecInjections   :: Bool
+  , srCreatedAt           :: Text   -- ^ Date de création ISO 8601 (@YYYY-MM-DDTHH:MM:SSZ@)
   } deriving (Eq, Show)

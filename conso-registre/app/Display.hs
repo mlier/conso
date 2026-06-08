@@ -63,16 +63,17 @@ afficherArret (sid, Left (code, lbl)) = putStrLn $ "  SGE " <> sid <> " : " <> c
 afficherSites :: [SiteRef] -> IO ()
 afficherSites [] = putStrLn "(aucun site inscrit)"
 afficherSites sites = do
-  putStrLn $ pad 36 "UUID" <> "  " <> pad 16 "PRM" <> "  " <> pad 16 "PCE"
-  putStrLn $ replicate 36 '-' <> "  " <> replicate 16 '-' <> "  " <> replicate 16 '-'
+  putStrLn $ pad 36 "UUID" <> "  " <> pad 16 "PRM" <> "  " <> pad 16 "PCE" <> "  " <> "Créé le"
+  putStrLn $ replicate 36 '-' <> "  " <> replicate 16 '-' <> "  " <> replicate 16 '-' <> "  " <> replicate 10 '-'
   mapM_ afficherSite sites
 
 afficherSite :: SiteRef -> IO ()
 afficherSite sr = do
   let (SiteId uuid) = srSiteId sr
-      prmStr = maybe "(aucun)" (\(Prm t) -> T.unpack t) (srPrm sr)
-      pceStr = maybe "(aucun)" (\(Pce t) -> T.unpack t) (srPce sr)
-  putStrLn $ pad 36 (UUID.toString uuid) <> "  " <> pad 16 prmStr <> "  " <> pad 16 pceStr
+      prmStr  = maybe "(aucun)" (\(Prm t) -> T.unpack t) (srPrm sr)
+      pceStr  = maybe "(aucun)" (\(Pce t) -> T.unpack t) (srPce sr)
+      dateStr = T.unpack (T.take 10 (srCreatedAt sr))
+  putStrLn $ pad 36 (UUID.toString uuid) <> "  " <> pad 16 prmStr <> "  " <> pad 16 pceStr <> "  " <> dateStr
 
 pad :: Int -> String -> String
 pad n s = take n (s <> repeat ' ')
