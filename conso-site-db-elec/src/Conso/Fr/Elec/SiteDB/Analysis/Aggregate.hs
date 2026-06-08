@@ -171,7 +171,8 @@ aggregateIndexDelta conn gp period deb fin =
       \      PARTITION BY grandeur_physique ORDER BY horodate\
       \    ) AS delta \
       \  FROM elec_index_values \
-      \  WHERE grandeur_physique = ? AND horodate >= ? AND horodate <= ?\
+      \  WHERE grandeur_physique = ? AND is_totalisateur = 1 \
+      \    AND horodate >= ? AND horodate <= ?\
       \) WHERE delta IS NOT NULL AND delta >= 0 \
       \ GROUP BY periode ORDER BY periode")
     (gp, deb, fin)
