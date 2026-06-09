@@ -10,7 +10,8 @@ module Conso.Fr.SiteDB.Orchestration.Desinscription
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Maybe (isNothing)
-import System.Directory (removeFile)
+import System.Directory (removeFile, removeDirectory)
+import System.FilePath  (takeDirectory)
 import System.IO (hPutStrLn, stderr)
 import Control.Exception (try, SomeException)
 
@@ -91,11 +92,13 @@ supprimerSite conn siteDbDir _prod verbose callbacks siteId = do
       logV verbose $ "SGE : arrêt des services pour PRM " <> T.unpack prmT
       cbArreterSge callbacks prmT
   deleteFromRegistry conn siteId
-  let dbPath = siteDbPath siteDbDir siteId
-  result <- try (removeFile dbPath) :: IO (Either SomeException ())
-  case result of
-    Left e  -> logV verbose $ "Avertissement : impossible de supprimer " <> dbPath <> " : " <> show e
-    Right _ -> return ()
+  let dbPath    = siteDbPath siteDbDir siteId
+      shard2Dir = takeDirectory dbPath
+      shard1Dir = takeDirectory shard2Dir
+  mapM_ (\p -> try (removeFile p) :: IO (Either SomeException ()))
+    [dbPath, dbPath <> "-shm", dbPath <> "-wal"]
+  mapM_ (\d -> try (removeDirectory d) :: IO (Either SomeException ()))
+    [shard2Dir, shard1Dir]
   return DesinscriptionResult
     { drSiteId      = siteId
     , drSiteDeleted = True
@@ -112,8 +115,13 @@ nettoyerSiVide conn siteDbDir siteId = do
   case mSite of
     Just site | isNothing (srPrm site) && isNothing (srPce site) -> do
       deleteFromRegistry conn siteId
-      let dbPath = siteDbPath siteDbDir siteId
-      _ <- try (removeFile dbPath) :: IO (Either SomeException ())
+      let dbPath    = siteDbPath siteDbDir siteId
+          shard2Dir = takeDirectory dbPath
+          shard1Dir = takeDirectory shard2Dir
+      mapM_ (\p -> try (removeFile p) :: IO (Either SomeException ()))
+        [dbPath, dbPath <> "-shm", dbPath <> "-wal"]
+      mapM_ (\d -> try (removeDirectory d) :: IO (Either SomeException ()))
+        [shard2Dir, shard1Dir]
       return True
     _ -> return False
 
