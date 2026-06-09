@@ -66,8 +66,12 @@ ingestDirectory
 ingestDirectory configDir siteDbDir = collectJson
   where
     collectJson dir = do
-      entries <- sort <$> listDirectory dir
-      concat <$> mapM (processEntry dir) entries
+      exists <- doesDirectoryExist dir
+      if not exists
+        then return []
+        else do
+          entries <- sort <$> listDirectory dir
+          concat <$> mapM (processEntry dir) entries
     processEntry dir name = do
       let path = dir </> name
       isDir <- doesDirectoryExist path

@@ -40,7 +40,7 @@ import           Data.Char           (isDigit)
 import           Data.List           (isSuffixOf, isPrefixOf, isInfixOf, tails)
 import           Data.Maybe          (fromMaybe)
 import           Control.Monad       (when, forM_)
-import           System.Directory    (listDirectory, doesDirectoryExist, removeFile, renameFile)
+import           System.Directory    (listDirectory, doesDirectoryExist, removeFile, renameFile, createDirectoryIfMissing)
 import           System.Exit         (ExitCode(..))
 import           System.FilePath     ((</>), takeFileName, takeDirectory)
 import           System.Process      (readProcessWithExitCode)
@@ -171,6 +171,7 @@ decryptDir :: DecryptConfig -- ^ Paramètres cryptographiques.
            -> FilePath      -- ^ Répertoire racine à parcourir.
            -> IO ()
 decryptDir cfg dir = do
+    createDirectoryIfMissing True dir
     putStrLn $ "Répertoire : " <> dir
     entries <- listDirectory dir
     mapM_ (processEntry cfg dir) entries
