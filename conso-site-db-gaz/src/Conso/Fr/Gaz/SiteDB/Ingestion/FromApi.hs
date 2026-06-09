@@ -38,7 +38,7 @@ import           Conso.Fr.Gaz.Adict.InjectionsPubliees
 import           Conso.Fr.Gaz.Adict.Types
 
 import           Conso.Fr.SiteDB.Types                  (Pce(..))
-import           Conso.Fr.SiteDB.Registry               (openRegistry, lookupOrCreateByPce)
+import           Conso.Fr.SiteDB.Registry               (openRegistry, lookupByPce)
 import           Conso.Fr.Gaz.SiteDB.Storage.Connection (openSiteDbGaz)
 import           Conso.Fr.Gaz.SiteDB.Storage.Insert
 import           Conso.Fr.Gaz.SiteDB.Storage.Query
@@ -317,8 +317,12 @@ ingestFromAdict
   -> Text     -- ^ Date de fin (YYYY-MM-DD)
   -> IO AdictIngestReport
 ingestFromAdict session configDir siteDbDir pce dateDebut dateFin = do
-  reg    <- openRegistry configDir
-  siteId <- lookupOrCreateByPce reg pce
+  reg     <- openRegistry configDir
+  mSiteId <- lookupByPce reg pce
+  siteId  <- case mSiteId of
+    Nothing       -> let Pce pId = pce
+                     in fail $ "PCE non inscrit dans le registre : " <> T.unpack pId
+    Just sid      -> return sid
   conn   <- openSiteDbGaz siteDbDir siteId
   rPub   <- ingererConsosPubliees      session conn pce dateDebut dateFin
   rInfo  <- ingererConsosInfos         session conn pce dateDebut dateFin

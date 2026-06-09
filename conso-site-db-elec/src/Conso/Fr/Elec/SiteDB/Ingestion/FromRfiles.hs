@@ -42,7 +42,7 @@ import           System.Directory           (listDirectory, doesDirectoryExist)
 import           Control.Exception          (try, SomeException)
 
 import           Conso.Fr.SiteDB.Types                               (Prm(..))
-import           Conso.Fr.SiteDB.Registry                            (openRegistry, lookupOrCreateByPrm)
+import           Conso.Fr.SiteDB.Registry                            (openRegistry, lookupByPrm)
 import           Conso.Fr.Elec.SiteDB.Storage.Connection      (openSiteDbElec)
 import           Conso.Fr.Elec.SiteDB.Types.Common            (PrmId(..))
 import           Conso.Fr.Elec.SiteDB.Types.Header            (CodeFlux, codeFluxFromText)
@@ -103,8 +103,10 @@ ingestJsonFile configDir siteDbDir inputDir fileName = do
               putStrLn $ "  [INGEST] " <> show cf <> " : " <> path
               let openConn (PrmId prmText) = do
                     reg     <- openRegistry configDir
-                    siteId  <- lookupOrCreateByPrm reg (Prm prmText)
-                    openSiteDbElec siteDbDir siteId
+                    mSiteId <- lookupByPrm reg (Prm prmText)
+                    case mSiteId of
+                      Nothing     -> fail $ "PRM non inscrit dans le registre : " <> T.unpack prmText
+                      Just siteId -> openSiteDbElec siteDbDir siteId
               results <- ingestFile openConn cf (Just (T.pack (takeFileName path))) bs
               return $ FileOk path results
 
