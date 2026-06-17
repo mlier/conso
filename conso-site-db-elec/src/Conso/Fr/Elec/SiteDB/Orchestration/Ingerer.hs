@@ -64,6 +64,25 @@ lookbackEnergiePmax = 3
 lookbackCourbes :: Integer
 lookbackCourbes = 2
 
+-- Profondeurs maximales d'historique selon la doc Enedis M023 :
+--   R63 courbes     : 24 mois max
+--   R64/R65/R66/R67 : 36 mois max
+maxJoursCourbes :: Int
+maxJoursCourbes = 730        -- ≈ 24 mois (limite doc R63)
+
+maxJoursEnergiePmaxIndex :: Int
+maxJoursEnergiePmaxIndex = 1095  -- ≈ 36 mois (limite doc R64/R65/R66/R67)
+
+-- | Découpe un intervalle (debut, fin) en tranches de maxDays jours.
+chunkRange :: Int -> (Day, Day) -> [(Day, Day)]
+chunkRange maxDays (debut, fin) = go debut
+  where
+    go d
+      | d > fin   = []
+      | otherwise =
+          let f = min fin (addDays (fromIntegral maxDays - 1) d)
+          in (d, f) : go (addDays 1 f)
+
 -- Limites officielles Enedis par flux (PRMs par requête)
 limiteMfi :: Text -> Int
 limiteMfi "COURBES" = 1500
@@ -131,8 +150,8 @@ ingererElec
 ingererElec regConn configDir siteDbDir params = do
   today <- utctDay <$> getCurrentTime
   let avantHier = addDays (-2) today
-      start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) avantHier
-      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     avantHier
+      start3Ans = addGregorianYearsRollOver (negate lookbackEnergiePmax) today
+      start2Ans = addGregorianYearsRollOver (negate lookbackCourbes)     today
 
   sites <- listSites regConn
   let prmsSites = mapMaybe (\sr -> fmap (, srSiteId sr) (srPrm sr)) sites
@@ -227,10 +246,18 @@ buildReportUnsafe rfilesDir siteDbDir byPrm start3Ans start2Ans endDate prm@(Prm
         , prirServicesArrets  = arrets
         }
 
-  let besoinsE = [BackfillBesoin prm "ENERGIE" "R65" d f | (d, f) <- groupDays trousE]
-      besoinsP = [BackfillBesoin prm "PMAX"    "R66" d f | (d, f) <- groupDays trousP]
-      besoinsC = [BackfillBesoin prm "COURBES" "R63" d f | (d, f) <- groupDays (nub trousC)]
-      besoinsI = besoinsIndex prm start3Ans endDate dIndex
+  let besoinsE = [ BackfillBesoin prm "ENERGIE" "R65" d f
+                 | (d0, f0) <- groupDays trousE
+                 , (d, f)   <- chunkRange maxJoursEnergiePmaxIndex (d0, f0) ]
+      besoinsP = [ BackfillBesoin prm "PMAX"    "R66" d f
+                 | (d0, f0) <- groupDays trousP
+                 , (d, f)   <- chunkRange maxJoursEnergiePmaxIndex (d0, f0) ]
+      besoinsC = [ BackfillBesoin prm "COURBES" "R63" d f
+                 | (d0, f0) <- groupDays (nub trousC)
+                 , (d, f)   <- chunkRange maxJoursCourbes (d0, f0) ]
+      besoinsI = [ BackfillBesoin prm "INDEX" "R64" d f
+                 | BackfillBesoin _ _ _ d0 f0 <- besoinsIndex prm start3Ans endDate dIndex
+                 , (d, f) <- chunkRange maxJoursEnergiePmaxIndex (d0, f0) ]
 
   crResults <- processCrDirectory rfilesDir conn
 
