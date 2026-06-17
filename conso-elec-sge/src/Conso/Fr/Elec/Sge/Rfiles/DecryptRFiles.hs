@@ -196,36 +196,87 @@ processEntry cfg dir name = do
                              tmpPath = path <> ".decrypting"
                          renameFile path tmpPath  -- évite la collision si le ZIP interne a le même nom
                          putStrLn $ "  → extraction vers : " <> outDir
+                         beforeUnzip <- listDirectory outDir
                          (code, out, err) <- readProcessWithExitCode "unzip" ["-o", tmpPath, "-d", outDir] ""
                          case code of
                            ExitSuccess -> do
                              mapM_ (\l -> putStrLn $ "    " <> l) (filter (not . null) (lines out))
                              removeFile tmpPath
-                             -- Extraire les ZIPs internes éventuels (ex. NASS : double couche)
-                             innerZips <- filter (".zip" `isSuffixOf`) <$> listDirectory outDir
+                             -- Diff avant/après : seulement les fichiers créés par CET unzip
+                             afterUnzip <- listDirectory outDir
+                             let innerZips = filter (".zip" `isSuffixOf`)
+                                                    (filter (`notElem` beforeUnzip) afterUnzip)
                              forM_ innerZips $ \innerName -> do
                                let innerPath = outDir </> innerName
                                    innerTmp  = innerPath <> ".inner"
                                renameFile innerPath innerTmp
-                               putStrLn $ "  → extraction ZIP interne : " <> innerName
-                               (code2, out2, err2) <- readProcessWithExitCode "unzip" ["-o", innerTmp, "-d", outDir] ""
-                               case code2 of
-                                 ExitSuccess -> do
-                                   mapM_ (\l -> putStrLn $ "      " <> l) (filter (not . null) (lines out2))
-                                   removeFile innerTmp
-                                 ExitFailure n2 -> do
-                                   renameFile innerTmp innerPath
-                                   putStrLn $ "ERREUR extraction ZIP interne (code " <> show n2 <> "): " <> err2
+                               rawInner <- BS.readFile innerTmp
+                               if BS.take 2 rawInner == BS.pack [0x50, 0x4B]
+                                 then do
+                                   putStrLn $ "  → extraction ZIP interne (non chiffré) : " <> innerName
+                                   (code2, out2, err2) <- readProcessWithExitCode "unzip" ["-o", innerTmp, "-d", outDir] ""
+                                   case code2 of
+                                     ExitSuccess -> do
+                                       mapM_ (\l -> putStrLn $ "      " <> l) (filter (not . null) (lines out2))
+                                       removeFile innerTmp
+                                     ExitFailure n2 -> do
+                                       renameFile innerTmp innerPath
+                                       putStrLn $ "ERREUR extraction ZIP interne (code " <> show n2 <> "): " <> err2
+                                 else do
+                                   putStrLn $ "  → déchiffrement + extraction ZIP interne : " <> innerName
+                                   case modeForFile cfg innerPath of
+                                     Left cfgErr -> do
+                                       renameFile innerTmp innerPath
+                                       putStrLn $ "ERREUR (config inner) : " <> cfgErr
+                                     Right innerMode -> do
+                                       decRes <- decryptZipFile innerMode innerTmp
+                                       case decRes of
+                                         Left decErr -> do
+                                           renameFile innerTmp innerPath
+                                           putStrLn $ "ERREUR déchiffrement ZIP interne : " <> decErr
+                                         Right () -> do
+                                           (code2, out2, err2) <- readProcessWithExitCode "unzip" ["-o", innerTmp, "-d", outDir] ""
+                                           case code2 of
+                                             ExitSuccess -> do
+                                               mapM_ (\l -> putStrLn $ "      " <> l) (filter (not . null) (lines out2))
+                                               removeFile innerTmp
+                                             ExitFailure n2 -> do
+                                               renameFile innerTmp innerPath
+                                               putStrLn $ "ERREUR extraction ZIP interne (code " <> show n2 <> "): " <> err2
+                             -- Niveau-3 : ZIPs plain réapparus avec le même nom qu'un inner traité
+                             -- (ex. C68 : inner chiffré → déchiffré → ZIP plain du même nom)
+                             afterInner <- listDirectory outDir
+                             let level3Zips = filter (".zip" `isSuffixOf`)
+                                                     (filter (`elem` innerZips) afterInner)
+                             forM_ level3Zips $ \l3Name -> do
+                               let l3Path = outDir </> l3Name
+                                   l3Tmp  = l3Path <> ".inner"
+                               rawL3 <- BS.readFile l3Path
+                               when (BS.take 2 rawL3 == BS.pack [0x50, 0x4B]) $ do
+                                 putStrLn $ "  → extraction ZIP niveau-3 (non chiffré) : " <> l3Name
+                                 renameFile l3Path l3Tmp
+                                 (code3, out3, err3) <- readProcessWithExitCode "unzip" ["-o", l3Tmp, "-d", outDir] ""
+                                 case code3 of
+                                   ExitSuccess -> do
+                                     mapM_ (\l -> putStrLn $ "      " <> l) (filter (not . null) (lines out3))
+                                     removeFile l3Tmp
+                                   ExitFailure n3 -> do
+                                     renameFile l3Tmp l3Path
+                                     putStrLn $ "ERREUR extraction ZIP niveau-3 (code " <> show n3 <> "): " <> err3
                              putStrLn "  → OK"
                            ExitFailure n -> do
                              renameFile tmpPath path
                              putStrLn $ "ERREUR unzip (code " <> show n <> ")\n  stdout=" <> out <> "\n  stderr=" <> err
                else when ("_CR_" `isInfixOf` name && ".json" `isSuffixOf` name) $ do
-                 putStr $ "  Déchiffrement CR : " <> name <> " ... "
-                 case modeForFile cfg path of
-                   Left err -> putStrLn $ "ERREUR (config) : " <> err
-                   Right mode -> do
-                     res <- decryptZipFile mode path
-                     putStrLn $ case res of
-                       Left err -> "ERREUR : " <> err
-                       Right () -> "OK"
+                 raw <- BS.readFile path
+                 if BS.length raw `mod` 16 /= 0
+                   then putStrLn $ "  CR JSON en clair : " <> name <> " (ignoré)"
+                   else do
+                     putStr $ "  Déchiffrement CR : " <> name <> " ... "
+                     case modeForFile cfg path of
+                       Left err -> putStrLn $ "ERREUR (config) : " <> err
+                       Right mode -> do
+                         res <- decryptZipFile mode path
+                         putStrLn $ case res of
+                           Left err -> "ERREUR : " <> err
+                           Right () -> "OK"
