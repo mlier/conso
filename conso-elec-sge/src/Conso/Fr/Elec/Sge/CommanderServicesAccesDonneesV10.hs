@@ -129,7 +129,8 @@ initType_ prod myPointId sens accordPersonneType typeDonnees duree mPeriodicite 
 
     let optsPub = fmap (\p -> OptionsPublicationType
           [ OptionPublicationType
-              { optionPublicationType_mesuresCorrigees        = Nothing
+              { optionPublicationType_mesuresCorrigees        =
+                  if typeDonnees == "CDC" then Just (BooleenType False) else Nothing
               , optionPublicationType_periodiciteTransmission =
                   PeriodiciteTransmissionType (Xsd.XsdString (periodiciteStr p))
               }

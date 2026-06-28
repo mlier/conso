@@ -97,7 +97,7 @@ envoyerBatchMfi conn prms flux typeCode (debut, fin) = do
       finStr   = show fin
       tc       = parseTypeCode typeCode
   result <- try $ do
-    req <- M23.initType prmStrs tc Nothing debutStr finStr M23T.SensSOUTIRAGE M23T.CadreAccesACCORDCLIENT
+    req <- M23.initType prmStrs tc (mesuresCorrFor typeCode) debutStr finStr M23T.SensSOUTIRAGE M23T.CadreAccesACCORDCLIENT
     M23.wsRequest req :: IO (Either (String, String) M23T.AffaireId)
   now <- getCurrentTime
   let nowStr  = T.pack $ formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" now
@@ -157,6 +157,10 @@ parseTypeCode "COURBES" = M23T.MesuresTypeCodeCOURBES
 parseTypeCode "PMAX"    = M23T.MesuresTypeCodePMAX
 parseTypeCode "INDEX"   = M23T.MesuresTypeCodeINDEX
 parseTypeCode _         = M23T.MesuresTypeCodeENERGIE
+
+mesuresCorrFor :: Text -> Maybe M23T.MesuresCorrigees
+mesuresCorrFor "COURBES" = Just (M23T.MesuresCorrigees False)
+mesuresCorrFor _         = Nothing
 
 chunksOf :: Int -> [a] -> [[a]]
 chunksOf _ [] = []

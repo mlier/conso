@@ -158,8 +158,8 @@ subscribeSge prod prmT accord t = do
     mkWs   = if prod then wsRequest else wsRequestTest
 
 periodiciteFor :: TypeFlux -> Maybe Periodicite
-periodiciteFor IDX = Nothing
-periodiciteFor _   = Just P1D
+periodiciteFor ENERGIE = Nothing
+periodiciteFor _       = Just P1D
 
 
 logV :: Bool -> String -> IO ()
